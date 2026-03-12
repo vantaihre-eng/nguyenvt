@@ -2693,6 +2693,9 @@ html, body {
         <div class="cms-nav-item" data-page="landing" onclick="cmsNav('landing',this)">
           <span class="nav-icon" style="display:flex;align-items:center"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></span> Landing Pages
         </div>
+        <div class="cms-nav-item" data-page="custompages" onclick="cmsNav('custompages',this)">
+          <span class="nav-icon" style="display:flex;align-items:center"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span> Trang chuyên biệt
+        </div>
         <div class="cms-nav-item" data-page="categories" onclick="cmsNav('categories',this)">
           <span class="nav-icon" style="display:flex;align-items:center"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></span> Danh mục
         </div>
@@ -2857,6 +2860,41 @@ html, body {
         </div>
       </div>
 
+      <!-- CUSTOM PAGES (Trang chuyên biệt) -->
+      <div id="cmspage-custompages" class="cms-page-content" style="display:none">
+        <div class="cms-topbar">
+          <h1>Trang chuyên biệt</h1>
+          <div style="font-size:12px;color:#777">Quản lý các box nội dung trên Trang chủ, Giới thiệu, Hồ sơ năng lực</div>
+        </div>
+        <div class="cms-content">
+          <div class="cms-editor-card" style="margin-bottom:20px;">
+            <div class="cms-form-group">
+              <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Chọn trang để chỉnh sửa</label>
+              <select id="cms-cp-select" class="cms-field" onchange="cmsLoadCustomPageBoxes(this.value)">
+                <option value="">-- Chọn trang --</option>
+                <option value="home">Trang chủ (Home)</option>
+                <option value="about">Giới thiệu (About)</option>
+                <option value="profile">Hồ sơ năng lực (Profile)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="cms-cp-editor-area" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <h2 style="font-size:16px;font-weight:700;margin:0">Danh sách các Box</h2>
+              <button class="cms-new-btn" onclick="cmsAddCustomPageBox()">+ Thêm Box</button>
+            </div>
+            
+            <!-- Container for draggable boxes -->
+            <div id="cms-cp-boxes-container" style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px;"></div>
+            
+            <div style="display:flex;gap:12px">
+              <button class="cms-save-btn" onclick="cmsSaveCustomPage()">💾 Lưu thay đổi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- LANDING PAGE BUILDER EDITOR (full-height, no scroll wrapper) -->
       <div id="cmspage-lpbuilder" class="cms-page-content" style="display:none;padding:0;overflow:hidden;height:100%">
         <div class="lpb-wrap">
@@ -3017,6 +3055,17 @@ html, body {
                 <div class="cms-form-group" style="margin-top:12px">
                   <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Mô tả SEO</label>
                   <textarea class="cms-field" id="cms-page-seo" rows="3" placeholder="Mô tả ngắn cho công cụ tìm kiếm..." style="resize:vertical"></textarea>
+                </div>
+                <div class="cms-form-group" style="margin-top:12px">
+                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">🖼 Thumbnail khi share (OG Image)</label>
+                  <div class="cms-img-row" style="margin-bottom:6px">
+                    <input class="cms-field" type="text" id="cms-page-og-image" placeholder="https://... (để trống = dùng ảnh đầu trang)" oninput="cmsUpdatePageOgPreview(this.value)">
+                    <button class="cms-img-btn" onclick="cmsPageOgImgPicker()">📚</button>
+                  </div>
+                  <div id="cms-page-og-preview" style="display:none;margin-top:6px">
+                    <img id="cms-page-og-preview-img" src="" style="max-width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid #e8e8e8">
+                  </div>
+                  <p style="font-size:10px;color:#aaa;margin-top:4px">Ảnh hiện khi share link trang này lên MXH</p>
                 </div>
               </div>
             </div>
@@ -3400,6 +3449,17 @@ html, body {
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Favicon URL</label>
                 <input class="cms-field" type="text" id="cms-set-favicon" placeholder="Đường dẫn đến ảnh icon...">
               </div>
+              <div class="cms-form-group" style="grid-column:1/-1">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">🖼 Thumbnail trang chủ (OG Image)</label>
+                <p style="font-size:11px;color:#999;margin:-2px 0 8px">Ảnh hiện ra khi share link trang chủ lên Facebook, Zalo, Telegram... Khuyến nghị 1200×630px.</p>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input class="cms-field" type="text" id="cms-set-og-image" placeholder="https://... URL ảnh thumbnail" style="flex:1;margin:0" oninput="cmsUpdateOgPreview(this.value)">
+                  <button class="cms-cancel-btn" style="white-space:nowrap;flex-shrink:0" onclick="cmsPickOgImage()">📁 Chọn ảnh</button>
+                </div>
+                <div id="cms-og-preview" style="margin-top:10px;display:none">
+                  <img id="cms-og-preview-img" src="" style="max-width:240px;height:126px;object-fit:cover;border-radius:6px;border:1px solid #e8e8e8">
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3535,7 +3595,7 @@ html, body {
           <div style="font-size:14px;font-weight:600">Kéo ảnh vào đây hoặc nhấn để chọn</div>
           <input type="file" id="rte-file-input" accept="image/*" style="display:none" onchange="rteHandleFileUpload(this.files)">
         </div>
-        <div id="rte-upload-status" style="text-align:center;font-size:12px;color:#777777;margin-top:10px"></div>
+        <div id="rte-upload-status"></div>
       </div>
       <!-- URL panel -->
       <div id="rte-panel-url" style="display:none">
@@ -3562,6 +3622,7 @@ html, body {
 const STORAGE_KEY = 'taitangau_data';
 const PAGE_LAYOUT_KEY = 'taitangau_page_layout';
 const IMAGES_KEY = 'taitangau_images'; // separate from posts for performance
+const THEME_KEY = 'taitangau_theme';
 
 let data = {
   posts: [],
@@ -3645,14 +3706,40 @@ function _loadLocal() {
 async function _pullFirebase() {
   if (!_db) return;
   try {
-    const [ps, ss, cs, pgs, ims, lps] = await Promise.all([
+    const [ps, ss, cs, pgs, ims, lps, themeSnap, customPagesSnap, layoutSnap, mobileSnap] = await Promise.all([
       _db.collection('posts').orderBy('date','desc').get(),
       _db.collection('site').doc('settings').get(),
       _db.collection('site').doc('categories').get(),
       _db.collection('pages').get(),
       _db.collection('images').get(),
-      _db.collection('landingPages').get()
+      _db.collection('landingPages').get(),
+      _db.collection('site').doc('theme').get(),
+      _db.collection('site').doc('custom_pages').get(),
+      _db.collection('site').doc('layout').get(),
+      _db.collection('site').doc('mobile').get()
     ]);
+
+    data.posts = []; data.categories = []; data.pages = []; data.images = []; landingPages = [];
+    
+    if (themeSnap.exists) {
+      const themeData = themeSnap.data();
+      localStorage.setItem(THEME_KEY, JSON.stringify(themeData));
+      applyTheme(themeData);
+    }
+    if (layoutSnap.exists) {
+      const layoutData = layoutSnap.data();
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify(layoutData));
+      applyLayout(layoutData);
+    }
+    if (mobileSnap.exists) {
+      const mobileData = mobileSnap.data();
+      localStorage.setItem(MOBILE_KEY, JSON.stringify(mobileData));
+      applyMobileCfg(mobileData);
+    }
+    
+    if (customPagesSnap.exists) {
+      customPagesData = customPagesSnap.data();
+    }
     if (!ps.empty)  data.posts      = ps.docs.map(d => ({_id:d.id, ...d.data()}));
     if (ss.exists)  { data.settings = Object.assign({}, data.settings, ss.data()); data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, ss.data()?.social||{}); }
     if (cs.exists && cs.data().list) data.categories = cs.data().list;
@@ -4701,6 +4788,7 @@ function cmsNav(page, el) {
   if (page === 'mobile') cmsLoadMobile();
   if (page === 'settings') cmsLoadSettings();
   if (page === 'landing') lpbRenderList();
+  if (page === 'custompages') { document.getElementById('cms-cp-select').value = ''; document.getElementById('cms-cp-editor-area').style.display = 'none'; }
 }
 
 /* ── Dashboard ── */
@@ -5437,6 +5525,8 @@ function cmsOpenPageEditor(idx) {
     document.getElementById('cms-page-image').value = pg.image || '';
     document.getElementById('cms-page-show-nav').checked = !!pg.showNav;
     document.getElementById('cms-page-seo').value = pg.seo || '';
+    document.getElementById('cms-page-og-image').value = pg.ogImage || '';
+    cmsUpdatePageOgPreview(pg.ogImage || '');
     updatePageImgPreview(pg.image || '');
   } else {
     document.getElementById('cms-page-title').value = '';
@@ -5445,6 +5535,8 @@ function cmsOpenPageEditor(idx) {
     document.getElementById('cms-page-image').value = '';
     document.getElementById('cms-page-show-nav').checked = true;
     document.getElementById('cms-page-seo').value = '';
+    document.getElementById('cms-page-og-image').value = '';
+    cmsUpdatePageOgPreview('');
     updatePageImgPreview('');
   }
 
@@ -5483,6 +5575,23 @@ function updatePageImgPreview(url) {
     p.innerHTML = '📷';
     p.style.fontSize = '32px';
   }
+}
+
+function cmsUpdatePageOgPreview(url) {
+  const preview = document.getElementById('cms-page-og-preview');
+  const img = document.getElementById('cms-page-og-preview-img');
+  if (!preview || !img) return;
+  if (url) { img.src = url; preview.style.display = 'block'; }
+  else { preview.style.display = 'none'; }
+}
+
+function cmsPageOgImgPicker() {
+  window._lpbImgInsert = (url) => {
+    const el = document.getElementById('cms-page-og-image');
+    if (el) { el.value = url; cmsUpdatePageOgPreview(url); }
+    window._lpbImgInsert = null;
+  };
+  openModal('cms-img-picker');
 }
 
 function cmsPageImgPicker() {
@@ -5541,6 +5650,7 @@ function cmsSavePage() {
     image: document.getElementById('cms-page-image').value.trim(),
     showNav: document.getElementById('cms-page-show-nav').checked,
     seo: document.getElementById('cms-page-seo').value.trim(),
+    ogImage: document.getElementById('cms-page-og-image')?.value.trim() || '',
     createdAt: cmsCurrentEditPageIdx !== null ? data.pages[cmsCurrentEditPageIdx].createdAt : Date.now(),
     updatedAt: Date.now()
   };
@@ -5646,6 +5756,10 @@ function cmsSaveLayout() {
     bgColor: document.getElementById('cms-color-bg-hex').value.trim() || document.getElementById('cms-color-bg').value
   };
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(cfg));
+  // ✅ Sync lên Firebase để mọi thiết bị thấy
+  if (_fbReady && _db) {
+    _db.collection('site').doc('layout').set(cfg).catch(e => console.error('Save layout error:', e));
+  }
   applyLayout(cfg);
   renderPosts();
   showToast('✅ Đã áp dụng giao diện mới');
@@ -5654,6 +5768,9 @@ function cmsSaveLayout() {
 function cmsResetLayout() {
   if (!confirm('Đặt lại giao diện về mặc định?')) return;
   localStorage.removeItem(LAYOUT_KEY);
+  if (_fbReady && _db) {
+    _db.collection('site').doc('layout').delete().catch(e => {});
+  }
   document.documentElement.style.removeProperty('--accent');
   document.documentElement.style.removeProperty('--cream');
   applyLayout({});
@@ -5671,6 +5788,11 @@ function cmsLoadSettings() {
   document.getElementById('cms-set-author').value = s.author || '';
   document.getElementById('cms-set-bio').value = s.bio || '';
   document.getElementById('cms-set-avatar').value = s.avatar || '';
+  const ogImgEl = document.getElementById('cms-set-og-image');
+  if (ogImgEl) {
+    ogImgEl.value = s.ogImage || '';
+    cmsUpdateOgPreview(s.ogImage || '');
+  }
   document.getElementById('cms-set-favicon').value = s.favicon || '';
   document.getElementById('cms-set-pass').value = '';
   document.getElementById('cms-set-pass2').value = '';
@@ -5757,6 +5879,7 @@ function cmsSaveSettings() {
   data.settings.bio = document.getElementById('cms-set-bio').value.trim();
   data.settings.avatar = document.getElementById('cms-set-avatar').value.trim();
   data.settings.favicon = document.getElementById('cms-set-favicon').value.trim();
+  data.settings.ogImage = document.getElementById('cms-set-og-image')?.value.trim() || '';
   if (p1) data.settings.password = p1;
   // Social
   if (!data.settings.social) data.settings.social = {};
@@ -5770,6 +5893,8 @@ function cmsSaveSettings() {
   data.settings.footerLinks = (data.settings.footerLinks || []).filter(lk => lk.label || lk.url);
   saveData(data);
   applyFavicon();
+  applyOgMeta();
+  applyOgMeta();
   renderSidebar('sidebar');
   renderFooter();
   renderNav();
@@ -5786,6 +5911,41 @@ function applyFavicon() {
     document.head.appendChild(link);
   }
   link.href = url;
+}
+
+function applyOgMeta() {
+  const s = data.settings;
+  const titleEl = document.getElementById('og-title');
+  const descEl  = document.getElementById('og-desc');
+  const imgEl   = document.getElementById('og-image');
+  const urlEl   = document.getElementById('og-url');
+  if (titleEl) titleEl.content = (s.sitename || 'Tài Tàng Au') + ' – ' + (s.tagline || '');
+  if (descEl)  descEl.content  = s.bio || s.tagline || '';
+  if (imgEl)   imgEl.content   = s.ogImage || '';
+  if (urlEl)   urlEl.content   = s.domain || window.location.origin;
+  // Update <title>
+  document.title = (s.sitename || 'Tài Tàng Au') + ' – ' + (s.tagline || '');
+}
+
+function cmsUpdateOgPreview(url) {
+  const preview = document.getElementById('cms-og-preview');
+  const img = document.getElementById('cms-og-preview-img');
+  if (!preview || !img) return;
+  if (url) {
+    img.src = url;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+function cmsPickOgImage() {
+  window._lpbImgInsert = (url) => {
+    const el = document.getElementById('cms-set-og-image');
+    if (el) { el.value = url; cmsUpdateOgPreview(url); }
+    window._lpbImgInsert = null;
+  };
+  openModal('cms-img-picker');
 }
 
 // Hash-based routing: go to #admin to open CMS
@@ -5831,6 +5991,13 @@ let lpbDragType = null;      // 'palette' or 'reorder'
 
 function saveLandingPages() {
   try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
+  // ✅ Sync landing pages lên Firebase
+  if (_fbReady && _db) {
+    landingPages.forEach(lp => {
+      const {id, ...lpData} = lp;
+      if (id) _db.collection('landingPages').doc(id).set(lpData).catch(e => {});
+    });
+  }
 }
 
 // ── Block defaults ──
@@ -6675,6 +6842,13 @@ function openLandingPage(slug) {
   if (typeof fixLpMobilePadding === 'function') setTimeout(fixLpMobilePadding, 20);
   window.scrollTo(0, 0);
   document.title = lp.title + ' – ' + (data.settings.sitename || '');
+  // Cập nhật OG meta cho landing page
+  const _ogImg = document.getElementById('og-image');
+  const _ogTitle = document.getElementById('og-title');
+  const _ogDesc = document.getElementById('og-desc');
+  if (_ogTitle) _ogTitle.content = lp.title + ' – ' + (data.settings.sitename || '');
+  if (_ogImg) _ogImg.content = lp.ogImage || data.settings.ogImage || '';
+  if (_ogDesc) _ogDesc.content = lp.description || data.settings.tagline || '';
   document.getElementById('main-nav').querySelectorAll('a').forEach(a => a.classList.remove('active'));
   if (!window._routerRestoring) {
     try { history.pushState({ view: 'lp', slug: slug }, '', '/page/' + slug); } catch(e) {}
@@ -6686,13 +6860,19 @@ const _origCmsNav = cmsNav;
 // Override after original is defined (see below — we patch via DOMContentLoaded hook)
 function lpbNavExtend(page, el) {
   _origCmsNav(page, el);
+  const appWrap = document.getElementById('cms-app');
+  const cmspage = document.getElementById('cms-page');
+  
   if (page === 'landing') setTimeout(lpbRenderList, 0);
+  
+  // Khi mở Page Builder
   if (page === 'lpbuilder') {
-    const main = document.getElementById('cms-main');
-    if (main) main.style.overflow = 'hidden';
+    if (appWrap) appWrap.style.display = 'none'; // Ẩn hoàn toàn Admin Sidebar & Main Content
+    if (cmspage) cmspage.style.background = '#ffffff'; // Xóa nền xám của login panel
+  // Khi thoát Page Builder về các Tab khác
   } else {
-    const main = document.getElementById('cms-main');
-    if (main && page !== 'lpbuilder') main.style.overflow = '';
+    if (appWrap) appWrap.style.display = 'flex'; // Hiện lại Layout Admin
+    if (cmspage) cmspage.style.background = '#f0ece5'; // Phục hồi nền xám login
   }
 }
 
@@ -6707,7 +6887,7 @@ function closeModal(id, e) {
 }
 
 // ── THEME CUSTOMIZER (New Layout, Typography, Colors) ──
-const THEME_KEY = 'taitangau_theme';
+// THEME_KEY is defined globally at the top of the script
 
 function getTheme() {
   try { return JSON.parse(localStorage.getItem(THEME_KEY)) || {}; } catch(e) { return {}; }
@@ -6738,6 +6918,11 @@ function cmsSaveTheme() {
     colorSurface: document.getElementById('cms-color-surface')?.value || '#f7f7f7'
   };
   localStorage.setItem(THEME_KEY, JSON.stringify(cfg));
+  
+  if (_fbReady && _db) {
+    _db.collection('site').doc('theme').set(cfg).catch(e => console.error("Error saving theme to Firestore:", e));
+  }
+  
   applyTheme(cfg);
   showToast('✅ Đã lưu Cấu hình Giao diện mới!');
 }
@@ -6745,6 +6930,9 @@ function cmsSaveTheme() {
 function cmsResetTheme() {
   if (!confirm('Khôi phục toàn bộ giao diện về mặc định?')) return;
   localStorage.removeItem(THEME_KEY);
+  if (_fbReady && _db) {
+    _db.collection('site').doc('theme').delete().catch(e => console.error("Error deleting theme from Firestore:", e));
+  }
   applyTheme({});
   cmsInitTheme();
   showToast('Đã khôi phục mặc định');
@@ -7460,6 +7648,10 @@ function cmsSaveMobile() {
     cardStyle: activeCardOpt ? activeCardOpt.dataset.val : 'full',
   };
   localStorage.setItem(MOBILE_KEY, JSON.stringify(cfg));
+  // ✅ Sync mobile config lên Firebase
+  if (_fbReady && _db) {
+    _db.collection('site').doc('mobile').set(cfg).catch(e => console.error('Save mobile error:', e));
+  }
   applyMobileCfg(cfg);
   // Update preview phone
   const bb = document.getElementById('mpv-bottombar');
