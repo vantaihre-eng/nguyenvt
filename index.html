@@ -15,37 +15,47 @@
 // Firebase config — paste your config here from Firebase Console
 // Project Settings → Your apps → Firebase SDK snippet → Config
 window.FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "taitangau.firebaseapp.com",
-  projectId: "taitangau",
-  storageBucket: "taitangau.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDaCVGTacHKbgY-c-AZOEmx5VrwPy1RrG8",
+  authDomain: "taitangau-7c2bb.firebaseapp.com",
+  projectId: "taitangau-7c2bb",
+  storageBucket: "taitangau-7c2bb.firebasestorage.app",
+  messagingSenderId: "211203067163",
+  appId: "1:211203067163:web:049caa517ca10ca0da57be"
 };
 
-// Lazy-load Firebase only when admin opens CMS
+// Firebase state
+let _db = null, _fbReady = false, _fbInitPromise = null;
+
 function loadFirebase(callback) {
-  if (window.firebase) { callback && callback(); return; }
-  const scripts = [
-    'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js',
-    'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js'
-  ];
-  let loaded = 0;
-  scripts.forEach(src => {
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = () => { if (++loaded === scripts.length) {
-      try {
-        firebase.initializeApp(window.FIREBASE_CONFIG);
-        window.db = firebase.firestore();
-        window.storage = firebase.storage();
-        console.log('🔥 Firebase loaded');
-      } catch(e) { /* already initialized */ }
-      callback && callback();
-    }};
-    document.head.appendChild(s);
+  initFirebase().then(() => callback && callback());
+}
+
+function initFirebase() {
+  if (_fbInitPromise) return _fbInitPromise;
+  _fbInitPromise = new Promise(resolve => {
+    if (_fbReady) { resolve(true); return; }
+    const cfg = window.FIREBASE_CONFIG;
+    if (!cfg.apiKey || cfg.apiKey === 'YOUR_API_KEY') { resolve(false); return; }
+    const scripts = [
+      'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
+      'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js'
+    ];
+    let loaded = 0;
+    scripts.forEach(src => {
+      const s = document.createElement('script'); s.src = src;
+      s.onload = () => { if (++loaded === scripts.length) {
+        try {
+          if (!firebase.apps.length) firebase.initializeApp(cfg);
+          _db = firebase.firestore(); window.db = _db;
+          _fbReady = true; console.log('🔥 Firebase OK');
+        } catch(e) {}
+        resolve(true);
+      }};
+      s.onerror = () => { if (++loaded === scripts.length) resolve(false); };
+      document.head.appendChild(s);
+    });
   });
+  return _fbInitPromise;
 }
 </script>
 <style>
@@ -3588,12 +3598,17 @@ let currentEditingPost = null;
 let pageLayout = [];
 let selectedBlock = null;
 
-function loadData() {
+async function loadData() {
+  _loadLocal();
+  const ok = await initFirebase();
+  if (ok) await _pullFirebase();
+}
+
+function _loadLocal() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Merge carefully: keep default categories if none saved
       if (parsed.categories && parsed.categories.length > 0) data.categories = parsed.categories;
       if (parsed.pages) data.pages = parsed.pages;
       if (parsed.posts) data.posts = parsed.posts;
@@ -3603,54 +3618,98 @@ function loadData() {
         data.settings.social = mergedSocial;
       }
     }
-  } catch (e) {
-    console.error('Load error:', e);
-  }
-
-  // Load images from separate key
-  try {
-    const imgs = localStorage.getItem(IMAGES_KEY);
-    if (imgs) data.images = JSON.parse(imgs);
-  } catch (e) {}
-
-  // Load page layout
-  try {
-    const savedLayout = localStorage.getItem(PAGE_LAYOUT_KEY);
-    if (savedLayout) pageLayout = JSON.parse(savedLayout);
-  } catch (e) {}
-
-  // Load landing pages
-  try {
-    const lp = localStorage.getItem(LP_KEY);
-    if (lp) landingPages = JSON.parse(lp);
-  } catch (e) {}
+  } catch(e) {}
+  try { const imgs = localStorage.getItem(IMAGES_KEY); if (imgs) data.images = JSON.parse(imgs); } catch(e) {}
+  try { const sl = localStorage.getItem(PAGE_LAYOUT_KEY); if (sl) pageLayout = JSON.parse(sl); } catch(e) {}
+  try { const lp = localStorage.getItem(LP_KEY); if (lp) landingPages = JSON.parse(lp); } catch(e) {}
 }
 
-function saveData(d) {
+async function _pullFirebase() {
+  if (!_db) return;
   try {
-    var saveObj = Object.assign({}, d);
-    delete saveObj.images;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveObj));
-  } catch (e) {
-    console.error('Save error:', e);
+    const [ps, ss, cs, pgs, ims, lps] = await Promise.all([
+      _db.collection('posts').orderBy('date','desc').get(),
+      _db.collection('site').doc('settings').get(),
+      _db.collection('site').doc('categories').get(),
+      _db.collection('pages').get(),
+      _db.collection('images').get(),
+      _db.collection('landingPages').get()
+    ]);
+    if (!ps.empty)  data.posts      = ps.docs.map(d => ({_id:d.id, ...d.data()}));
+    if (ss.exists)  { data.settings = Object.assign({}, data.settings, ss.data()); data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, ss.data()?.social||{}); }
+    if (cs.exists && cs.data().list) data.categories = cs.data().list;
+    if (!pgs.empty) data.pages      = pgs.docs.map(d => ({_id:d.id, ...d.data()}));
+    if (!ims.empty) data.images     = ims.docs.map(d => ({_id:d.id, ...d.data()}));
+    if (!lps.empty) landingPages    = lps.docs.map(d => ({id:d.id,  ...d.data()}));
+    _cacheLocal();
+    console.log('✅ Firebase synced:', data.posts.length, 'posts');
+    renderNav(); renderFilterBar(); renderHero(); renderPosts(); renderSidebar('sidebar'); renderFooter();
+  } catch(e) { console.warn('Firebase pull error:', e); }
+}
+
+function _cacheLocal() {
+  try { const o = Object.assign({}, data); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
+  try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
+}
+
+async function saveData(d) {
+  try { const o = Object.assign({}, d); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
+  if (!_fbReady || !_db) return;
+  try {
+    const {password, ...pub} = d.settings;
+    await _db.collection('site').doc('settings').set(pub, {merge:true});
+    await _db.collection('site').doc('categories').set({list: d.categories}, {merge:true});
+    for (const pg of (d.pages||[])) {
+      const {_id, ...pd} = pg;
+      if (_id) await _db.collection('pages').doc(_id).set(pd);
+      else { const r = await _db.collection('pages').add(pd); pg._id = r.id; }
+    }
+  } catch(e) { console.error('saveData Firebase:', e); }
+}
+
+async function savePost(post, existingId) {
+  if (_fbReady && _db) {
+    try {
+      const {_id, ...pd} = post;
+      if (existingId) { await _db.collection('posts').doc(existingId).set(pd); post._id = existingId; }
+      else { const r = await _db.collection('posts').add(pd); post._id = r.id; }
+    } catch(e) { console.error('savePost error:', e); }
+  }
+  _cacheLocal();
+}
+
+async function deletePost(fbId) {
+  if (_fbReady && _db && fbId) {
+    try { await _db.collection('posts').doc(fbId).delete(); } catch(e) {}
   }
 }
 
 function saveImages() {
-  try {
-    localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images));
-  } catch (e) {
-    // If quota exceeded, warn user
-    showToast('⚠️ Hết dung lượng lưu trữ. Hãy xóa bớt ảnh.', true);
+  try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {
+    showToast('⚠️ Hết dung lượng. Dùng URL ảnh thay vì upload.', true);
   }
+  if (!_fbReady || !_db) return;
+  data.images.filter(i => i.url && !i.url.startsWith('data:')).forEach(async img => {
+    try { const {_id, ...d} = img; if (_id) await _db.collection('images').doc(_id).set(d); else { const r = await _db.collection('images').add(d); img._id = r.id; } } catch(e) {}
+  });
 }
 
 function savePageLayoutData() {
-  try {
-    localStorage.setItem(PAGE_LAYOUT_KEY, JSON.stringify(pageLayout));
-  } catch (e) {
-    console.error('Save layout error:', e);
-  }
+  try { localStorage.setItem(PAGE_LAYOUT_KEY, JSON.stringify(pageLayout)); } catch(e) {}
+}
+
+function saveLandingPages() {
+  try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
+  if (!_fbReady || !_db) return;
+  landingPages.forEach(async lp => {
+    try { const {id, ...d} = lp; await _db.collection('landingPages').doc(id).set(d); } catch(e) {}
+  });
+}
+
+async function deleteLandingPage(id) {
+  landingPages = landingPages.filter(p => p.id !== id);
+  try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
+  if (_fbReady && _db) { try { await _db.collection('landingPages').doc(id).delete(); } catch(e) {} }
 }
 
 /* ══════════════════════════════════════════════
@@ -4672,7 +4731,9 @@ function cmsRenderPostsList() {
 
 function cmsDeletePost(idx) {
   if (!confirm('Xóa bài viết này?')) return;
+  const fbId = data.posts[idx]?._id;
   data.posts.splice(idx, 1);
+  deletePost(fbId);
   saveData(data);
   cmsRenderPostsList();
   cmsRenderDashboard();
@@ -4867,23 +4928,23 @@ function cmsSavePost() {
     readTime: Math.max(1, Math.ceil((content || '').replace(/<[^>]+>/g,'').split(/\s+/).filter(Boolean).length / 200))
   };
 
+  const existingId = (cmsCurrentEditIdx !== null && data.posts[cmsCurrentEditIdx]?._id) ? data.posts[cmsCurrentEditIdx]._id : null;
+  if (existingId) post._id = existingId;
+
   if (cmsCurrentEditIdx !== null) {
     data.posts[cmsCurrentEditIdx] = post;
-    showToast('✅ Đã cập nhật bài viết');
   } else {
     data.posts.unshift(post);
-    showToast('✅ Đã tạo bài viết mới');
+    cmsCurrentEditIdx = 0;
   }
 
-  saveData(data);
-
-  // Update homepage immediately
-  renderHero();
-  renderPosts();
-  renderSidebar('sidebar');
-
-  // Navigate back to posts list in CMS
-  cmsNav('posts', document.querySelector('.cms-nav-item[data-page="posts"]'));
+  savePost(post, existingId).then(() => {
+    showToast('✅ Đã lưu bài viết');
+    renderHero();
+    renderPosts();
+    renderSidebar('sidebar');
+    cmsNav('posts', document.querySelector('.cms-nav-item[data-page="posts"]'));
+  });
 }
 
 /* ── Rich Text Editor ── */
@@ -5763,9 +5824,7 @@ function lpbSave() {
 
 function lpbDelete(id) {
   if (!confirm('Xoá landing page này?')) return;
-  landingPages = landingPages.filter(p => p.id !== id);
-  saveLandingPages();
-  lpbRenderList();
+  deleteLandingPage(id).then(() => { lpbRenderList(); showToast('Đã xóa'); });
 }
 
 function lpbPreview() {
@@ -6949,8 +7008,8 @@ function getTopTags() {
 /* ══════════════════════════════════════════════
    INITIALIZATION
 ══════════════════════════════════════════════ */
-function init() {
-  loadData();
+async function init() {
+  await loadData();
   applyFavicon();
   
   // Apply saved layout
@@ -6983,7 +7042,7 @@ function init() {
         readTime: 2
       }
     ];
-    saveData(data);
+    savePost(data.posts[0], null);
     renderHero();
     renderPosts();
     renderSidebar('sidebar');
