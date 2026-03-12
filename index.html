@@ -7195,6 +7195,11 @@ async function init() {
     renderSidebar('sidebar');
   }
 
+  // Khởi chạy Route sau khi data Firebase đã tải đầy đủ.
+  // Lúc này dữ liệu data.posts đã sẵn sàng để router tìm ID hoặc thay đổi giao diện phù hợp.
+  const initState = routerParseUrl();
+  routerApplyState(initState);
+
   // Reading progress bar
   window.addEventListener('scroll', () => {
     const pg = document.getElementById('post-detail-page');
@@ -7209,18 +7214,13 @@ async function init() {
     }
   });
 }
+
 // Keyboard shortcut: Ctrl+Shift+A to open CMS
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.shiftKey && e.key === 'A') {
     e.preventDefault();
     openCMS();
   }
-});
-
-// Chờ trang tải hoàn tất dữ liệu rồi chạy Route cho khớp với Link Chia sẻ
-document.addEventListener('DOMContentLoaded', () => {
-  const initState = routerParseUrl();
-  routerApplyState(initState);
 });
 
 
