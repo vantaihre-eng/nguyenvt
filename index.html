@@ -7170,9 +7170,7 @@ async function init() {
   renderNav();
   renderFilterBar();
 
-  // Render content
-  renderHero();
-  renderPosts();
+// Render sidebar cho mọi trang
   renderSidebar('sidebar');
   renderFooter();
   
@@ -7211,7 +7209,6 @@ async function init() {
     }
   });
 }
-
 // Keyboard shortcut: Ctrl+Shift+A to open CMS
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.shiftKey && e.key === 'A') {
@@ -7219,6 +7216,13 @@ document.addEventListener('keydown', e => {
     openCMS();
   }
 });
+
+// Chờ trang tải hoàn tất dữ liệu rồi chạy Route cho khớp với Link Chia sẻ
+document.addEventListener('DOMContentLoaded', () => {
+  const initState = routerParseUrl();
+  routerApplyState(initState);
+});
+
 
 /* ══════════════════════════════════════════════
    BROWSER HISTORY ROUTER
