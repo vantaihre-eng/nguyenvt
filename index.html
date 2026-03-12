@@ -3086,104 +3086,123 @@ html, body {
         </div>
       </div>
 
-      <!-- LAYOUT PAGE -->
+      <!-- LAYOUT PAGE (THEME CUSTOMIZER) -->
       <div id="cmspage-layout" class="cms-page-content" style="display:none">
-        <div class="cms-topbar"><h1>Giao diện</h1></div>
-        <div class="cms-content">
-          <div class="cms-editor-card">
-            <div class="cms-section-title">Bố cục danh sách</div>
-              <div class="cms-layout-options">
+        <div class="cms-topbar">
+          <h1>🎨 Theme Customizer</h1>
+          <span style="font-size:12px;color:#999;font-weight:400">Tùy biến bộ mặt Website</span>
+        </div>
+        
+        <div class="cms-content" style="max-width:800px">
+          
+          <!-- TAB: Layout & Bố cục -->
+          <div id="layout-panel-blog">
+            <div class="cms-editor-card">
+              <div class="cms-section-title">Bố cục Trang chủ (Lưới bài viết)</div>
+              <div class="cms-layout-options" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
                 <div class="cms-layout-opt" data-layout="list" onclick="cmsSelectLayout('list',this)">
-                  <div class="icon" style="font-size:18px">☰</div><div class="name">List</div>
+                  <div class="icon" style="font-size:24px;color:currentColor">☰</div><div class="name">Classic List</div>
                 </div>
                 <div class="cms-layout-opt" data-layout="grid" onclick="cmsSelectLayout('grid',this)">
-                  <div class="icon" style="font-size:18px">⊞</div><div class="name">Grid</div>
+                  <div class="icon" style="font-size:24px;color:currentColor">⊞</div><div class="name">Grid View</div>
                 </div>
                 <div class="cms-layout-opt" data-layout="masonry" onclick="cmsSelectLayout('masonry',this)">
-                  <div class="icon" style="font-size:18px">▦</div><div class="name">Masonry</div>
+                  <div class="icon" style="font-size:24px;color:currentColor">▦</div><div class="name">Modern Masonry</div>
                 </div>
               </div>
             </div>
-            <div style="display:flex;gap:12px;margin-top:4px">
-              <button class="cms-save-btn" onclick="cmsSaveLayout()">Lưu Trang chủ</button>
-              <button class="cms-cancel-btn" onclick="cmsResetLayout()">Đặt lại</button>
-            </div>
-          </div>
 
-          <!-- TAB: Trang blog -->
-          <div id="layout-panel-blog" style="display:none">
             <div class="cms-editor-card">
-              <div class="cms-section-title">Trang bài viết (Blog post)</div>
-              <div style="display:grid;gap:14px">
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                  <input type="checkbox" id="cms-blog-show-cover"> Hiện ảnh bìa lớn đầu trang</label>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                  <input type="checkbox" id="cms-blog-show-sidebar"> Hiện sidebar bài liên quan</label>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                  <input type="checkbox" id="cms-blog-show-related"> Hiện bài viết liên quan phía dưới</label>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                  <input type="checkbox" id="cms-blog-show-progress"> Hiện thanh tiến trình đọc</label>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                  <input type="checkbox" id="cms-blog-show-share"> Hiện nút chia sẻ mạng xã hội</label>
+              <div class="cms-section-title">Trang Chi Tiết (Blog Post)</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;background:#f8f6f1;padding:20px;border-radius:8px">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600">
+                  <input type="checkbox" id="cms-blog-show-cover" style="width:16px;height:16px;accent-color:var(--accent)"> Hiển thị Top Cover</label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600">
+                  <input type="checkbox" id="cms-blog-show-sidebar" style="width:16px;height:16px;accent-color:var(--accent)"> Sidebar bài viết</label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600">
+                  <input type="checkbox" id="cms-blog-show-related" style="width:16px;height:16px;accent-color:var(--accent)"> Tin liên quan (Dưới cùng)</label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600">
+                  <input type="checkbox" id="cms-blog-show-progress" style="width:16px;height:16px;accent-color:var(--accent)"> Tracking thanh dọc</label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600">
+                  <input type="checkbox" id="cms-blog-show-share" style="width:16px;height:16px;accent-color:var(--accent)"> Nút Share mạng xã hội</label>
               </div>
             </div>
-            <div class="cms-editor-card">
-              <div class="cms-section-title">Font chữ bài viết</div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <button class="cms-layout-opt" id="blogfont-serif" onclick="cmsBlogFontSelect('serif',this)"
-                  style="flex:1;min-width:120px">
-                  <div class="icon" style="font-family:Georgia,serif;font-size:20px">Aa</div>
-                  <div class="name">Serif</div>
-                </button>
-                <button class="cms-layout-opt" id="blogfont-sans" onclick="cmsBlogFontSelect('sans',this)"
-                  style="flex:1;min-width:120px">
-                  <div class="icon" style="font-family:sans-serif;font-size:20px">Aa</div>
-                  <div class="name">Sans-serif</div>
-                </button>
-                <button class="cms-layout-opt" id="blogfont-mono" onclick="cmsBlogFontSelect('mono',this)"
-                  style="flex:1;min-width:120px">
-                  <div class="icon" style="font-family:monospace;font-size:20px">Aa</div>
-                  <div class="name">Monospace</div>
-                </button>
-              </div>
-            </div>
-            <div class="cms-editor-card">
-              <div class="cms-section-title">Cỡ chữ nội dung</div>
-              <input type="range" id="cms-blog-fontsize" min="14" max="22" value="17"
-                oninput="document.getElementById('cms-blog-fontsize-val').textContent=this.value+'px'"
-                style="width:100%;accent-color:var(--accent)">
-              <div style="text-align:center;font-size:13px;color:#777;margin-top:6px" id="cms-blog-fontsize-val">17px</div>
-            </div>
-            <div style="display:flex;gap:12px">
-              <button class="cms-save-btn" onclick="cmsSaveBlogLayout()">Lưu giao diện Blog</button>
-              <button class="cms-cancel-btn" onclick="cmsResetBlogLayout()">Đặt lại</button>
-            </div>
-          </div>
 
-          <!-- TAB: Màu sắc -->
-          <div id="layout-panel-colors" style="display:none">
+            <!-- TAB: MÀU SẮC (Color Palette) -->
             <div class="cms-editor-card">
-              <div class="cms-section-title">Màu sắc</div>
-              <div class="cms-field-row">
+              <div class="cms-section-title">Bảng màu sắc (Design Tokens)</div>
+              <div class="cms-field-row" style="grid-template-columns:repeat(3,1fr)">
+                
                 <div class="cms-form-group">
-                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Màu chủ đạo</label>
-                  <div class="color-picker-group">
-                    <input type="color" id="cms-color-accent" onchange="syncColor(this,'cms-color-accent-hex')">
-                    <input class="cms-field" type="text" id="cms-color-accent-hex" placeholder="#e84040" onchange="syncColor(this,'cms-color-accent')">
+                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Màu Chủ đạo (Primary)</label>
+                  <div class="color-picker-group" style="display:flex;align-items:center;gap:10px;background:#fff;padding:8px;border-radius:6px;border:1px solid #d8cfc3">
+                    <input type="color" id="cms-color-accent" onchange="syncColor(this,'cms-color-accent-hex')" style="border:none;width:32px;height:32px;border-radius:6px;cursor:pointer;padding:0">
+                    <input type="text" id="cms-color-accent-hex" placeholder="#e84040" onchange="syncColor(this,'cms-color-accent')" style="border:none;outline:none;font-weight:600;width:100%;font-size:13px">
                   </div>
                 </div>
+
                 <div class="cms-form-group">
-                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Màu nền</label>
-                  <div class="color-picker-group">
-                    <input type="color" id="cms-color-bg" onchange="syncColor(this,'cms-color-bg-hex')">
-                    <input class="cms-field" type="text" id="cms-color-bg-hex" placeholder="#ffffff" onchange="syncColor(this,'cms-color-bg')">
+                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Màu Nền (Background)</label>
+                  <div class="color-picker-group" style="display:flex;align-items:center;gap:10px;background:#fff;padding:8px;border-radius:6px;border:1px solid #d8cfc3">
+                    <input type="color" id="cms-color-bg" onchange="syncColor(this,'cms-color-bg-hex')" style="border:none;width:32px;height:32px;border-radius:6px;cursor:pointer;padding:0">
+                    <input type="text" id="cms-color-bg-hex" placeholder="#ffffff" onchange="syncColor(this,'cms-color-bg')" style="border:none;outline:none;font-weight:600;width:100%;font-size:13px">
                   </div>
+                </div>
+
+                <div class="cms-form-group">
+                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Màu Layout Phụ (Surface)</label>
+                  <div class="color-picker-group" style="display:flex;align-items:center;gap:10px;background:#fff;padding:8px;border-radius:6px;border:1px solid #d8cfc3">
+                    <input type="color" id="cms-color-surface" onchange="syncColor(this,'cms-color-surface-hex')" style="border:none;width:32px;height:32px;border-radius:6px;cursor:pointer;padding:0">
+                    <input type="text" id="cms-color-surface-hex" placeholder="#f7f7f7" onchange="syncColor(this,'cms-color-surface')" style="border:none;outline:none;font-weight:600;width:100%;font-size:13px">
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- TAB: FONT CHỮ (Typography) -->
+            <div class="cms-editor-card">
+              <div class="cms-section-title">Phong cách Font chữ (Typography)</div>
+              <div class="cms-field-row" style="grid-template-columns:1fr 1fr">
+                
+                <div class="cms-form-group">
+                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Font Nội Dung (Body)</label>
+                  <select id="cms-font-body" class="cms-field" style="font-size:14px;padding:12px;font-weight:600">
+                    <option value="'Nunito Sans', sans-serif">Nunito Sans (Default)</option>
+                    <option value="'Inter', sans-serif">Inter (Modern, Startup)</option>
+                    <option value="'Roboto', sans-serif">Roboto (Clean, Flat)</option>
+                    <option value="Georgia, serif">Georgia (Newspaper)</option>
+                    <option value="'Playfair Display', serif">Playfair (Elegant)</option>
+                  </select>
+                </div>
+
+                <div class="cms-form-group">
+                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Font Tiêu Đề (Headings)</label>
+                  <select id="cms-font-heading" class="cms-field" style="font-size:14px;padding:12px;font-weight:600">
+                    <option value="'Merriweather', serif">Merriweather (Default)</option>
+                    <option value="'Playfair Display', serif">Playfair Display (Premium Classy)</option>
+                    <option value="'Outfit', sans-serif">Outfit (Tech Bold)</option>
+                    <option value="'Inter', sans-serif">Inter Bold (Sleek)</option>
+                    <option value="Arial, sans-serif">Arial (Basic)</option>
+                  </select>
+                </div>
+
+              </div>
+              
+              <div style="margin-top:24px">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:10px;display:block">Cỡ chữ bài viết (px)</label>
+                <div style="display:flex;align-items:center;gap:16px">
+                  <div style="font-size:14px;font-weight:700;background:#1a1a1a;color:#fff;padding:6px 12px;border-radius:6px;width:56px;text-align:center" id="cms-blog-fontsize-val">17px</div>
+                  <input type="range" id="cms-blog-fontsize" min="14" max="24" value="17"
+                    oninput="document.getElementById('cms-blog-fontsize-val').textContent=this.value+'px'"
+                    style="flex:1;accent-color:var(--accent)">
                 </div>
               </div>
             </div>
-            <div style="display:flex;gap:12px">
-              <button class="cms-save-btn" onclick="cmsSaveLayout()">Áp dụng màu</button>
-              <button class="cms-cancel-btn" onclick="cmsResetLayout()">Đặt lại</button>
+
+            <div style="display:flex;gap:12px;margin-top:32px;padding-top:20px;border-top:1px solid #e0d8cc">
+              <button class="cms-save-btn" onclick="cmsSaveTheme()" style="padding:16px 24px;font-size:15px;background:#1a1a1a">💾  Áp dụng toàn bộ Website</button>
+              <button class="cms-cancel-btn" onclick="cmsResetTheme()" style="padding:16px 24px;font-size:15px">Đặt lại mặc định</button>
             </div>
           </div>
         </div>
@@ -6687,56 +6706,123 @@ function closeModal(id, e) {
   document.getElementById(id).classList.remove('active');
 }
 
-// Layout tabs
-function layoutTabSwitch(tab) {
-  ['homepage','blog','colors'].forEach(t => {
-    const btn = document.getElementById('layout-tab-' + t);
-    const panel = document.getElementById('layout-panel-' + t);
-    if (!btn || !panel) return;
-    const active = t === tab;
-    btn.style.color = active ? 'var(--accent)' : '#999';
-    btn.style.borderBottomColor = active ? 'var(--accent)' : 'transparent';
-    btn.style.fontWeight = active ? '700' : '600';
-    panel.style.display = active ? 'block' : 'none';
-  });
+// ── THEME CUSTOMIZER (New Layout, Typography, Colors) ──
+const THEME_KEY = 'taitangau_theme';
+
+function getTheme() {
+  try { return JSON.parse(localStorage.getItem(THEME_KEY)) || {}; } catch(e) { return {}; }
 }
 
-const BLOG_LAYOUT_KEY = 'taitangau_blog_layout';
-function getBlogLayout() {
-  try { return JSON.parse(localStorage.getItem(BLOG_LAYOUT_KEY)) || {}; } catch(e) { return {}; }
+function cmsSelectLayout(layoutType, el) {
+  document.querySelectorAll('.cms-layout-opt').forEach(opt => opt.classList.remove('active'));
+  el.classList.add('active');
 }
-function cmsBlogFontSelect(font, el) {
-  document.querySelectorAll('[id^=blogfont-]').forEach(b => b.classList.remove('active'));
-  if (el) el.classList.add('active');
-}
-function cmsSaveBlogLayout() {
+
+function cmsSaveTheme() {
+  const activeLayout = document.querySelector('.cms-layout-opt.active');
   const cfg = {
+    // Layout
+    listLayout:   activeLayout ? activeLayout.dataset.layout : 'list',
     showCover:    document.getElementById('cms-blog-show-cover')?.checked ?? true,
     showSidebar:  document.getElementById('cms-blog-show-sidebar')?.checked ?? true,
     showRelated:  document.getElementById('cms-blog-show-related')?.checked ?? true,
     showProgress: document.getElementById('cms-blog-show-progress')?.checked ?? true,
     showShare:    document.getElementById('cms-blog-show-share')?.checked ?? true,
+    // Typography
+    fontBody:     document.getElementById('cms-font-body')?.value || "'Nunito Sans', sans-serif",
+    fontHeading:  document.getElementById('cms-font-heading')?.value || "'Merriweather', serif",
     fontSize:     document.getElementById('cms-blog-fontsize')?.value || '17',
-    font:         document.querySelector('[id^=blogfont-].active')?.id?.replace('blogfont-','') || 'serif'
+    // Colors
+    colorAccent:  document.getElementById('cms-color-accent')?.value || '#e84040',
+    colorBg:      document.getElementById('cms-color-bg')?.value || '#ffffff',
+    colorSurface: document.getElementById('cms-color-surface')?.value || '#f7f7f7'
   };
-  localStorage.setItem(BLOG_LAYOUT_KEY, JSON.stringify(cfg));
-  applyBlogLayout(cfg);
-  showToast('✅ Đã lưu giao diện blog');
+  localStorage.setItem(THEME_KEY, JSON.stringify(cfg));
+  applyTheme(cfg);
+  showToast('✅ Đã lưu Cấu hình Giao diện mới!');
 }
-function cmsResetBlogLayout() {
-  localStorage.removeItem(BLOG_LAYOUT_KEY);
-  applyBlogLayout({});
-  cmsInitBlogLayout();
-  showToast('Đã đặt lại');
+
+function cmsResetTheme() {
+  if (!confirm('Khôi phục toàn bộ giao diện về mặc định?')) return;
+  localStorage.removeItem(THEME_KEY);
+  applyTheme({});
+  cmsInitTheme();
+  showToast('Đã khôi phục mặc định');
 }
-function applyBlogLayout(cfg) {
-  const style = document.getElementById('blog-layout-style') || (() => {
-    const s = document.createElement('style'); s.id = 'blog-layout-style'; document.head.appendChild(s); return s;
+
+// Hàm khởi tạo tải dữ liệu cũ vào Form Panel
+function cmsInitTheme() {
+  const cfg = getTheme();
+  const s = (id, val, def) => { const el = document.getElementById(id); if (el) el.checked = (val !== undefined ? val : def); };
+  
+  // Layout Options
+  document.querySelectorAll('.cms-layout-opt').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.layout === (cfg.listLayout || 'list'));
+  });
+  s('cms-blog-show-cover',    cfg.showCover, true);
+  s('cms-blog-show-sidebar',  cfg.showSidebar, true);
+  s('cms-blog-show-related',  cfg.showRelated, true);
+  s('cms-blog-show-progress', cfg.showProgress, true);
+  s('cms-blog-show-share',    cfg.showShare, true);
+
+  // Typography Options
+  const elFontBody = document.getElementById('cms-font-body');
+  if (elFontBody && cfg.fontBody) elFontBody.value = cfg.fontBody;
+  const elFontHeading = document.getElementById('cms-font-heading');
+  if (elFontHeading && cfg.fontHeading) elFontHeading.value = cfg.fontHeading;
+
+  const fsEl = document.getElementById('cms-blog-fontsize');
+  const fsVal = document.getElementById('cms-blog-fontsize-val');
+  if (fsEl && cfg.fontSize) { fsEl.value = cfg.fontSize; if (fsVal) fsVal.textContent = cfg.fontSize + 'px'; }
+
+  // Color Options
+  const ca = document.getElementById('cms-color-accent');
+  if (ca && cfg.colorAccent) { ca.value = cfg.colorAccent; document.getElementById('cms-color-accent-hex').value = cfg.colorAccent; }
+  const cb = document.getElementById('cms-color-bg');
+  if (cb && cfg.colorBg) { cb.value = cfg.colorBg; document.getElementById('cms-color-bg-hex').value = cfg.colorBg; }
+  const cs = document.getElementById('cms-color-surface');
+  if (cs && cfg.colorSurface) { cs.value = cfg.colorSurface; document.getElementById('cms-color-surface-hex').value = cfg.colorSurface; }
+  
+  applyTheme(cfg);
+}
+
+// Bơm StyleSheet động (Dynamic CSS) ra Frontend cho User xem
+function applyTheme(cfg) {
+  // 1. Setup CSS Layout Classes
+  const list = document.getElementById('posts-list');
+  if (list) {
+    list.className = 'posts-list';
+    if (cfg.listLayout && cfg.listLayout !== 'list') list.classList.add('layout-' + cfg.listLayout);
+  }
+
+  // 2. Setup CSS Variables cho Colors
+  const root = document.documentElement;
+  if (cfg.colorAccent) root.style.setProperty('--accent', cfg.colorAccent);
+  if (cfg.colorBg) {
+    root.style.setProperty('--cream', cfg.colorBg); // cream was the original background color var
+    root.style.setProperty('--bg-soft', cfg.colorBg);
+  }
+  if (cfg.colorSurface) root.style.setProperty('--surface', cfg.colorSurface); // New design token
+  
+  // 3. Setup Block hiển thị & Typography (Nhúng thẻ Style Injector)
+  const style = document.getElementById('theme-layout-style') || (() => {
+    const s = document.createElement('style'); s.id = 'theme-layout-style'; document.head.appendChild(s); return s;
   })();
+  
   const fs = cfg.fontSize || '17';
-  const fontFam = cfg.font === 'sans' ? 'var(--font-body)' : cfg.font === 'mono' ? 'monospace' : 'var(--font-heading)';
+  const fBody = cfg.fontBody || "'Nunito Sans', sans-serif";
+  const fHead = cfg.fontHeading || "'Merriweather', serif";
+  
   style.textContent = `
-    .post-body { font-size: ${fs}px; font-family: ${fontFam}; }
+    /* Typography Global Overrides */
+    body { font-family: ${fBody} !important; }
+    h1, h2, h3, h4, h5, h6, .hero-title, .post-title { font-family: ${fHead} !important; }
+    .post-body { font-size: ${fs}px; font-family: ${fBody}; }
+
+    /* Surface Card Overrides */
+    .post-card, .sidebar-widget { background: var(--surface, #fff) !important; }
+
+    /* Visibility Overrides */
     ${cfg.showProgress === false ? '#reading-progress { display:none!important; }' : ''}
     ${cfg.showShare === false ? '.post-share { display:none!important; }' : ''}
     ${cfg.showSidebar === false ? '#post-detail-sidebar { display:none!important; }' : ''}
@@ -6744,48 +6830,7 @@ function applyBlogLayout(cfg) {
     ${cfg.showCover === false ? '.post-cover-img { display:none!important; }' : ''}
   `;
 }
-function cmsInitBlogLayout() {
-  const cfg = getBlogLayout();
-  const s = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val !== false; };
-  s('cms-blog-show-cover',    cfg.showCover);
-  s('cms-blog-show-sidebar',  cfg.showSidebar);
-  s('cms-blog-show-related',  cfg.showRelated);
-  s('cms-blog-show-progress', cfg.showProgress);
-  s('cms-blog-show-share',    cfg.showShare);
-  const fsEl = document.getElementById('cms-blog-fontsize');
-  const fsVal = document.getElementById('cms-blog-fontsize-val');
-  if (fsEl && cfg.fontSize) { fsEl.value = cfg.fontSize; if (fsVal) fsVal.textContent = cfg.fontSize + 'px'; }
-  if (cfg.font) {
-    document.querySelectorAll('[id^=blogfont-]').forEach(b => b.classList.remove('active'));
-    const fb = document.getElementById('blogfont-' + cfg.font);
-    if (fb) fb.classList.add('active');
-  }
-  applyBlogLayout(cfg);
-}
 
-// Layout CMS (kept for applyLayout)
-const LAYOUT_KEY = 'taitangau_layout';
-
-function getLayout() {
-  try { return JSON.parse(localStorage.getItem(LAYOUT_KEY)) || {}; } catch(e) { return {}; }
-}
-
-function applyLayout(cfg) {
-  const list = document.getElementById('posts-list');
-  const wrap = document.querySelector('.main-wrap');
-  const hero = document.getElementById('hero-section');
-  const fbar = document.querySelector('.filter-bar');
-  list.className = 'posts-list';
-  if (cfg.listLayout && cfg.listLayout !== 'list') list.classList.add('layout-' + cfg.listLayout);
-  if (wrap) wrap.classList.toggle('no-sidebar', cfg.sidebar === false);
-  if (hero) hero.classList.toggle('hidden', cfg.hero === false);
-  if (fbar) fbar.style.display = cfg.filterbar === false ? 'none' : '';
-  document.querySelectorAll('.post-image-wrap').forEach(el => {
-    el.style.display = cfg.cardImg === false ? 'none' : '';
-  });
-  if (cfg.accent) document.documentElement.style.setProperty('--accent', cfg.accent);
-  if (cfg.bgColor) document.documentElement.style.setProperty('--cream', cfg.bgColor);
-}
 
 function syncColor(src, targetId) {
   document.getElementById(targetId).value = src.value;
@@ -7161,9 +7206,8 @@ async function init() {
   await loadData();
   applyFavicon();
   
-  // Apply saved layout
-  const layoutCfg = getLayout();
-  applyLayout(layoutCfg);
+  // Apply saved Theme Customizer
+  cmsInitTheme();
   applyMobileCfg(getMobileCfg());
   
   // Render nav + filter (dynamic categories)
