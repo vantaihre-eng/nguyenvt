@@ -128,6 +128,10 @@ function initFirebase() {
     top: 0;
     z-index: 100;
     box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    transition: transform 0.3s ease-in-out;
+  }
+  header.header-hidden {
+    transform: translateY(-100%);
   }
   .header-inner {
     max-width: 1160px;
@@ -416,7 +420,7 @@ function initFirebase() {
 
   /* ── SIDEBAR ── */
   .sidebar-section {
-    background: #fff;
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 24px;
@@ -1633,7 +1637,7 @@ function initFirebase() {
     font-family: var(--body-font); color: #1a1a1a; transition: all .15s;
   }
   .cms-table .t-btn:hover { background: #1a1a1a; color: #ffffff; border-color: #1a1a1a; }
-  .cms-table .t-btn.danger:hover { background: #DC2626; border-color: #DC2626; color: #fff; }
+  .cms-table .t-btn.danger:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
 
   /* Post Editor */
   .cms-editor-wrap {
@@ -1755,7 +1759,7 @@ function initFirebase() {
   .cms-img-btns { display: flex; gap: 4px; }
   .cms-img-btns button { flex: 1; font-size: 10px; padding: 4px; border-radius: 3px; border: 1px solid #e0d8cc; cursor: pointer; background: none; font-family: var(--body-font); font-weight: 600; transition: all .15s; }
   .cms-img-btns button:hover { background: #1a1a1a; color: #ffffff; border-color: #1a1a1a; }
-  .cms-img-btns button.del:hover { background: #DC2626; border-color: #DC2626; color: #fff; }
+  .cms-img-btns button.del:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
 
   /* Layout / Giao dien */
   .cms-layout-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
@@ -1884,7 +1888,7 @@ function initFirebase() {
   .reaction-bar {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
     margin-top: 32px; padding: 20px 24px;
-    background: #fff8f8; border-radius: 8px; border: 1px solid #fce4e4;
+    background: var(--bg-soft); border-radius: 8px; border: 1px solid var(--border);
   }
   .reaction-label { font-size: 14px; font-weight: 700; color: var(--dark); }
   .reaction-btn {
@@ -1894,7 +1898,7 @@ function initFirebase() {
     font-size: 13px; font-weight: 600; cursor: pointer;
     font-family: var(--body-font); transition: all .18s; color: var(--dark);
   }
-  .reaction-btn:hover { border-color: var(--accent); color: var(--accent); background: #fff8f8; }
+  .reaction-btn:hover { border-color: var(--accent); color: var(--accent); background: #fff; }
   .reaction-btn.reacted { background: var(--accent); color: #fff; border-color: var(--accent); }
   /* Related posts */
   .related-posts { margin-top: 48px; }
@@ -3843,12 +3847,6 @@ function renderPosts() {
           <h2 class="post-title">${escHtml(post.title)}</h2>
           <p class="post-excerpt">${escHtml(post.excerpt || '')}</p>
           <div class="post-meta">
-            ${data.settings.avatar
-              ? `<img src="${data.settings.avatar}" class="post-author-avatar" alt="" onerror="this.style.display='none'">`
-              : `<div class="post-author-avatar post-author-avatar-placeholder">${(data.settings.author||'A').charAt(0).toUpperCase()}</div>`
-            }
-            <span class="post-author-name">${escHtml(data.settings.author || '')}</span>
-            <div class="dot"></div>
             <span>${formatDate(post.date)}</span>
             ${rt > 0 ? `<div class="dot"></div><span>${rt} phút đọc</span>` : ''}
           </div>
@@ -3879,7 +3877,7 @@ function renderHero() {
 
   const idx = data.posts.indexOf(featured);
   const imgCol = featured.image
-    ? `<div class="hero-img-col"><img src="${featured.image}" alt="${escHtml(featured.title)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=hero-img-col-ph>${getCatEmoji(featured.category)}</div>'"></div>`
+    ? `<div class="hero-img-col"><img src="${featured.image}" alt="${escHtml(featured.title)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\"hero-img-col-ph\\">${getCatEmoji(featured.category)}</div>'"></div>`
     : `<div class="hero-img-col"><div class="hero-img-col-ph">${getCatEmoji(featured.category)}</div></div>`;
 
   hero.className = featured.image ? '' : 'hero-no-img';
@@ -4698,16 +4696,33 @@ function filterCat(cat, elem, e) {
 
 function goHome(e) {
   if (e) e.preventDefault();
-  // If on post detail, go back to list
-  if (document.getElementById('post-detail-page').style.display !== 'none') {
-    goBack();
-    return;
-  }
+  
+  // Ẩn tất cả pages
+  document.getElementById('blog-home').style.display = 'block';
+  document.getElementById('post-detail-page').style.display = 'none';
+  document.getElementById('lp-viewer-page').style.display = 'none';
+  
+  // Reset về "Tất cả" category
   currentCategory = 'all';
+  
+  // Reset active nav
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   const firstNav = document.querySelector('nav a');
   if (firstNav) firstNav.classList.add('active');
+  
+  // Render lại posts
   renderPosts();
+  
+  // Scroll to top smoothly
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  // Hiện header
+  document.querySelector('header').classList.remove('header-hidden');
+  
+  // Update URL về trang chủ
+  try {
+    history.pushState({ view: 'home' }, '', location.pathname);
+  } catch(e) {}
 }
 
 /* ══════════════════════════════════════════════
@@ -7435,18 +7450,45 @@ async function init() {
   const initState = routerParseUrl();
   routerApplyState(initState);
 
-  // Reading progress bar
+  // Reading progress bar + Smart header hide/show
+  let lastScrollTop = 0;
+  let scrollThreshold = 5; // Độ nhạy để tránh header nhấp nháy
+  
   window.addEventListener('scroll', () => {
+    // Reading progress bar
     const pg = document.getElementById('post-detail-page');
     const bar = document.getElementById('reading-progress');
-    if (!bar) return;
-    if (pg && pg.style.display !== 'none') {
-      const h = document.documentElement;
-      const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
-      bar.style.width = Math.min(100, pct || 0) + '%';
-    } else {
-      bar.style.width = '0%';
+    if (bar) {
+      if (pg && pg.style.display !== 'none') {
+        const h = document.documentElement;
+        const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+        bar.style.width = Math.min(100, pct || 0) + '%';
+      } else {
+        bar.style.width = '0%';
+      }
     }
+    
+    // Smart header hide/show
+    const header = document.querySelector('header');
+    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Nếu ở top của trang (< 100px), luôn hiện header
+    if (currentScroll < 100) {
+      header.classList.remove('header-hidden');
+      lastScrollTop = currentScroll;
+      return;
+    }
+    
+    // Nếu scroll xuống (và đã vượt threshold)
+    if (currentScroll > lastScrollTop + scrollThreshold) {
+      header.classList.add('header-hidden');
+    }
+    // Nếu scroll lên (và đã vượt threshold)
+    else if (currentScroll < lastScrollTop - scrollThreshold) {
+      header.classList.remove('header-hidden');
+    }
+    
+    lastScrollTop = currentScroll;
   });
 }
 
