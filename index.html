@@ -95,9 +95,9 @@ function initFirebase() {
     --cream: #ffffff;
     --bg-soft: #f7f7f7;
     --dark: #1a1a1a;
-    --warm: #c0392b;
-    --accent: #e84040;
-    --accent-dark: #c0392b;
+    --warm: #102144;
+    --accent: #1a305e;
+    --accent-dark: #102144;
     --muted: #777777;
     --border: #e8e8e8;
     --card-bg: #ffffff;
@@ -175,7 +175,7 @@ function initFirebase() {
     cursor: pointer;
     white-space: nowrap;
   }
-  nav a:hover { color: var(--accent); background: #fff5f5; }
+  nav a:hover { color: var(--accent); background: #f0f4ff; }
   nav a.active { color: var(--accent); }
   .header-right { display: flex; align-items: center; gap: 10px; }
   .nav-toggle { display: none; } /* shown only in mobile media query */
@@ -631,7 +631,7 @@ function initFirebase() {
     }
     .mobile-nav a:last-child { border-bottom: none; }
     .mobile-nav a:hover,
-    .mobile-nav a.active { color: var(--accent); background: #fff5f5; }
+    .mobile-nav a.active { color: var(--accent); background: #f0f4ff; }
     @keyframes slideDown {
       from { opacity: 0; transform: translateY(-8px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -2183,7 +2183,7 @@ body.cms-open .mobile-bottom-nav { display: none !important; }
   font-size: 18px; font-weight: 700; transition: all .15s;
 }
 .mb-sz-btn small { font-size: 10px; font-weight: 600; color: #888; }
-.mb-sz-btn.active { border-color: var(--accent); background: #fff5f5; color: var(--accent); }
+.mb-sz-btn.active { border-color: var(--accent); background: #f0f4ff; color: var(--accent); }
 .mb-sz-btn.active small { color: var(--accent); }
 
 /* Card style selector */
@@ -2229,8 +2229,8 @@ body.cms-open .mobile-bottom-nav { display: none !important; }
 /* Mobile preview strip */
 .mobile-preview-strip {
   display: flex; align-items: center; gap: 24px;
-  background: linear-gradient(135deg,#fff5f5 0%,#fff 100%);
-  border: 1px solid #fcc; border-radius: 12px; padding: 20px 24px;
+  background: linear-gradient(135deg,#f0f4ff 0%,#fff 100%);
+  border: 1px solid #d0daff; border-radius: 12px; padding: 20px 24px;
   margin-bottom: 4px;
 }
 .mpv-phone {
@@ -2251,7 +2251,7 @@ body.cms-open .mobile-bottom-nav { display: none !important; }
 }
 .mpv-bottombar.visible { display: flex !important; }
 .mpv-bb-dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
-.mpv-bb-dot.mpv-active { background: #e84040; }
+.mpv-bb-dot.mpv-active { background: #1a305e; }
 .mpv-info { flex: 1; }
 .mpv-badge {
   display: inline-block; background: var(--accent); color: #fff;
@@ -2605,7 +2605,7 @@ html, body {
       <a onclick="filterCat('Nhật Ký Sự Kiện', this, event)">Sự Kiện</a>
     </nav>
     <div class="header-right">
-      <button class="search-btn" onclick="openSearch()">🔍 <span>Tìm kiếm</span></button>
+      <button class="search-btn" onclick="openSearch()"><span>Tìm kiếm</span></button>
       <button class="nav-toggle" id="nav-toggle" onclick="toggleMobileNav()" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
@@ -3190,7 +3190,7 @@ html, body {
                   <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Màu Chủ đạo (Primary)</label>
                   <div class="color-picker-group" style="display:flex;align-items:center;gap:10px;background:#fff;padding:8px;border-radius:6px;border:1px solid #d8cfc3">
                     <input type="color" id="cms-color-accent" onchange="syncColor(this,'cms-color-accent-hex')" style="border:none;width:32px;height:32px;border-radius:6px;cursor:pointer;padding:0">
-                    <input type="text" id="cms-color-accent-hex" placeholder="#e84040" onchange="syncColor(this,'cms-color-accent')" style="border:none;outline:none;font-weight:600;width:100%;font-size:13px">
+                    <input type="text" id="cms-color-accent-hex" placeholder="#1a305e" onchange="syncColor(this,'cms-color-accent')" style="border:none;outline:none;font-weight:600;width:100%;font-size:13px">
                   </div>
                 </div>
 
@@ -3877,7 +3877,7 @@ function renderHero() {
 
   const idx = data.posts.indexOf(featured);
   const imgCol = featured.image
-    ? `<div class="hero-img-col"><img src="${featured.image}" alt="${escHtml(featured.title)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\"hero-img-col-ph\\">${getCatEmoji(featured.category)}</div>'"></div>`
+    ? `<div class="hero-img-col"><img src="${featured.image}" alt="${escHtml(featured.title)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'hero-img-col-ph\'>${getCatEmoji(featured.category)}</div>'"></div>`
     : `<div class="hero-img-col"><div class="hero-img-col-ph">${getCatEmoji(featured.category)}</div></div>`;
 
   hero.className = featured.image ? '' : 'hero-no-img';
@@ -3889,8 +3889,6 @@ function renderHero() {
         <p class="hero-desc">${escHtml(featured.excerpt || '')}</p>
         <div class="hero-meta">
           <span class="author">${escHtml(data.settings.author)}</span>
-          <div class="hero-divider"></div>
-          <span>${formatDate(featured.date)}</span>
         </div>
         <a class="read-more read-more-inline" onclick="openPost(${idx})">Đọc tiếp →</a>
       </div>
@@ -5812,7 +5810,7 @@ function cmsLoadLayout() {
   document.getElementById('cms-toggle-filterbar').checked = cfg.filterbar !== false;
   document.getElementById('cms-toggle-sidebar').checked = cfg.sidebar !== false;
   document.getElementById('cms-toggle-cardimg').checked = cfg.cardImg !== false;
-  const accent = cfg.accent || '#e84040';
+  const accent = cfg.accent || '#1a305e';
   const bg = cfg.bgColor || '#ffffff';
   document.getElementById('cms-color-accent').value = accent;
   document.getElementById('cms-color-accent-hex').value = accent;
@@ -6029,7 +6027,7 @@ function saveLandingPages() {
 const LPB_DEFAULTS = {
   hero:    { bgColor: '#1a1a1a', bgImage: '', overlayColor: '#000000', overlayOpacity: 50,
              title: 'Tiêu đề nổi bật của bạn', subtitle: 'Mô tả ngắn gọn và thu hút.',
-             btnText: 'Bắt đầu ngay', btnUrl: '#', btnBg: '#e84040', btnColor: '#ffffff',
+             btnText: 'Bắt đầu ngay', btnUrl: '#', btnBg: '#1a305e', btnColor: '#ffffff',
              minHeight: 420, textAlign: 'center', titleSize: 48, titleColor: '#ffffff', subColor: 'rgba(255,255,255,0.85)' },
   heading: { text: 'Tiêu đề section', level: 'h2', color: '#1a1a1a', align: 'left',
              fontSize: 32, padTop: 40, padBottom: 16, padLeft: 48, padRight: 48 },
@@ -6038,7 +6036,7 @@ const LPB_DEFAULTS = {
   image:   { src: '', alt: '', caption: '', fullWidth: false, borderRadius: 0,
              padTop: 0, padBottom: 0, padLeft: 0, padRight: 0 },
   video:   { url: '', padTop: 32, padBottom: 32, padLeft: 48, padRight: 48 },
-  button:  { text: 'Nhấn vào đây', url: '#', align: 'center', bg: '#e84040', color: '#ffffff',
+  button:  { text: 'Nhấn vào đây', url: '#', align: 'center', bg: '#1a305e', color: '#ffffff',
              fontSize: 15, padV: 13, padH: 32, borderRadius: 6, padTop: 24, padBottom: 24, padLeft: 48, padRight: 48 },
   '2col':  { bgColor: '#ffffff', col1Html: '<p>Nội dung cột trái</p>', col2Html: '<p>Nội dung cột phải</p>',
              col1Bg: 'transparent', col2Bg: 'transparent',
@@ -6209,7 +6207,7 @@ function lpbBlockHTML(block) {
         <div class="lp-hero-content">
           <div class="lp-hero-title" style="font-size:${p.titleSize||48}px;color:${p.titleColor||'#fff'}">${escHtml(p.title||'')}</div>
           <div class="lp-hero-sub" style="color:${p.subColor||'rgba(255,255,255,0.85)'}">${escHtml(p.subtitle||'')}</div>
-          ${p.btnText ? `<a class="lp-hero-btn" href="${escHtml(p.btnUrl||'#')}" style="background:${p.btnBg||'#e84040'};color:${p.btnColor||'#fff'}">${escHtml(p.btnText)}</a>` : ''}
+          ${p.btnText ? `<a class="lp-hero-btn" href="${escHtml(p.btnUrl||'#')}" style="background:${p.btnBg||'#1a305e'};color:${p.btnColor||'#fff'}">${escHtml(p.btnText)}</a>` : ''}
         </div>
       </div>`;
     }
@@ -6243,7 +6241,7 @@ function lpbBlockHTML(block) {
       const bAlign = p.align || 'center';
       const flex = bAlign === 'center' ? 'center' : bAlign === 'right' ? 'flex-end' : 'flex-start';
       return `<div style="padding:${p.padTop||24}px ${p.padRight||48}px ${p.padBottom||24}px ${p.padLeft||48}px;display:flex;justify-content:${flex}">
-        <a class="lp-btn" href="${escHtml(p.url||'#')}" style="background:${p.bg||'#e84040'};color:${p.color||'#fff'};font-size:${p.fontSize||15}px;padding:${p.padV||13}px ${p.padH||32}px;border-radius:${p.borderRadius||6}px">${escHtml(p.text||'Nhấn vào đây')}</a>
+        <a class="lp-btn" href="${escHtml(p.url||'#')}" style="background:${p.bg||'#1a305e'};color:${p.color||'#fff'};font-size:${p.fontSize||15}px;padding:${p.padV||13}px ${p.padH||32}px;border-radius:${p.borderRadius||6}px">${escHtml(p.text||'Nhấn vào đây')}</a>
       </div>`;
     }
     case '2col': {
@@ -6378,7 +6376,7 @@ function lpbPropsHTML(block) {
           <div class="lpb-prop-row"><label>Màu tiêu đề</label>
             <div class="lpb-prop-inline"><input type="color" value="${p.titleColor||'#ffffff'}" oninput="${upd('titleColor')}"><input type="text" value="${p.titleColor||'#ffffff'}" oninput="${upd('titleColor')}"></div></div>
           <div class="lpb-prop-row"><label>Màu nền nút</label>
-            <div class="lpb-prop-inline"><input type="color" value="${p.btnBg||'#e84040'}" oninput="${upd('btnBg')}"><input type="text" value="${p.btnBg||'#e84040'}" oninput="${upd('btnBg')}"></div></div>
+            <div class="lpb-prop-inline"><input type="color" value="${p.btnBg||'#1a305e'}" oninput="${upd('btnBg')}"><input type="text" value="${p.btnBg||'#1a305e'}" oninput="${upd('btnBg')}"></div></div>
         </div>
         <div class="lpb-prop-group">
           <div class="lpb-prop-group-title">Kích thước</div>
@@ -6481,7 +6479,7 @@ function lpbPropsHTML(block) {
         <div class="lpb-prop-group">
           <div class="lpb-prop-group-title">Kiểu dáng</div>
           <div class="lpb-prop-row"><label>Màu nền</label>
-            <div class="lpb-prop-inline"><input type="color" value="${p.bg||'#e84040'}" oninput="${upd('bg')}"><input type="text" value="${p.bg||'#e84040'}" oninput="${upd('bg')}"></div></div>
+            <div class="lpb-prop-inline"><input type="color" value="${p.bg||'#1a305e'}" oninput="${upd('bg')}"><input type="text" value="${p.bg||'#1a305e'}" oninput="${upd('bg')}"></div></div>
           <div class="lpb-prop-row"><label>Màu chữ</label>
             <div class="lpb-prop-inline"><input type="color" value="${p.color||'#fff'}" oninput="${upd('color')}"><input type="text" value="${p.color||'#fff'}" oninput="${upd('color')}"></div></div>
           <div class="lpb-prop-row"><label>Cỡ chữ (px)</label>
@@ -6585,7 +6583,7 @@ function lpbPropsHTML(block) {
           <div class="lpb-prop-group-title">HTML tuỳ chỉnh</div>
           <div class="lpb-prop-row"><label>Code HTML</label>
             <textarea rows="10" style="font-family:monospace;font-size:12px" oninput="lpbUpdateProp(${i},'code',this.value)">${(p.code||'').replace(/</g,'&lt;')}</textarea></div>
-          <div style="font-size:11px;color:#e84040;margin-top:4px">⚠️ Chỉ dùng với code đáng tin cậy</div>
+          <div style="font-size:11px;color:#1a305e;margin-top:4px">⚠️ Chỉ dùng với code đáng tin cậy</div>
         </div>
         ${padSection}
       </div>`;
@@ -6931,7 +6929,7 @@ function cmsSaveTheme() {
     fontHeading:  document.getElementById('cms-font-heading')?.value || "'Merriweather', serif",
     fontSize:     document.getElementById('cms-blog-fontsize')?.value || '17',
     // Colors
-    colorAccent:  document.getElementById('cms-color-accent')?.value || '#e84040',
+    colorAccent:  document.getElementById('cms-color-accent')?.value || '#1a305e',
     colorBg:      document.getElementById('cms-color-bg')?.value || '#ffffff',
     colorSurface: document.getElementById('cms-color-surface')?.value || '#f7f7f7'
   };
