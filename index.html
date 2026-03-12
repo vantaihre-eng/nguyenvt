@@ -4838,6 +4838,13 @@ function cmsOpenEditor(idx) {
   const curCat = isNew ? ((cats[0] && cats[0].name) || 'Chuyện Nghề') : ((data.posts[idx] && data.posts[idx].category) || '');
   catSel.innerHTML = cats.map(c => `<option value="${escHtml(c.name)}" ${c.name===curCat?'selected':''}>${escHtml(c.name)}</option>`).join('');
 
+  // Show editor page (MUST do this BEFORE setting Quill html so it renders toolbar)
+  document.querySelectorAll('.cms-nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.cms-page-content').forEach(p => p.style.display = 'none');
+  document.getElementById('cmspage-editor').style.display = '';
+  document.getElementById('cms-main').scrollTop = 0;
+
+  // Initialize Quill after DOM is visible
   if (!postQuill) initQuillEditors();
 
   if (!isNew) {
@@ -4848,7 +4855,7 @@ function cmsOpenEditor(idx) {
     
     // Set Quill HTML content
     const contentHtml = post.content || '';
-    postQuill.root.innerHTML = contentHtml;
+    if (postQuill) postQuill.root.innerHTML = contentHtml;
     // Also update fallback
     document.getElementById('cms-post-content').innerHTML = contentHtml;
     
@@ -4866,8 +4873,8 @@ function cmsOpenEditor(idx) {
     document.getElementById('cms-post-category').value = 'Chuyện Nghề';
     document.getElementById('cms-post-excerpt').value = '';
     
-    postQuill.root.innerHTML = '';
     document.getElementById('cms-post-content').innerHTML = '';
+    if (postQuill) postQuill.root.innerHTML = '';
     
     document.getElementById('cms-post-image').value = '';
     document.getElementById('cms-post-tags').value = '';
@@ -4875,12 +4882,6 @@ function cmsOpenEditor(idx) {
     document.getElementById('cms-post-date').value = new Date().toISOString().split('T')[0];
     updateImgPreview('');
   }
-
-  // Show editor page
-  document.querySelectorAll('.cms-nav-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.cms-page-content').forEach(p => p.style.display = 'none');
-  document.getElementById('cmspage-editor').style.display = '';
-  document.getElementById('cms-main').scrollTop = 0;
 }
 
 function updateImgPreview(url) {
@@ -5304,42 +5305,6 @@ function compressImage(dataUrl, filename, callback) {
     const compressed = canvas.toDataURL('image/jpeg', 0.82);
     callback(compressed, filename);
   };
-  img.src = dataUrl;
-}
-
-function cmsAddImageUrl() {
-  const url = document.getElementById('cms-img-url').value.trim();
-  if (!url) return showToast('Vui lòng nhập URL', true);
-  const name = document.getElementById('cms-img-name').value.trim() || 'Ảnh ' + (data.images.length + 1);
-  data.images.push({ url, name, createdAt: Date.now() });
-  saveImages();
-  document.getElementById('cms-img-add-form').style.display = 'none';
-  document.getElementById('cms-img-url').value = '';
-  document.getElementById('cms-img-name').value = '';
-  cmsRenderImages();
-  showToast('Đã thêm hình ảnh');
-}
-
-function cmsRenderImages() {
-  const wrap = document.getElementById('cms-img-gallery-wrap');
-  if (data.images.length === 0) {
-    wrap.innerHTML = '<p style="color:#777777;text-align:center;padding:48px">Chưa có hình ảnh nào. Nhấn "+ Thêm hình ảnh" để bắt đầu.</p>';
-    return;
-  }
-  wrap.innerHTML = `<div class="cms-img-grid">
-    ${data.images.map((img, i) => `
-      <div class="cms-img-item">
-        <img src="${escHtml(img.url)}" alt="${escHtml(img.name)}" loading="lazy">
-        <div class="cms-img-meta">
-          <div class="name">${escHtml(img.name)}</div>
-          <div class="cms-img-btns">
-            <button onclick="cmsImgCopy('${escHtml(img.url)}',this)">Copy URL</button>
-            <button class="del" onclick="cmsImgDelete(${i})">Xóa</button>
-          </div>
-        </div>
-      </div>
-    `).join('')}
-  </div>`;
 }
 
 function cmsImgCopy(url, btn) {
