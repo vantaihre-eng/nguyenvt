@@ -21,6 +21,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- Quill WYSIWYG Editor -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
 <!-- Firebase SDK (lazy-loaded only when CMS is opened) -->
 <script>
 // Firebase config — paste your config here from Firebase Console
@@ -2798,55 +2802,9 @@ html, body {
 
               <div class="cms-editor-card">
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Nội dung bài viết <span class="req">*</span></label>
-                <!-- Rich Text Toolbar -->
-                <div class="rte-toolbar" id="rte-toolbar">
-                  <button class="rte-btn" title="Bold" onmousedown="event.preventDefault()" onclick="rteCmd('bold')"><b>B</b></button>
-                  <button class="rte-btn" title="Italic" onmousedown="event.preventDefault()" onclick="rteCmd('italic')"><i>I</i></button>
-                  <button class="rte-btn" title="Underline" onmousedown="event.preventDefault()" onclick="rteCmd('underline')"><u>U</u></button>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn" title="Căn trái" onmousedown="event.preventDefault()" onclick="rteCmd('justifyLeft')">⫷</button>
-                  <button class="rte-btn" title="Căn giữa" onmousedown="event.preventDefault()" onclick="rteCmd('justifyCenter')">≡</button>
-                  <button class="rte-btn" title="Căn phải" onmousedown="event.preventDefault()" onclick="rteCmd('justifyRight')">⫸</button>
-                  <div class="rte-sep"></div>
-                  <select class="rte-select" onchange="rteCmd('fontName', this.value); this.selectedIndex=0">
-                    <option value="" disabled selected>Font</option>
-                    <option value="Arial">Arial</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Times New Roman">Times</option>
-                    <option value="Courier New">Courier</option>
-                  </select>
-                  <select class="rte-select" onchange="rteCmd('fontSize', this.value); this.selectedIndex=0">
-                    <option value="" disabled selected>Cỡ chữ</option>
-                    <option value="1">Nhỏ nhất</option>
-                    <option value="2">Nhỏ</option>
-                    <option value="3">Vừa</option>
-                    <option value="4">Lớn</option>
-                    <option value="5">Rất lớn</option>
-                    <option value="6">Cực lớn</option>
-                  </select>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn-text" title="Heading 2" onmousedown="event.preventDefault()" onclick="rteCmd('formatBlock','h2')">H2</button>
-                  <button class="rte-btn-text" title="Heading 3" onmousedown="event.preventDefault()" onclick="rteCmd('formatBlock','h3')">H3</button>
-                  <button class="rte-btn-text" title="Paragraph" onmousedown="event.preventDefault()" onclick="rteCmd('formatBlock','p')">¶</button>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rteCmd('insertUnorderedList')">+ List</button>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rteCmd('insertOrderedList')">1. List</button>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn-text" title="Blockquote" onmousedown="event.preventDefault()" onclick="rteCmd('formatBlock','blockquote')">❝</button>
-                  <button class="rte-btn-text" title="Divider" onmousedown="event.preventDefault()" onclick="rteInsertHr()">—</button>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn-text" title="Link" onmousedown="event.preventDefault()" onclick="rteInsertLink()">🔗</button>
-                  <input class="rte-color" type="color" value="#F5E6CC" title="Highlight color"
-                         onchange="rteCmd('hiliteColor',this.value)" style="margin:0 2px">
-                  <button class="rte-btn-text" title="Remove format" onmousedown="event.preventDefault()" onclick="rteCmd('removeFormat')">✕</button>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn-text" title="Chèn ảnh từ thư viện" onmousedown="event.preventDefault()" onclick="rteOpenImgPicker()" style="background:#f0ece5;border-color:var(--accent);color:var(--accent)">Chèn ảnh</button>
-                  <button class="rte-preview-btn" onclick="rteTogglePreview()">🔍 Preview</button>
-                </div>
-                <div class="rte-body" id="cms-post-content" contenteditable="true"
-                     onkeydown="rteHandleKey(event)"
-                     oninput="rteSync()"
-                     style="min-height:280px"></div>
+                <!-- Quill Editor Container for Post -->
+                <div id="cms-quill-editor" style="min-height: 450px; background: #fff; font-family: var(--body-font); font-size: 16px;"></div>
+                <div id="cms-post-content" style="display:none;"></div> <!-- Hidden field to store for the save function -->
               </div>
 
               <div class="cms-editor-card">
@@ -3032,43 +2990,9 @@ html, body {
               </div>
               <div class="cms-editor-card">
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Nội dung trang</label>
-                <div class="rte-toolbar">
-                  <button class="rte-btn" onmousedown="event.preventDefault()" onclick="rtePageCmd('bold')"><b>B</b></button>
-                  <button class="rte-btn" onmousedown="event.preventDefault()" onclick="rtePageCmd('italic')"><i>I</i></button>
-                  <button class="rte-btn" onmousedown="event.preventDefault()" onclick="rtePageCmd('underline')"><u>U</u></button>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn" title="Căn trái" onmousedown="event.preventDefault()" onclick="rtePageCmd('justifyLeft')">⫷</button>
-                  <button class="rte-btn" title="Căn giữa" onmousedown="event.preventDefault()" onclick="rtePageCmd('justifyCenter')">≡</button>
-                  <button class="rte-btn" title="Căn phải" onmousedown="event.preventDefault()" onclick="rtePageCmd('justifyRight')">⫸</button>
-                  <div class="rte-sep"></div>
-                  <select class="rte-select" onchange="rtePageCmd('fontName', this.value); this.selectedIndex=0">
-                    <option value="" disabled selected>Font</option>
-                    <option value="Arial">Arial</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Times New Roman">Times</option>
-                    <option value="Courier New">Courier</option>
-                  </select>
-                  <select class="rte-select" onchange="rtePageCmd('fontSize', this.value); this.selectedIndex=0">
-                    <option value="" disabled selected>Cỡ chữ</option>
-                    <option value="1">Nhỏ nhất</option>
-                    <option value="2">Nhỏ</option>
-                    <option value="3">Vừa</option>
-                    <option value="4">Lớn</option>
-                    <option value="5">Rất lớn</option>
-                    <option value="6">Cực lớn</option>
-                  </select>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rtePageCmd('formatBlock','h2')">H2</button>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rtePageCmd('formatBlock','h3')">H3</button>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rtePageCmd('formatBlock','p')">¶</button>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rtePageCmd('insertUnorderedList')">+ List</button>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rtePageCmd('insertOrderedList')">1. List</button>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rtePageCmd('formatBlock','blockquote')">❝</button>
-                  <div class="rte-sep"></div>
-                  <button class="rte-btn-text" onmousedown="event.preventDefault()" onclick="rtePageOpenImgPicker()" style="background:#f0ece5;border-color:var(--accent);color:var(--accent)">🖼 Ảnh</button>
-                </div>
-                <div class="rte-body" id="cms-page-content" contenteditable="true" style="min-height:320px"></div>
+                <!-- Quill Editor Container for Page -->
+                <div id="cms-page-quill-editor" style="min-height: 450px; background: #fff; font-family: var(--body-font); font-size: 16px;"></div>
+                <div id="cms-page-content" style="display:none;"></div>
               </div>
               <div style="display:flex;gap:12px">
                 <button class="cms-save-btn" onclick="cmsSavePage()">💾 Lưu trang</button>
@@ -4828,6 +4752,79 @@ function cmsDeletePost(idx) {
   showToast('Đã xóa bài viết');
 }
 
+/* ── Init Quill Editor ── */
+let postQuill, pageQuill;
+let imgPickerCallback = null;
+
+function initQuillEditors() {
+  if (postQuill) return; // Prevent double init
+  
+  const toolbarOptions = [
+    [{ 'header': [2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+    ['blockquote'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    [{ 'align': [] }],
+    ['link', 'image', 'video'],
+    [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+    ['clean']                                         // remove formatting button
+  ];
+  
+  // Custom image handler
+  const imageHandler = function() {
+    imgPickerCallback = (url) => {
+      const range = this.quill.getSelection(true);
+      this.quill.insertEmbed(range.index, 'image', url);
+      this.quill.setSelection(range.index + 1);
+    };
+    rteOpenImgPicker();
+  };
+
+  postQuill = new Quill('#cms-quill-editor', {
+    theme: 'snow',
+    modules: {
+      toolbar: {
+        container: toolbarOptions,
+        handlers: { image: imageHandler }
+      }
+    }
+  });
+
+  pageQuill = new Quill('#cms-page-quill-editor', {
+    theme: 'snow',
+    modules: {
+      toolbar: {
+        container: toolbarOptions,
+        handlers: { image: imageHandler }
+      }
+    }
+  });
+
+  // Sync Quill changes to hidden input for saving later (optional fallback, but we'll fetch direct on save)
+  postQuill.on('text-change', function() {
+    document.getElementById('cms-post-content').innerHTML = postQuill.root.innerHTML;
+  });
+  
+  pageQuill.on('text-change', function() {
+    document.getElementById('cms-page-content').innerHTML = pageQuill.root.innerHTML;
+  });
+}
+
+// Override original img picker callback to inject into Quill if it's open
+const origLpbPickImgCb = window.rteOpenImgPicker; // We keep original picker UI, but intercept the result
+function rteOpenImgPicker() {
+  window._rteTarget = 'quill'; 
+  document.getElementById('cms-img-picker').style.display = 'flex';
+  loadImgPicker();
+}
+
+function rteInsertPickedImg(url) {
+  if (imgPickerCallback && window._rteTarget === 'quill') {
+    imgPickerCallback(url);
+    imgPickerCallback = null;
+  }
+}
+
 /* ── Post Editor ── */
 function cmsOpenEditor(idx) {
   cmsCurrentEditIdx = idx !== undefined ? idx : null;
@@ -4841,12 +4838,20 @@ function cmsOpenEditor(idx) {
   const curCat = isNew ? ((cats[0] && cats[0].name) || 'Chuyện Nghề') : ((data.posts[idx] && data.posts[idx].category) || '');
   catSel.innerHTML = cats.map(c => `<option value="${escHtml(c.name)}" ${c.name===curCat?'selected':''}>${escHtml(c.name)}</option>`).join('');
 
+  if (!postQuill) initQuillEditors();
+
   if (!isNew) {
     const post = data.posts[idx];
     document.getElementById('cms-post-title').value = post.title || '';
     document.getElementById('cms-post-slug').value = post.slug || '';
     document.getElementById('cms-post-excerpt').value = post.excerpt || '';
-    document.getElementById('cms-post-content').innerHTML = post.content || '';
+    
+    // Set Quill HTML content
+    const contentHtml = post.content || '';
+    postQuill.root.innerHTML = contentHtml;
+    // Also update fallback
+    document.getElementById('cms-post-content').innerHTML = contentHtml;
+    
     document.getElementById('cms-post-image').value = post.image || '';
     document.getElementById('cms-post-tags').value = (post.tags || []).join(', ');
     document.getElementById('cms-post-featured').checked = !!post.featured;
@@ -4860,7 +4865,10 @@ function cmsOpenEditor(idx) {
     document.getElementById('cms-post-slug').value = '';
     document.getElementById('cms-post-category').value = 'Chuyện Nghề';
     document.getElementById('cms-post-excerpt').value = '';
+    
+    postQuill.root.innerHTML = '';
     document.getElementById('cms-post-content').innerHTML = '';
+    
     document.getElementById('cms-post-image').value = '';
     document.getElementById('cms-post-tags').value = '';
     document.getElementById('cms-post-featured').checked = false;
@@ -4990,8 +4998,8 @@ function cmsSavePost() {
     slug = slug + '-' + Date.now().toString().slice(-4);
   }
 
-  const contentEl = document.getElementById('cms-post-content');
-  const content = contentEl.innerHTML.trim();
+  const contentHtml = postQuill.root.innerHTML;
+  const content = contentHtml.trim() === '<p><br></p>' ? '' : contentHtml.trim();
 
   const dateVal = document.getElementById('cms-post-date').value;
   const isFeatured = document.getElementById('cms-post-featured').checked;
@@ -5117,6 +5125,14 @@ function rteInsertImg(idxStr) {
 }
 
 function _rteDoInsert(src, alt) {
+  // This is the old rtePickerImage function body from before we rewrote rteOpenImgPicker
+  // intercept logic
+  if (window._rteTarget === 'quill') {
+    rteInsertPickedImg(url);
+    document.getElementById('cms-img-picker').style.display='none';
+    return;
+  }
+
   const targetId = window._rteTarget === 'page' ? 'cms-page-content' : 'cms-post-content';
   window._rteTarget = null;
   const editor = document.getElementById(targetId);
