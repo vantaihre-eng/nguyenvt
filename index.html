@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
+<!-- Open Graph / Social sharing -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Tài Tàng Au">
+<meta property="og:title" id="og-title" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
+<meta property="og:description" id="og-desc" content="Chuyện Nghề &amp; Chuyện Đời">
+<meta property="og:image" id="og-image" content="">
+<meta property="og:url" id="og-url" content="">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" id="tw-title" content="Tài Tàng Au">
+<meta name="twitter:description" id="tw-desc" content="Chuyện Nghề &amp; Chuyện Đời">
+<meta name="twitter:image" id="tw-image" content="">
 <!-- Netlify: cache static assets, HTML always revalidated -->
 <meta http-equiv="Cache-Control" content="no-cache">
 <title>Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời</title>
@@ -38,7 +49,8 @@ function initFirebase() {
     if (!cfg.apiKey || cfg.apiKey === 'YOUR_API_KEY') { resolve(false); return; }
     const scripts = [
       'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
-      'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js'
+      'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js',
+      'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js'
     ];
     let loaded = 0;
     scripts.forEach(src => {
@@ -47,6 +59,7 @@ function initFirebase() {
         try {
           if (!firebase.apps.length) firebase.initializeApp(cfg);
           _db = firebase.firestore(); window.db = _db;
+          window._storage = firebase.storage();
           _fbReady = true; console.log('🔥 Firebase OK');
         } catch(e) {}
         resolve(true);
@@ -3155,53 +3168,99 @@ html, body {
         <div class="cms-content">
           <div class="cms-editor-card">
             <div class="cms-section-title">Bố cục danh sách</div>
-            <div class="cms-layout-options">
-              <div class="cms-layout-opt" data-layout="list" onclick="cmsSelectLayout('list',this)">
-                <div class="icon">📋</div><div class="name">List</div>
-              </div>
-              <div class="cms-layout-opt" data-layout="grid" onclick="cmsSelectLayout('grid',this)">
-                <div class="icon">⊞</div><div class="name">Grid</div>
-              </div>
-              <div class="cms-layout-opt" data-layout="masonry" onclick="cmsSelectLayout('masonry',this)">
-                <div class="icon">🧱</div><div class="name">Masonry</div>
-              </div>
-            </div>
-          </div>
-          <div class="cms-editor-card">
-            <div class="cms-section-title">Hiển thị</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                <input type="checkbox" id="cms-toggle-hero"> Hiện Hero Section</label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                <input type="checkbox" id="cms-toggle-filterbar"> Hiện Filter Bar</label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                <input type="checkbox" id="cms-toggle-sidebar"> Hiện Sidebar</label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
-                <input type="checkbox" id="cms-toggle-cardimg"> Hiện ảnh trong card</label>
-            </div>
-          </div>
-          <div class="cms-editor-card">
-            <div class="cms-section-title">Màu sắc</div>
-            <div class="cms-field-row">
-              <div class="cms-form-group">
-                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Màu chủ đạo</label>
-                <div class="color-picker-group">
-                  <input type="color" id="cms-color-accent" onchange="syncColor(this,'cms-color-accent-hex')">
-                  <input class="cms-field" type="text" id="cms-color-accent-hex" placeholder="#e84040" onchange="syncColor(this,'cms-color-accent')">
+              <div class="cms-layout-options">
+                <div class="cms-layout-opt" data-layout="list" onclick="cmsSelectLayout('list',this)">
+                  <div class="icon" style="font-size:18px">☰</div><div class="name">List</div>
                 </div>
-              </div>
-              <div class="cms-form-group">
-                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Màu nền</label>
-                <div class="color-picker-group">
-                  <input type="color" id="cms-color-bg" onchange="syncColor(this,'cms-color-bg-hex')">
-                  <input class="cms-field" type="text" id="cms-color-bg-hex" placeholder="#ffffff" onchange="syncColor(this,'cms-color-bg')">
+                <div class="cms-layout-opt" data-layout="grid" onclick="cmsSelectLayout('grid',this)">
+                  <div class="icon" style="font-size:18px">⊞</div><div class="name">Grid</div>
+                </div>
+                <div class="cms-layout-opt" data-layout="masonry" onclick="cmsSelectLayout('masonry',this)">
+                  <div class="icon" style="font-size:18px">▦</div><div class="name">Masonry</div>
                 </div>
               </div>
             </div>
+            <div style="display:flex;gap:12px;margin-top:4px">
+              <button class="cms-save-btn" onclick="cmsSaveLayout()">Lưu Trang chủ</button>
+              <button class="cms-cancel-btn" onclick="cmsResetLayout()">Đặt lại</button>
+            </div>
           </div>
-          <div style="display:flex;gap:12px">
-            <button class="cms-save-btn" onclick="cmsSaveLayout()">✅ Áp dụng</button>
-            <button class="cms-cancel-btn" onclick="cmsResetLayout()">Đặt lại</button>
+
+          <!-- TAB: Trang blog -->
+          <div id="layout-panel-blog" style="display:none">
+            <div class="cms-editor-card">
+              <div class="cms-section-title">Trang bài viết (Blog post)</div>
+              <div style="display:grid;gap:14px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
+                  <input type="checkbox" id="cms-blog-show-cover"> Hiện ảnh bìa lớn đầu trang</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
+                  <input type="checkbox" id="cms-blog-show-sidebar"> Hiện sidebar bài liên quan</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
+                  <input type="checkbox" id="cms-blog-show-related"> Hiện bài viết liên quan phía dưới</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
+                  <input type="checkbox" id="cms-blog-show-progress"> Hiện thanh tiến trình đọc</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
+                  <input type="checkbox" id="cms-blog-show-share"> Hiện nút chia sẻ mạng xã hội</label>
+              </div>
+            </div>
+            <div class="cms-editor-card">
+              <div class="cms-section-title">Font chữ bài viết</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="cms-layout-opt" id="blogfont-serif" onclick="cmsBlogFontSelect('serif',this)"
+                  style="flex:1;min-width:120px">
+                  <div class="icon" style="font-family:Georgia,serif;font-size:20px">Aa</div>
+                  <div class="name">Serif</div>
+                </button>
+                <button class="cms-layout-opt" id="blogfont-sans" onclick="cmsBlogFontSelect('sans',this)"
+                  style="flex:1;min-width:120px">
+                  <div class="icon" style="font-family:sans-serif;font-size:20px">Aa</div>
+                  <div class="name">Sans-serif</div>
+                </button>
+                <button class="cms-layout-opt" id="blogfont-mono" onclick="cmsBlogFontSelect('mono',this)"
+                  style="flex:1;min-width:120px">
+                  <div class="icon" style="font-family:monospace;font-size:20px">Aa</div>
+                  <div class="name">Monospace</div>
+                </button>
+              </div>
+            </div>
+            <div class="cms-editor-card">
+              <div class="cms-section-title">Cỡ chữ nội dung</div>
+              <input type="range" id="cms-blog-fontsize" min="14" max="22" value="17"
+                oninput="document.getElementById('cms-blog-fontsize-val').textContent=this.value+'px'"
+                style="width:100%;accent-color:var(--accent)">
+              <div style="text-align:center;font-size:13px;color:#777;margin-top:6px" id="cms-blog-fontsize-val">17px</div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <button class="cms-save-btn" onclick="cmsSaveBlogLayout()">Lưu giao diện Blog</button>
+              <button class="cms-cancel-btn" onclick="cmsResetBlogLayout()">Đặt lại</button>
+            </div>
+          </div>
+
+          <!-- TAB: Màu sắc -->
+          <div id="layout-panel-colors" style="display:none">
+            <div class="cms-editor-card">
+              <div class="cms-section-title">Màu sắc</div>
+              <div class="cms-field-row">
+                <div class="cms-form-group">
+                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Màu chủ đạo</label>
+                  <div class="color-picker-group">
+                    <input type="color" id="cms-color-accent" onchange="syncColor(this,'cms-color-accent-hex')">
+                    <input class="cms-field" type="text" id="cms-color-accent-hex" placeholder="#e84040" onchange="syncColor(this,'cms-color-accent')">
+                  </div>
+                </div>
+                <div class="cms-form-group">
+                  <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Màu nền</label>
+                  <div class="color-picker-group">
+                    <input type="color" id="cms-color-bg" onchange="syncColor(this,'cms-color-bg-hex')">
+                    <input class="cms-field" type="text" id="cms-color-bg-hex" placeholder="#ffffff" onchange="syncColor(this,'cms-color-bg')">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <button class="cms-save-btn" onclick="cmsSaveLayout()">Áp dụng màu</button>
+              <button class="cms-cancel-btn" onclick="cmsResetLayout()">Đặt lại</button>
+            </div>
           </div>
         </div>
       </div>
@@ -3604,6 +3663,22 @@ async function loadData() {
   if (ok) await _pullFirebase();
 }
 
+// Upload file ảnh lên Firebase Storage, trả về download URL
+async function uploadImageToStorage(file) {
+  if (!_fbReady || !window._storage) return null;
+  try {
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
+    const ref = window._storage.ref(path);
+    await ref.put(file);
+    const url = await ref.getDownloadURL();
+    return url;
+  } catch(e) {
+    console.error('Storage upload error:', e);
+    return null;
+  }
+}
+
 function _loadLocal() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -3833,7 +3908,7 @@ function renderSidebar(containerId, currentIdx) {
       <h3>Chuyên mục</h3>
       ${Object.keys(catCounts).map(cat => `
         <a href="#" class="cat-link" onclick="filterCat('${escHtml(cat)}', null, event)">
-          <span><span class="cat-icon">${getCatEmoji(cat)}</span>${escHtml(cat)}</span>
+          <span>${escHtml(cat)}</span>
           <span class="cat-count">${catCounts[cat]}</span>
         </a>
       `).join('')}
@@ -3844,7 +3919,7 @@ function renderSidebar(containerId, currentIdx) {
       ${recent.map(p => `
         <div class="sidebar-post-item" onclick="openPost(${p._idx})">
           <div class="sidebar-post-thumb">
-            ${p.image ? `<img src="${p.image}" alt="${escHtml(p.title)}" loading="lazy">` : getCatEmoji(p.category)}
+            ${p.image ? `<img src="${p.image}" alt="${escHtml(p.title)}" loading="lazy">` : '<span style="color:#ccc;font-size:20px">◆</span>'}
           </div>
           <div class="sidebar-post-info">
             <div class="sidebar-post-cat">${escHtml(p.category)}</div>
@@ -3869,12 +3944,12 @@ function renderFooter() {
   const s = data.settings;
   const soc = s.social || {};
   const socialMap = [
-    { key: 'facebook',  icon: '📘', label: 'Facebook' },
-    { key: 'instagram', icon: '📸', label: 'Instagram' },
-    { key: 'youtube',   icon: '▶️', label: 'YouTube' },
-    { key: 'tiktok',    icon: '🎵', label: 'TikTok' },
-    { key: 'linkedin',  icon: '💼', label: 'LinkedIn' },
-    { key: 'twitter',   icon: '🐦', label: 'X' }
+    { key: 'facebook',  icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>', label: 'Facebook' },
+    { key: 'instagram', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>', label: 'Instagram' },
+    { key: 'youtube',   icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 0 0 1.95-1.97A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon fill="white" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>', label: 'YouTube' },
+    { key: 'tiktok',    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/></svg>', label: 'TikTok' },
+    { key: 'linkedin',  icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>', label: 'LinkedIn' },
+    { key: 'twitter',   icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.258 5.63 5.906-5.63z"/></svg>', label: 'X' }
   ];
   const activeSocial = socialMap.filter(s => soc[s.key]);
   const footerLinks = s.footerLinks || [
@@ -3909,7 +3984,7 @@ function renderFooter() {
         <h4>Danh mục</h4>
         <ul>
           ${(data.categories || []).map(c => `
-            <li><a href="#" onclick="filterCat('${escHtml(c.name)}',null,event);return false">${c.emoji} ${escHtml(c.name)}</a></li>
+            <li><a href="#" onclick="filterCat('${escHtml(c.name)}',null,event);return false">${escHtml(c.name)}</a></li>
           `).join('')}
         </ul>
       </div>
@@ -3918,6 +3993,17 @@ function renderFooter() {
       <p>&copy; ${new Date().getFullYear()} ${escHtml(s.sitename)}. All rights reserved. &nbsp;·&nbsp; <a href="#admin" onclick="window.open(location.href.split('#')[0]+'#admin','_blank');return false" style="color:#444;font-size:11px;text-decoration:none;opacity:.35" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.35" title="Mở CMS">⚙</a></p>
     </div>
   `;
+}
+
+function updateMetaTags({ title, desc, image, url }) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.setAttribute('content', val); };
+  const sitename = data.settings.sitename || 'Tài Tàng Au';
+  const fullTitle = title ? title + ' – ' + sitename : sitename + ' – ' + (data.settings.tagline || '');
+  document.title = fullTitle;
+  set('og-title', fullTitle); set('tw-title', fullTitle);
+  if (desc) { set('og-desc', desc); set('tw-desc', desc); }
+  if (image) { set('og-image', image); set('tw-image', image); }
+  if (url)   { set('og-url', url); }
 }
 
 function performSearch() {
@@ -4668,7 +4754,7 @@ function cmsNav(page, el) {
   if (page === 'images') cmsRenderImages();
   if (page === 'categories') cmsRenderCategories();
   if (page === 'pages') cmsRenderPagesList();
-  if (page === 'layout') cmsLoadLayout();
+  if (page === 'layout') { cmsLoadLayout(); cmsInitBlogLayout(); }
   if (page === 'mobile') cmsLoadMobile();
   if (page === 'settings') cmsLoadSettings();
   if (page === 'landing') lpbRenderList();
@@ -4836,19 +4922,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (item.type.startsWith('image/')) {
           e.preventDefault();
           const file = item.getAsFile();
-          const reader = new FileReader();
-          reader.onload = function(ev) {
-            compressImage(ev.target.result, 'pasted-image', (url) => {
-              // Insert image into editor
-              document.execCommand('insertHTML', false, `<img src="${url}" style="max-width:100%;border-radius:6px;margin:8px 0">`);
-              // Also save to library
-              if (!data.images) data.images = [];
-              data.images.push({ url, name: 'Ảnh dán ' + new Date().toLocaleTimeString('vi-VN'), createdAt: Date.now() });
-              saveImages();
-              showToast('Đã chèn ảnh vào bài viết');
-            });
-          };
-          reader.readAsDataURL(file);
+          (async () => {
+            let url = await uploadImageToStorage(file);
+            if (!url) {
+              url = await new Promise(res => {
+                const reader = new FileReader();
+                reader.onload = ev => compressImage(ev.target.result, 'pasted-image', res);
+                reader.readAsDataURL(file);
+              });
+            }
+            document.execCommand('insertHTML', false, `<img src="${url}" style="max-width:100%;border-radius:6px;margin:8px 0">`);
+            if (!data.images) data.images = [];
+            data.images.push({ url, name: 'Ảnh dán ' + new Date().toLocaleTimeString('vi-VN'), createdAt: Date.now() });
+            saveImages();
+            showToast('Đã chèn ảnh vào bài viết');
+          })();
           break;
         }
       }
@@ -5048,26 +5136,28 @@ function rteHandleDrop(e) {
   if (e.dataTransfer.files.length) rteHandleFileUpload(e.dataTransfer.files);
 }
 
-function rteHandleFileUpload(files) {
+async function rteHandleFileUpload(files) {
   const file = Array.from(files).find(f => f.type.startsWith('image/'));
   if (!file) return;
   const status = document.getElementById('rte-upload-status');
-  status.textContent = 'Đang xử lý...';
-  const reader = new FileReader();
-  reader.onload = ev => {
-    compressImage(ev.target.result, file.name, (url) => {
-      const name = file.name.replace(/\.[^.]+$/, '');
-      if (!data.images) data.images = [];
-      data.images.push({ url, name, createdAt: Date.now() });
-      saveImages();
-      status.textContent = '✅ Đã xử lý xong! Đang chèn...';
-      setTimeout(() => {
-        _rteDoInsert(url, name);
-        closeModal('rte-img-picker');
-      }, 500);
+  status.textContent = 'Đang upload...';
+
+  let url = await uploadImageToStorage(file);
+  if (!url) {
+    // Fallback base64
+    url = await new Promise(res => {
+      const reader = new FileReader();
+      reader.onload = ev => compressImage(ev.target.result, file.name, res);
+      reader.readAsDataURL(file);
     });
-  };
-  reader.readAsDataURL(file);
+  }
+
+  const name = file.name.replace(/\.[^.]+$/, '');
+  if (!data.images) data.images = [];
+  data.images.push({ url, name, createdAt: Date.now() });
+  saveImages();
+  status.textContent = '✅ Đã upload! Đang chèn...';
+  setTimeout(() => { _rteDoInsert(url, name); closeModal('rte-img-picker'); }, 500);
 }
 
 function rteInsertImgFromUrl() {
@@ -5133,51 +5223,51 @@ function cmsHandleDrop(e) {
 function cmsHandleFiles(files) {
   const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
   if (!arr.length) return showToast('Chỉ hỗ trợ file ảnh', true);
-  
+
   const previews = document.getElementById('cms-upload-previews');
   const progress = document.getElementById('cms-upload-progress');
-  const bar = document.getElementById('cms-upload-bar');
-  const status = document.getElementById('cms-upload-status');
-  
+  const bar      = document.getElementById('cms-upload-bar');
+  const status   = document.getElementById('cms-upload-status');
+
   previews.innerHTML = '';
   progress.style.display = 'block';
-  
+
   let done = 0;
-  arr.forEach((file, idx) => {
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      // Compress if large (> 800KB → resize to max 1200px wide)
-      const dataUrl = ev.target.result;
-      compressImage(dataUrl, file.name, (finalUrl, finalName) => {
-        // Add to library
-        const imgName = file.name.replace(/\.[^.]+$/, '');
-        if (!data.images) data.images = [];
-        data.images.push({ url: finalUrl, name: finalName || imgName, createdAt: Date.now() });
-        
-        // Preview
-        const thumb = document.createElement('div');
-        thumb.style.cssText = 'position:relative;width:100px;height:80px;border-radius:6px;overflow:hidden;background:#e0d8cc;flex-shrink:0';
-        thumb.innerHTML = `<img src="${finalUrl}" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(28,20,9,.65);color:#fff;font-size:10px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(imgName)}</div>`;
-        previews.appendChild(thumb);
-        
-        done++;
-        const pct = Math.round(done / arr.length * 100);
-        bar.style.width = pct + '%';
-        status.textContent = `Đang xử lý ${done}/${arr.length} ảnh...`;
-        
-        if (done === arr.length) {
-          saveImages();
-          status.textContent = `✅ Đã thêm ${done} ảnh vào thư viện!`;
-          setTimeout(() => {
-            progress.style.display = 'none';
-            bar.style.width = '0%';
-          }, 2000);
-          cmsRenderImages();
-          showToast(`✅ Đã upload ${done} ảnh`);
-        }
+  arr.forEach(async (file) => {
+    const imgName = file.name.replace(/\.[^.]+$/, '');
+    status.textContent = `Đang upload ${imgName}...`;
+
+    // Thử upload lên Firebase Storage
+    let finalUrl = await uploadImageToStorage(file);
+
+    // Fallback: nếu chưa có Storage thì dùng base64
+    if (!finalUrl) {
+      finalUrl = await new Promise(res => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          compressImage(ev.target.result, file.name, (url) => res(url));
+        };
+        reader.readAsDataURL(file);
       });
-    };
-    reader.readAsDataURL(file);
+    }
+
+    if (!data.images) data.images = [];
+    data.images.push({ url: finalUrl, name: imgName, createdAt: Date.now() });
+
+    const thumb = document.createElement('div');
+    thumb.style.cssText = 'position:relative;width:100px;height:80px;border-radius:6px;overflow:hidden;background:#e0d8cc;flex-shrink:0';
+    thumb.innerHTML = `<img src="${finalUrl}" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(28,20,9,.65);color:#fff;font-size:10px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(imgName)}</div>`;
+    previews.appendChild(thumb);
+
+    done++;
+    bar.style.width = Math.round(done / arr.length * 100) + '%';
+    if (done === arr.length) {
+      saveImages();
+      status.textContent = `✅ Đã upload ${done} ảnh lên Firebase!`;
+      setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 2000);
+      cmsRenderImages();
+      showToast(`✅ Đã upload ${done} ảnh`);
+    }
   });
 }
 
@@ -6616,6 +6706,82 @@ function closeModal(id, e) {
   document.getElementById(id).classList.remove('active');
 }
 
+// Layout tabs
+function layoutTabSwitch(tab) {
+  ['homepage','blog','colors'].forEach(t => {
+    const btn = document.getElementById('layout-tab-' + t);
+    const panel = document.getElementById('layout-panel-' + t);
+    if (!btn || !panel) return;
+    const active = t === tab;
+    btn.style.color = active ? 'var(--accent)' : '#999';
+    btn.style.borderBottomColor = active ? 'var(--accent)' : 'transparent';
+    btn.style.fontWeight = active ? '700' : '600';
+    panel.style.display = active ? 'block' : 'none';
+  });
+}
+
+const BLOG_LAYOUT_KEY = 'taitangau_blog_layout';
+function getBlogLayout() {
+  try { return JSON.parse(localStorage.getItem(BLOG_LAYOUT_KEY)) || {}; } catch(e) { return {}; }
+}
+function cmsBlogFontSelect(font, el) {
+  document.querySelectorAll('[id^=blogfont-]').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+function cmsSaveBlogLayout() {
+  const cfg = {
+    showCover:    document.getElementById('cms-blog-show-cover')?.checked ?? true,
+    showSidebar:  document.getElementById('cms-blog-show-sidebar')?.checked ?? true,
+    showRelated:  document.getElementById('cms-blog-show-related')?.checked ?? true,
+    showProgress: document.getElementById('cms-blog-show-progress')?.checked ?? true,
+    showShare:    document.getElementById('cms-blog-show-share')?.checked ?? true,
+    fontSize:     document.getElementById('cms-blog-fontsize')?.value || '17',
+    font:         document.querySelector('[id^=blogfont-].active')?.id?.replace('blogfont-','') || 'serif'
+  };
+  localStorage.setItem(BLOG_LAYOUT_KEY, JSON.stringify(cfg));
+  applyBlogLayout(cfg);
+  showToast('✅ Đã lưu giao diện blog');
+}
+function cmsResetBlogLayout() {
+  localStorage.removeItem(BLOG_LAYOUT_KEY);
+  applyBlogLayout({});
+  cmsInitBlogLayout();
+  showToast('Đã đặt lại');
+}
+function applyBlogLayout(cfg) {
+  const style = document.getElementById('blog-layout-style') || (() => {
+    const s = document.createElement('style'); s.id = 'blog-layout-style'; document.head.appendChild(s); return s;
+  })();
+  const fs = cfg.fontSize || '17';
+  const fontFam = cfg.font === 'sans' ? 'var(--font-body)' : cfg.font === 'mono' ? 'monospace' : 'var(--font-heading)';
+  style.textContent = `
+    .post-body { font-size: ${fs}px; font-family: ${fontFam}; }
+    ${cfg.showProgress === false ? '#reading-progress { display:none!important; }' : ''}
+    ${cfg.showShare === false ? '.post-share { display:none!important; }' : ''}
+    ${cfg.showSidebar === false ? '#post-detail-sidebar { display:none!important; }' : ''}
+    ${cfg.showRelated === false ? '.related-posts { display:none!important; }' : ''}
+    ${cfg.showCover === false ? '.post-cover-img { display:none!important; }' : ''}
+  `;
+}
+function cmsInitBlogLayout() {
+  const cfg = getBlogLayout();
+  const s = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val !== false; };
+  s('cms-blog-show-cover',    cfg.showCover);
+  s('cms-blog-show-sidebar',  cfg.showSidebar);
+  s('cms-blog-show-related',  cfg.showRelated);
+  s('cms-blog-show-progress', cfg.showProgress);
+  s('cms-blog-show-share',    cfg.showShare);
+  const fsEl = document.getElementById('cms-blog-fontsize');
+  const fsVal = document.getElementById('cms-blog-fontsize-val');
+  if (fsEl && cfg.fontSize) { fsEl.value = cfg.fontSize; if (fsVal) fsVal.textContent = cfg.fontSize + 'px'; }
+  if (cfg.font) {
+    document.querySelectorAll('[id^=blogfont-]').forEach(b => b.classList.remove('active'));
+    const fb = document.getElementById('blogfont-' + cfg.font);
+    if (fb) fb.classList.add('active');
+  }
+  applyBlogLayout(cfg);
+}
+
 // Layout CMS (kept for applyLayout)
 const LAYOUT_KEY = 'taitangau_layout';
 
@@ -6805,7 +6971,8 @@ function openPost(idx) {
   document.getElementById('post-detail-page').style.display = 'block';
   const _rp = document.getElementById('reading-progress'); if(_rp) _rp.style.width = '0%';
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  document.title = post.title + ' – ' + s.sitename;
+  const postUrl = window.location.origin + '/bai-viet/' + (post.slug || String(idx));
+  updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: postUrl });
   if (!window._routerRestoring) {
     const slug = post.slug || String(idx);
     try { history.pushState({ view: 'post', idx: idx, slug: slug }, '', '/bai-viet/' + slug); } catch(e) {}
@@ -6871,6 +7038,7 @@ function _showHome(cat) {
   document.getElementById('blog-home').style.display = '';
   const _rp = document.getElementById('reading-progress'); if(_rp) _rp.style.width = '0%';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateMetaTags({ title: '', desc: data.settings.tagline, image: (data.posts.find(p=>p.featured)||data.posts[0]||{}).image||'', url: window.location.origin });
   document.title = data.settings.sitename + ' – ' + data.settings.tagline;
   renderPosts();
   document.querySelectorAll('nav a, .filter-btn').forEach(a => a.classList.remove('active'));
@@ -6917,7 +7085,7 @@ function renderFilterBar() {
     <button class="filter-btn ${currentCategory==='all'?'active':''}" onclick="filterCat('all',this,event)">Tất cả</button>
     ${cats.map(c => `
       <button class="filter-btn ${currentCategory===c.name?'active':''}" onclick="filterCat('${escHtml(c.name)}',this,event)">
-        ${c.emoji} ${escHtml(c.name)}
+        ${escHtml(c.name)}
       </button>`).join('')}
   `;
 }
