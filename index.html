@@ -66,9 +66,22 @@ function loadFirebase(callback) {
   initFirebase().then(() => callback && callback());
 }
 
-// Đăng nhập Firebase với email admin
+// Load firebase-auth SDK lazily rồi mới sign in
 async function _fbSignIn(email, password) {
   await initFirebase();
+  // Load firebase-auth nếu chưa có
+  if (!window._auth) {
+    await new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js';
+      s.onload = () => {
+        try { window._auth = firebase.auth(); } catch(e) {}
+        resolve();
+      };
+      s.onerror = resolve;
+      document.head.appendChild(s);
+    });
+  }
   if (!window._auth) return false;
   try {
     await window._auth.signInWithEmailAndPassword(email, password);
@@ -94,10 +107,9 @@ function initFirebase() {
     if (!cfg.apiKey || cfg.apiKey === 'YOUR_API_KEY') { resolve(false); return; }
     const scripts = [
       'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
-      'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js',
       'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js',
       'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js'
-    ];
+    ]; // firebase-auth loaded lazily when CMS opens
     let loaded = 0;
     scripts.forEach(src => {
       const s = document.createElement('script'); s.src = src;
@@ -1242,7 +1254,7 @@ function initFirebase() {
 
   /* Builder 3-pane layout */
   .lpb-editor {
-    display: flex; flex: 1; overflow: hidden;
+    display: flex; flex: 1; overflow: hidden; min-height: 0;
   }
   /* Left: Block palette */
   .lpb-palette {
@@ -1269,9 +1281,9 @@ function initFirebase() {
 
   /* Center: Canvas */
   .lpb-canvas-wrap {
-    flex: 1; background: #e9e9e9; overflow-y: auto;
+    flex: 1; background: #e9e9e9; overflow-y: scroll;
     display: flex; flex-direction: column; align-items: center;
-    padding: 28px 24px; gap: 0;
+    padding: 28px 24px; gap: 0; min-height: 0;
   }
   .lpb-canvas-zoom-bar {
     display: flex; align-items: center; gap: 8px;
@@ -3875,8 +3887,28 @@ function _loadAndRenderFast() {
 
 async function _syncFirebaseBackground() {
   try {
+    // Cache TTL: nếu cache mới hơn 5 phút → skip Firebase fetch, dùng cache
+    const CACHE_TTL = 5 * 60 * 1000; // 5 phút
+    const lastSync = parseInt(localStorage.getItem('taitangau_last_sync') || '0');
+    const cacheAge = Date.now() - lastSync;
+    const hasFreshCache = cacheAge < CACHE_TTL && !!localStorage.getItem('taitangau_data');
+    if (hasFreshCache) {
+      console.log('⚡ Using fresh cache (' + Math.round(cacheAge/1000) + 's old), skip Firebase');
+      // Load landingPages từ localStorage (cache riêng)
+      try {
+        const lpCache = localStorage.getItem('taitangau_landing_pages');
+        if (lpCache) landingPages = JSON.parse(lpCache);
+      } catch(e) {}
+      window._fbFullyLoaded = true;
+      const _p = location.pathname.replace(/^\//, '');
+      const _isSlug = !!_p && !_p.startsWith('bai-viet') && !_p.startsWith('danh-muc');
+      if (_isSlug) _openBySlug(_p);
+      return;
+    }
     const ok = await initFirebase();
     if (ok) await _pullFirebase();
+    // Lưu thời điểm sync
+    try { localStorage.setItem('taitangau_last_sync', String(Date.now())); } catch(e) {}
   } catch(e) { console.warn('Background sync error:', e); }
 }
 
@@ -4030,10 +4062,13 @@ async function _pullFirebase() {
 function _cacheLocal() {
   try { const o = Object.assign({}, data); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
   try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
+  // Lưu thời điểm cache để TTL check
+  try { localStorage.setItem('taitangau_last_sync', String(Date.now())); } catch(e) {}
 }
 
 async function saveData(d) {
   try { const o = Object.assign({}, d); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
+  try { localStorage.removeItem('taitangau_last_sync'); } catch(e) {} // force next visitor to re-fetch
   if (!_fbReady || !_db) return;
   try {
     const {password, ...pub} = d.settings;
@@ -6855,8 +6890,6 @@ function lpbBuildFullHTML(lp) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escHtml(lp.title || 'Landing Page')}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Nunito Sans',sans-serif;color:#333;background:#fff}
@@ -6938,7 +6971,7 @@ function lpbNavExtend(page, el) {
   if (page === 'lpbuilder') {
     // Dùng classList để không conflict với showCmsApp
     if (appWrap) { appWrap.classList.remove('active'); appWrap.style.display = ''; }
-    if (lpbPanel) lpbPanel.style.display = 'flex';
+    if (lpbPanel) { lpbPanel.style.display = 'flex'; lpbPanel.style.flexDirection = 'column'; lpbPanel.style.height = '100vh'; }
   } else {
     if (appWrap) { appWrap.style.display = ''; appWrap.classList.add('active'); }
     if (lpbPanel) lpbPanel.style.display = 'none';
