@@ -3960,8 +3960,9 @@ async function _pullFirebase() {
     // Re-render với dữ liệu mới nhất từ Firebase
     renderNav(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
     const _cmsOpen0 = document.getElementById('cms-page').classList.contains('active');
-    const _postOpen0 = document.getElementById('post-detail-page')?.style.display !== 'none';
-    const _lpOpen0 = document.getElementById('lp-viewer-page')?.style.display !== 'none';
+    // Dùng === 'block' thay vì !== 'none' để tránh false positive khi inline style chưa được set
+    const _postOpen0 = document.getElementById('post-detail-page')?.style.display === 'block';
+    const _lpOpen0 = document.getElementById('lp-viewer-page')?.style.display === 'block';
     // Chỉ render home nếu URL không phải /slug (để tránh đè 404 hoặc LP)
     const _pendingPath = location.pathname.replace(/^\//, '');
     const _urlIsSlug = _pendingPath
@@ -4007,7 +4008,7 @@ async function _pullFirebase() {
       // Tự tạo slug từ title nếu chưa có
       if (!obj.slug && obj.title) {
         obj.slug = obj.title.toLowerCase()
-          .normalize('NFD').replace(/[̀-ͯ]/g,'')
+          .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
           .replace(/đ/gi,'d').replace(/[^a-z0-9\s-]/g,'')
           .trim().replace(/\s+/g,'-').replace(/-+/g,'-').substring(0,60);
       } else if (!obj.slug) {
