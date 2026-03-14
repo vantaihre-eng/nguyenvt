@@ -3962,109 +3962,89 @@ function _loadLocal() {
 async function _pullFirebase() {
   if (!_db) return;
   try {
-    // Priority 1: fetch critical data trước (posts, settings, categories, pages)
-    const [ps, ss, cs, pgs] = await Promise.all([
+    const _pendingPath = location.pathname.replace(/^\//, '');
+    const _urlIsSlug = !!_pendingPath
+      && !_pendingPath.startsWith('bai-viet')
+      && !_pendingPath.startsWith('danh-muc');
+    const _cmsOpen = document.getElementById('cms-page').classList.contains('active');
+
+    // Fetch tất cả trong 1 lần - đơn giản, không chia priority
+    const [ps, ss, cs, pgs, lps, ims, themeSnap, layoutSnap, mobileSnap] = await Promise.all([
       _db.collection('posts').orderBy('date','desc').get(),
       _db.collection('site').doc('settings').get(),
       _db.collection('site').doc('categories').get(),
       _db.collection('pages').get(),
-    ]);
-
-    // Apply critical data + render ngay
-    if (!ps.empty) data.posts = ps.docs.map(d => ({_id:d.id, ...d.data()}));
-    if (ss.exists) {
-      const fbSettings = ss.data();
-      if (fbSettings.sidebarWidgets && Array.isArray(fbSettings.sidebarWidgets) && fbSettings.sidebarWidgets.length === 4) {
-        try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(fbSettings.sidebarWidgets)); } catch(e) {}
-      }
-      if (fbSettings.sidebarVisibleHome !== undefined && localStorage.getItem('taitangau_sidebar_home') === null) {
-        try { localStorage.setItem('taitangau_sidebar_home', fbSettings.sidebarVisibleHome ? '1' : '0'); } catch(e) {}
-      }
-      data.settings = Object.assign({}, data.settings, fbSettings);
-      data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, fbSettings?.social||{});
-    }
-    // Apply categories và pages
-    const _defaultCats = data.categories.length ? [...data.categories] : [];
-    if (cs.exists && cs.data().list) data.categories = cs.data().list;
-    else if (_defaultCats.length) data.categories = _defaultCats;
-    if (!pgs.empty) data.pages = pgs.docs.map(d => ({_id:d.id, ...d.data()}));
-
-    // Re-render với dữ liệu mới nhất từ Firebase
-    renderNav(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
-    const _cmsOpen0 = document.getElementById('cms-page').classList.contains('active');
-    // Dùng === 'block' thay vì !== 'none' để tránh false positive khi inline style chưa được set
-    const _postOpen0 = document.getElementById('post-detail-page')?.style.display === 'block';
-    const _lpOpen0 = document.getElementById('lp-viewer-page')?.style.display === 'block';
-    // Chỉ render home nếu URL không phải /slug (để tránh đè 404 hoặc LP)
-    const _pendingPath = location.pathname.replace(/^\//, '');
-    const _urlIsSlug = _pendingPath
-      && !_pendingPath.startsWith('bai-viet')
-      && !_pendingPath.startsWith('danh-muc')
-      && !_pendingPath.startsWith('page/')
-      && !_pendingPath.startsWith('lp/');
-    if (!_cmsOpen0 && !_postOpen0 && !_lpOpen0 && !_urlIsSlug) {
-      renderHero(); renderPosts();
-    }
-    if (document.getElementById('cmspage-layout')?.style.display !== 'none') cmsRenderSidebarOrder();
-
-    // Priority 2: fetch non-critical data ngầm (images, landingPages, theme, layout, mobile)
-    const [ims, lps, themeSnap, layoutSnap, mobileSnap] = await Promise.all([
-      _db.collection('images').get(),
       _db.collection('landingPages').get(),
+      _db.collection('images').get(),
       _db.collection('site').doc('theme').get(),
       _db.collection('site').doc('layout').get(),
       _db.collection('site').doc('mobile').get()
     ]);
 
-    // Process non-critical data
-    data.images = []; landingPages = [];
-    if (themeSnap.exists) {
-      const themeData = themeSnap.data();
-      localStorage.setItem(THEME_KEY, JSON.stringify(themeData));
-      applyTheme(themeData);
+    // Apply settings
+    if (ss.exists) {
+      const s = ss.data();
+      if (s.sidebarWidgets) try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(s.sidebarWidgets)); } catch(e) {}
+      data.settings = Object.assign({}, data.settings, s);
+      data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, s.social||{});
     }
-    if (layoutSnap && layoutSnap.exists) {
-      const ld = layoutSnap.data();
-      localStorage.setItem(LAYOUT_KEY, JSON.stringify(ld));
-      applyLayout(ld);
+    const _defaultCats = data.categories.length ? [...data.categories] : [];
+    if (cs.exists && cs.data().list) data.categories = cs.data().list;
+    else if (_defaultCats.length) data.categories = _defaultCats;
+    if (!ps.empty) data.posts  = ps.docs.map(d => ({_id:d.id, ...d.data()}));
+    if (!pgs.empty) data.pages = pgs.docs.map(d => ({_id:d.id, ...d.data()}));
+    if (!ims.empty) data.images = ims.docs.map(d => ({_id:d.id, ...d.data()}));
+
+    // Apply landingPages
+    if (!lps.empty) {
+      landingPages = lps.docs.map(d => {
+        const obj = {id: d.id, ...d.data()};
+        if (!obj.slug) {
+          obj.slug = obj.title
+            ? obj.title.toLowerCase().normalize('NFD')
+                .replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d')
+                .replace(/[^a-z0-9\s-]/g,'').trim()
+                .replace(/\s+/g,'-').replace(/-+/g,'-').substring(0,60)
+            : d.id;
+        }
+        return obj;
+      });
+    } else {
+      landingPages = [];
     }
-    if (mobileSnap && mobileSnap.exists) {
-      const md = mobileSnap.data();
-      localStorage.setItem(MOBILE_KEY, JSON.stringify(md));
-      applyMobileCfg(md);
-    }
-    
-    if (!ims.empty) data.images   = ims.docs.map(d => ({_id:d.id, ...d.data()}));
-    if (!lps.empty) landingPages  = lps.docs.map(d => {
-      const obj = {id: d.id, ...d.data()};
-      if (!obj.slug && obj.title) {
-        obj.slug = obj.title.toLowerCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-          .replace(/đ/gi,'d').replace(/[^a-z0-9\s-]/g,'')
-          .trim().replace(/\s+/g,'-').replace(/-+/g,'-').substring(0,60);
-      } else if (!obj.slug) {
-        obj.slug = d.id;
-      }
-      return obj;
-    });
+
+    // Apply theme/layout/mobile
+    if (themeSnap.exists) { const t = themeSnap.data(); localStorage.setItem(THEME_KEY, JSON.stringify(t)); applyTheme(t); }
+    if (layoutSnap?.exists) { const l = layoutSnap.data(); localStorage.setItem(LAYOUT_KEY, JSON.stringify(l)); applyLayout(l); }
+    if (mobileSnap?.exists) { const m = mobileSnap.data(); localStorage.setItem(MOBILE_KEY, JSON.stringify(m)); applyMobileCfg(m); }
+
     _cacheLocal();
     console.log('✅ Firebase synced:', data.posts.length, 'posts,', landingPages.length, 'LPs');
 
-    // Xử lý URL /slug SAU KHI landingPages đã được fill đầy đủ
+    // Render + route - tất cả data đã sẵn sàng
+    renderNav(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
+    if (document.getElementById('cmspage-layout')?.style.display !== 'none') cmsRenderSidebarOrder();
+
     window._fbFullyLoaded = true;
-    if (_urlIsSlug && !_cmsOpen0 && !_postOpen0 && !_lpOpen0) {
-      _openBySlug(_pendingPath);
-    } else if (!_cmsOpen0 && !_postOpen0 && !_lpOpen0 && !_urlIsSlug) {
-      // URL là trang chủ → render home với data mới nhất
-      renderHero(); renderPosts();
+
+    const _postOpen = document.getElementById('post-detail-page')?.style.display === 'block';
+    const _lpOpen   = document.getElementById('lp-viewer-page')?.style.display === 'block';
+
+    if (!_cmsOpen && !_postOpen && !_lpOpen) {
+      if (_urlIsSlug) {
+        _openBySlug(_pendingPath);
+      } else {
+        renderHero(); renderPosts();
+      }
     }
+
   } catch(e) { console.warn('Firebase pull error:', e); }
 }
 
 function _cacheLocal() {
   try { const o = Object.assign({}, data); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
   try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
-  // Lưu thời điểm cache để TTL check
+  try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
   try { localStorage.setItem('taitangau_last_sync', String(Date.now())); } catch(e) {}
 }
 
