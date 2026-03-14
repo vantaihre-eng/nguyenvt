@@ -4037,24 +4037,26 @@ async function _pullFirebase() {
     if (!ims.empty) data.images   = ims.docs.map(d => ({_id:d.id, ...d.data()}));
     if (!lps.empty) landingPages  = lps.docs.map(d => {
       const obj = {id: d.id, ...d.data()};
-      // Tự tạo slug từ title nếu chưa có
       if (!obj.slug && obj.title) {
         obj.slug = obj.title.toLowerCase()
           .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
           .replace(/đ/gi,'d').replace(/[^a-z0-9\s-]/g,'')
           .trim().replace(/\s+/g,'-').replace(/-+/g,'-').substring(0,60);
       } else if (!obj.slug) {
-        obj.slug = d.id; // fallback = id
+        obj.slug = d.id;
       }
       return obj;
     });
     _cacheLocal();
-    console.log('✅ Firebase synced (full):', data.posts.length, 'posts,', landingPages.length, 'LPs');
+    console.log('✅ Firebase synced:', data.posts.length, 'posts,', landingPages.length, 'LPs');
 
-    // Sau khi có đủ data (kể cả landingPages), xử lý URL /slug
+    // Xử lý URL /slug SAU KHI landingPages đã được fill đầy đủ
+    window._fbFullyLoaded = true;
     if (_urlIsSlug && !_cmsOpen0 && !_postOpen0 && !_lpOpen0) {
-      window._fbFullyLoaded = true;
       _openBySlug(_pendingPath);
+    } else if (!_cmsOpen0 && !_postOpen0 && !_lpOpen0 && !_urlIsSlug) {
+      // URL là trang chủ → render home với data mới nhất
+      renderHero(); renderPosts();
     }
   } catch(e) { console.warn('Firebase pull error:', e); }
 }
