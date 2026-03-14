@@ -4002,7 +4002,19 @@ async function _pullFirebase() {
     }
     
     if (!ims.empty) data.images   = ims.docs.map(d => ({_id:d.id, ...d.data()}));
-    if (!lps.empty) landingPages  = lps.docs.map(d => ({id:d.id,  ...d.data()}));
+    if (!lps.empty) landingPages  = lps.docs.map(d => {
+      const obj = {id: d.id, ...d.data()};
+      // Tự tạo slug từ title nếu chưa có
+      if (!obj.slug && obj.title) {
+        obj.slug = obj.title.toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g,'')
+          .replace(/đ/gi,'d').replace(/[^a-z0-9\s-]/g,'')
+          .trim().replace(/\s+/g,'-').replace(/-+/g,'-').substring(0,60);
+      } else if (!obj.slug) {
+        obj.slug = d.id; // fallback = id
+      }
+      return obj;
+    });
     _cacheLocal();
     console.log('✅ Firebase synced (full):', data.posts.length, 'posts,', landingPages.length, 'LPs');
 
@@ -6172,13 +6184,16 @@ function lpbRenderList() {
     <tbody>
     ${landingPages.map(lp => `<tr>
       <td><strong>${escHtml(lp.title)}</strong><br><span style="font-size:11px;color:#999">${lp.blocks ? lp.blocks.length : 0} block</span></td>
-      <td><code style="font-size:11px;color:#555;background:#f5f5f5;padding:2px 6px;border-radius:3px">/${escHtml(lp.slug)}</code></td>
+      <td>
+        <code style="font-size:11px;color:#555;background:#f5f5f5;padding:2px 6px;border-radius:3px">/${escHtml(lp.slug || '')}</code>
+        ${!lp.slug ? '<span style="font-size:10px;color:#e85555;display:block;margin-top:2px">⚠️ Chưa có slug</span>' : ''}
+      </td>
       <td><span class="lpb-status-badge ${lp.status === 'published' ? 'published' : 'draft'}">${lp.status === 'published' ? '✅ Công khai' : '📝 Nháp'}</span></td>
       <td style="color:#999;font-size:12px">${lp.updatedAt ? new Date(lp.updatedAt).toLocaleDateString('vi') : ''}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="cms-action-btn" onclick="lpbEdit('${lp.id}')">✏️ Sửa</button>
-          ${lp.status === 'published' ? `<button class="cms-action-btn" onclick="openLandingPage('${escHtml(lp.slug)}')">👁 Xem</button>` : ''}
+          ${lp.status === 'published' ? `<button class="cms-action-btn" onclick="window.open('/' + '${escHtml(lp.slug)}', '_blank')">👁 Xem</button>` : ''}
           <button class="cms-action-btn del" onclick="lpbDelete('${lp.id}')">🗑</button>
         </div>
       </td>
@@ -6800,8 +6815,7 @@ function lpbInitBlockDrag() {
 let lpbImgPickTarget = null;
 function lpbPickImg(blockIdx, field) {
   lpbImgPickTarget = { blockIdx, field };
-  cmsRenderImgPicker();
-  document.getElementById('cms-img-picker').classList.add('active');
+  cmsOpenImgPicker(); // cmsOpenImgPicker tự render gallery + add active
   // Override insert to update LPB block
   window._lpbImgInsert = (src) => {
     if (!lpbImgPickTarget) return;
@@ -6812,17 +6826,7 @@ function lpbPickImg(blockIdx, field) {
   };
 }
 
-// Patch cmsSelectImg to also handle LPB
-const _origCmsSelectImg = window.cmsSelectImg;
-function cmsSelectImg(idx) {
-  if (window._lpbImgInsert) {
-    const src = data.images[idx] ? data.images[idx].src : '';
-    window._lpbImgInsert(src);
-    window._lpbImgInsert = null;
-    return;
-  }
-  if (_origCmsSelectImg) _origCmsSelectImg(idx);
-}
+// cmsPickImage handles _lpbImgInsert directly
 
 // ── Full HTML export for preview ──
 function lpbBuildFullHTML(lp) {
