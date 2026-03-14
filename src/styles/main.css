@@ -2347,6 +2347,24 @@ html, body {
     margin-bottom: 20px !important;
   }
 
+  .lp-columns {
+    max-width: 1160px;
+    margin: 0 auto;
+    display: grid;
+    box-sizing: border-box;
+  }
+  .lp-column {
+    box-sizing: border-box;
+  }
+  @media (max-width: 768px) {
+    .lp-columns {
+      grid-template-columns: 1fr !important;
+      padding-left: 20px !important;
+      padding-right: 20px !important;
+      gap: 30px !important;
+    }
+  }
+
   .lp-hero-btn {
     padding: 12px 24px !important;
     font-size: 14px !important;

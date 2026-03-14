@@ -2189,9 +2189,30 @@ let lpbSelectedIdx = null;   // index of selected block
 let lpbDragSrcIdx = null;    // drag reorder source index
 let lpbDragType = null;      // 'palette' or 'reorder'
 
-function saveLandingPages() {
+async function saveLandingPages() {
   try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
+  if (!_fbReady || !_db) return;
+  try {
+    for (const lp of (landingPages || [])) {
+      const { id, ...lpd } = lp;
+      if (id && id.startsWith('lp')) {
+        await _db.collection('landingPages').doc(id).set(lpd, { merge: true });
+      } else {
+        const r = await _db.collection('landingPages').add(lpd);
+        lp.id = r.id;
+      }
+    }
+  } catch(e) { console.error('saveLandingPages Firebase:', e); }
 }
+
+async function deleteLandingPage(id) {
+  if (id && _fbReady && _db) {
+    try { await _db.collection('landingPages').doc(id).delete(); } catch(e) {}
+  }
+  landingPages = landingPages.filter(p => p.id !== id);
+  saveLandingPages();
+}
+
 
 // ── Block defaults ──
 const LPB_DEFAULTS = {
@@ -2211,6 +2232,10 @@ const LPB_DEFAULTS = {
   '2col':  { bgColor: '#ffffff', col1Html: '<p>Nội dung cột trái</p>', col2Html: '<p>Nội dung cột phải</p>',
              col1Bg: 'transparent', col2Bg: 'transparent',
              ratio: '1-1', padTop: 40, padBottom: 40 },
+  'columns': { bgColor: '#ffffff', columns: [
+               { html: '<p>Cột 1</p>', bg: 'transparent' },
+               { html: '<p>Cột 2</p>', bg: 'transparent' }
+             ], padTop: 40, padBottom: 40, gap: 20 },
   cards:   { bgColor: '#f7f7f7', count: 3, padTop: 48, padBottom: 48,
              cards: [
                { icon: '⚡', title: 'Tính năng 1', text: 'Mô tả ngắn về tính năng đầu tiên của bạn.' },
@@ -2274,6 +2299,28 @@ function lpbSave() {
   if (document.getElementById('lpb-list-wrap')) lpbRenderList();
 }
 
+function lpbPreview() {
+  const title = document.getElementById('lpb-page-title').value.trim() || 'Preview';
+  const slug = document.getElementById('lpb-page-slug').value.trim();
+  const lp = { title, slug, blocks: lpbBlocks, status: 'preview' };
+  const content = document.getElementById('lp-viewer-content');
+  if (!content) return;
+  content.innerHTML = (lp.blocks || []).map(b => lpbBlockHTML(b)).join('');
+  document.getElementById('blog-home').style.display = 'none';
+  document.getElementById('post-detail-page').style.display = 'none';
+  document.getElementById('cms-page').style.display = 'none';
+  document.getElementById('lp-viewer-page').style.display = 'block';
+  window.scrollTo(0, 0);
+  showToast('👁️ Chế độ xem trước');
+}
+
+function lpbPickImg(idx, field) {
+  window._lpbImgInsert = (url) => {
+    lpbUpdateProp(idx, field, url);
+  };
+  cmsOpenImgPicker();
+}
+
 function lpbDelete(id) {
   if (!confirm('Xoá landing page này?')) return;
   deleteLandingPage(id).then(() => { lpbRenderList(); showToast('Đã xóa'); });
@@ -2308,19 +2355,26 @@ function lpbRenderList() {
       <th>Tên trang</th><th>Slug / URL</th><th>Trạng thái</th><th>Cập nhật</th><th>Thao tác</th>
     </tr></thead>
     <tbody>
-    ${landingPages.map(lp => `<tr>
+    ${landingPages.map(lp => {
+      const pubUrl = window.location.origin + '/lp/' + lp.slug;
+      return `<tr>
       <td><strong>${escHtml(lp.title)}</strong><br><span style="font-size:11px;color:#999">${lp.blocks ? lp.blocks.length : 0} block</span></td>
-      <td><code style="font-size:11px;color:#555;background:#f5f5f5;padding:2px 6px;border-radius:3px">/${escHtml(lp.slug)}</code></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <code style="font-size:11px;color:#555;background:#f5f5f5;padding:2px 6px;border-radius:3px">/lp/${escHtml(lp.slug)}</code>
+          <button class="cms-action-btn" style="padding:2px 6px;font-size:10px" onclick="navigator.clipboard.writeText('${pubUrl}').then(()=>showToast('Đã copy link!'))">📋 Copy</button>
+        </div>
+      </td>
       <td><span class="lpb-status-badge ${lp.status === 'published' ? 'published' : 'draft'}">${lp.status === 'published' ? '✅ Công khai' : '📝 Nháp'}</span></td>
       <td style="color:#999;font-size:12px">${lp.updatedAt ? new Date(lp.updatedAt).toLocaleDateString('vi') : ''}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="cms-action-btn" onclick="lpbEdit('${lp.id}')">✏️ Sửa</button>
-          ${lp.status === 'published' ? `<button class="cms-action-btn" onclick="openLandingPage('${escHtml(lp.slug)}')">👁 Xem</button>` : ''}
+          <button class="cms-action-btn" onclick="openLandingPage('${escHtml(lp.slug)}')">👁 Xem</button>
           <button class="cms-action-btn del" onclick="lpbDelete('${lp.id}')">🗑</button>
         </div>
       </td>
-    </tr>`).join('')}
+    </tr>`}).join('')}
     </tbody>
   </table>`;
 }
@@ -2430,6 +2484,15 @@ function lpbBlockHTML(block) {
         </div>
       </div>`;
     }
+    case 'columns': {
+      const cols = p.columns || [];
+      return `<div style="background:${p.bgColor||'#fff'}">
+        <div class="lp-columns" style="display:grid;grid-template-columns:repeat(${cols.length},1fr);gap:${p.gap||20}px;padding:${p.padTop||40}px 48px ${p.padBottom||40}px">
+          ${cols.map(c => `<div class="lp-column" style="background:${c.bg||'transparent'};padding:12px;border-radius:4px">${c.html||''}</div>`).join('')}
+        </div>
+      </div>`;
+    }
+
     case 'cards': {
       const cards = p.cards || [];
       const cols = Math.min(cards.length, 4);
@@ -2698,6 +2761,37 @@ function lpbPropsHTML(block) {
         </div>
       </div>`;
 
+    case 'columns': return `
+      <div class="lpb-props-body">
+        <div class="lpb-prop-group">
+          <div class="lpb-prop-group-title">Tổng quan</div>
+          <div class="lpb-prop-row"><label>Số cột</label>
+            <select onchange="lpbUpdateColumnCount(${i},parseInt(this.value))">
+              ${[1,2,3,4].map(n=>`<option value="${n}"${(p.columns||[]).length===n?' selected':''}>${n} cột</option>`).join('')}
+            </select></div>
+          <div class="lpb-prop-row"><label>Khoảng cách (gap)</label>
+            <input type="number" value="${p.gap||20}" oninput="${updN('gap')}"></div>
+          <div class="lpb-prop-row"><label>Màu nền section</label>
+            <div class="lpb-prop-inline"><input type="color" value="${p.bgColor||'#fff'}" oninput="${upd('bgColor')}"><input type="text" value="${p.bgColor||'#fff'}" oninput="${upd('bgColor')}"></div></div>
+        </div>
+        ${(p.columns||[]).map((c,ci) => `
+        <div class="lpb-prop-group">
+          <div class="lpb-prop-group-title">Cột ${ci+1}</div>
+          <div class="lpb-prop-row"><label>HTML Nội dung</label>
+            <textarea rows="4" oninput="lpbUpdateColumnProp(${i},${ci},'html',this.value)">${(c.html||'').replace(/</g,'&lt;')}</textarea></div>
+          <div class="lpb-prop-row"><label>Màu nền cột</label>
+            <div class="lpb-prop-inline"><input type="color" value="${c.bg&&c.bg!=='transparent'?c.bg:'#ffffff'}" oninput="lpbUpdateColumnProp(${i},${ci},'bg',this.value)"></div></div>
+        </div>`).join('')}
+        <div class="lpb-prop-group">
+          <div class="lpb-prop-group-title">Padding dọc (px)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="lpb-prop-row"><label>Trên</label><input type="number" value="${p.padTop||40}" oninput="${updN('padTop')}"></div>
+            <div class="lpb-prop-row"><label>Dưới</label><input type="number" value="${p.padBottom||40}" oninput="${updN('padBottom')}"></div>
+          </div>
+        </div>
+      </div>`;
+
+
     case 'cards': return `
       <div class="lpb-props-body">
         <div class="lpb-prop-group">
@@ -2781,6 +2875,29 @@ function lpbUpdateCard(blockIdx, cardIdx, field, value) {
     lpbRefreshBlock(blockIdx);
   }
 }
+
+function lpbUpdateColumnProp(blockIdx, colIdx, field, value) {
+  const cols = lpbBlocks[blockIdx].props.columns;
+  if (cols && cols[colIdx]) {
+    cols[colIdx][field] = value;
+    lpbRefreshBlock(blockIdx);
+  }
+}
+
+function lpbUpdateColumnCount(blockIdx, count) {
+  const props = lpbBlocks[blockIdx].props;
+  const cur = props.columns || [];
+  while (cur.length < count) cur.push({ html: `<p>Cột ${cur.length+1}</p>`, bg: 'transparent' });
+  props.columns = cur.slice(0, count);
+  lpbSelectedIdx = blockIdx;
+  lpbRenderCanvas();
+  setTimeout(() => {
+    lpbSelectBlock(blockIdx, null);
+    lpbRenderProps();
+  }, 0);
+}
+
+
 
 function lpbUpdateCardsCount(blockIdx, count) {
   const props = lpbBlocks[blockIdx].props;
@@ -3029,7 +3146,7 @@ function openLandingPage(slug) {
   document.title = lp.title + ' – ' + (data.settings.sitename || '');
   document.getElementById('main-nav').querySelectorAll('a').forEach(a => a.classList.remove('active'));
   if (!window._routerRestoring) {
-    try { history.pushState({ view: 'lp', slug: slug }, '', '/page/' + slug); } catch(e) {}
+    try { history.pushState({ view: 'lp', slug: slug }, '', '/lp/' + slug); } catch(e) {}
   }
 }
 
@@ -4074,8 +4191,12 @@ const functionsToExpose = {
   cmsSelectImg, cmsUploadImg, rteCommand, rteLink, rteImg, rteColor,
   openMobileCats, closeMobileCats, openMobileSearch, mobileScrollTop,
   lpbOpen, lpbClose, lpbAddBlock, lpbUpdateProp, lpbDeleteBlock,
-  renderPosts, renderSidebar, loadData, init, routerInit, showToast
+  lpbUpdateColumnProp, lpbUpdateColumnCount,
+  renderPosts, renderSidebar, loadData, init, routerInit, showToast,
+  lpbNew, lpbEdit, lpbSave, lpbDelete, lpbPreview, lpbPickImg
 };
+
+
 Object.keys(functionsToExpose).forEach(fn => {
   window[fn] = functionsToExpose[fn];
 });
