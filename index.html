@@ -3892,18 +3892,30 @@ async function _syncFirebaseBackground() {
     const lastSync = parseInt(localStorage.getItem('taitangau_last_sync') || '0');
     const cacheAge = Date.now() - lastSync;
     const hasFreshCache = cacheAge < CACHE_TTL && !!localStorage.getItem('taitangau_data');
-    if (hasFreshCache) {
-      console.log('⚡ Using fresh cache (' + Math.round(cacheAge/1000) + 's old), skip Firebase');
-      // Load landingPages từ localStorage (cache riêng)
-      try {
-        const lpCache = localStorage.getItem('taitangau_landing_pages');
-        if (lpCache) landingPages = JSON.parse(lpCache);
-      } catch(e) {}
+    // Load LP từ cache
+    try {
+      const lpCache = localStorage.getItem('taitangau_landing_pages');
+      if (lpCache) landingPages = JSON.parse(lpCache);
+    } catch(e) {}
+
+    const _needLp = (() => {
+      const p = location.pathname.replace(/^\//, '');
+      return !!p && !p.startsWith('bai-viet') && !p.startsWith('danh-muc');
+    })();
+
+    // Dùng cache nếu: cache còn tươi VÀ (không cần LP hoặc đã có LP trong cache)
+    if (hasFreshCache && (!_needLp || landingPages.length > 0)) {
+      console.log('⚡ Cache hit (' + Math.round(cacheAge/1000) + 's), LPs:', landingPages.length);
       window._fbFullyLoaded = true;
-      const _p = location.pathname.replace(/^\//, '');
-      const _isSlug = !!_p && !_p.startsWith('bai-viet') && !_p.startsWith('danh-muc');
-      if (_isSlug) _openBySlug(_p);
+      if (_needLp) {
+        const _p = location.pathname.replace(/^\//, '');
+        _openBySlug(_p);
+      }
       return;
+    }
+    // Cache tươi nhưng LP trống → vẫn fetch Firebase để lấy LP
+    if (hasFreshCache && _needLp && landingPages.length === 0) {
+      console.log('⚡ Cache hit but LP empty, fetching Firebase for LP...');
     }
     const ok = await initFirebase();
     if (ok) await _pullFirebase();
