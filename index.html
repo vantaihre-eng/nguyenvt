@@ -3747,6 +3747,19 @@ async function loadData() {
   if (ok) await _pullFirebase();
 }
 
+// Phiên bản nhanh: load local + render ngay, Firebase sync ngầm không block
+function _loadAndRenderFast() {
+  _loadLocal();
+  return; // render sẽ được gọi ngay trong init()
+}
+
+async function _syncFirebaseBackground() {
+  try {
+    const ok = await initFirebase();
+    if (ok) await _pullFirebase();
+  } catch(e) { console.warn('Background sync error:', e); }
+}
+
 // Upload file ảnh lên Firebase Storage, trả về download URL
 async function uploadImageToStorage(file) {
   // Đảm bảo Firebase đã init trước khi upload (load async)
@@ -3797,11 +3810,43 @@ function _loadLocal() {
 async function _pullFirebase() {
   if (!_db) return;
   try {
-    const [ps, ss, cs, pgs, ims, lps, themeSnap, layoutSnap, mobileSnap] = await Promise.all([
+    // Priority 1: fetch critical data trước (posts, settings, categories, pages)
+    const [ps, ss, cs, pgs] = await Promise.all([
       _db.collection('posts').orderBy('date','desc').get(),
       _db.collection('site').doc('settings').get(),
       _db.collection('site').doc('categories').get(),
       _db.collection('pages').get(),
+    ]);
+
+    // Apply critical data + render ngay
+    if (!ps.empty) data.posts = ps.docs.map(d => ({_id:d.id, ...d.data()}));
+    if (ss.exists) {
+      const fbSettings = ss.data();
+      if (fbSettings.sidebarWidgets && Array.isArray(fbSettings.sidebarWidgets) && fbSettings.sidebarWidgets.length === 4) {
+        try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(fbSettings.sidebarWidgets)); } catch(e) {}
+      }
+      if (fbSettings.sidebarVisibleHome !== undefined && localStorage.getItem('taitangau_sidebar_home') === null) {
+        try { localStorage.setItem('taitangau_sidebar_home', fbSettings.sidebarVisibleHome ? '1' : '0'); } catch(e) {}
+      }
+      data.settings = Object.assign({}, data.settings, fbSettings);
+      data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, fbSettings?.social||{});
+    }
+    // Apply categories và pages
+    const _defaultCats = data.categories.length ? [...data.categories] : [];
+    if (cs.exists && cs.data().list) data.categories = cs.data().list;
+    else if (_defaultCats.length) data.categories = _defaultCats;
+    if (!pgs.empty) data.pages = pgs.docs.map(d => ({_id:d.id, ...d.data()}));
+
+    // Re-render với dữ liệu mới nhất từ Firebase
+    renderNav(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
+    const _cmsOpen0 = document.getElementById('cms-page').classList.contains('active');
+    const _postOpen0 = document.getElementById('post-detail-page')?.style.display !== 'none';
+    const _lpOpen0 = document.getElementById('lp-viewer-page')?.style.display !== 'none';
+    if (!_cmsOpen0 && !_postOpen0 && !_lpOpen0) { renderHero(); renderPosts(); }
+    if (document.getElementById('cmspage-layout')?.style.display !== 'none') cmsRenderSidebarOrder();
+
+    // Priority 2: fetch non-critical data ngầm (images, landingPages, theme, layout, mobile)
+    const [ims, lps, themeSnap, layoutSnap, mobileSnap] = await Promise.all([
       _db.collection('images').get(),
       _db.collection('landingPages').get(),
       _db.collection('site').doc('theme').get(),
@@ -3809,9 +3854,8 @@ async function _pullFirebase() {
       _db.collection('site').doc('mobile').get()
     ]);
 
-    const _defaultCats = data.categories.length ? [...data.categories] : [];
-    data.posts = []; data.categories = []; data.pages = []; data.images = []; landingPages = [];
-    
+    // Process non-critical data
+    data.images = []; landingPages = [];
     if (themeSnap.exists) {
       const themeData = themeSnap.data();
       localStorage.setItem(THEME_KEY, JSON.stringify(themeData));
@@ -3828,54 +3872,10 @@ async function _pullFirebase() {
       applyMobileCfg(md);
     }
     
-    if (!ps.empty)  data.posts      = ps.docs.map(d => ({_id:d.id, ...d.data()}));
-    if (ss.exists)  {
-      const fbSettings = ss.data();
-      // Lưu sidebarWidgets từ Firebase vào localStorage nếu có
-      if (fbSettings.sidebarWidgets && Array.isArray(fbSettings.sidebarWidgets) && fbSettings.sidebarWidgets.length === 4) {
-        try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(fbSettings.sidebarWidgets)); } catch(e) {}
-      }
-      // Lưu sidebarVisibleHome từ Firebase vào localStorage nếu có (và localStorage chưa set)
-      if (fbSettings.sidebarVisibleHome !== undefined && localStorage.getItem('taitangau_sidebar_home') === null) {
-        try { localStorage.setItem('taitangau_sidebar_home', fbSettings.sidebarVisibleHome ? '1' : '0'); } catch(e) {}
-      }
-      data.settings = Object.assign({}, data.settings, fbSettings);
-      data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, fbSettings?.social||{});
-    }
-    if (cs.exists && cs.data().list) data.categories = cs.data().list;
-    else if (_defaultCats.length) data.categories = _defaultCats; // Khôi phục default nếu Firebase chưa có categories
-    if (!pgs.empty) data.pages      = pgs.docs.map(d => ({_id:d.id, ...d.data()}));
-    if (!ims.empty) data.images     = ims.docs.map(d => ({_id:d.id, ...d.data()}));
-    if (!lps.empty) landingPages    = lps.docs.map(d => ({id:d.id,  ...d.data()}));
+    if (!ims.empty) data.images   = ims.docs.map(d => ({_id:d.id, ...d.data()}));
+    if (!lps.empty) landingPages  = lps.docs.map(d => ({id:d.id,  ...d.data()}));
     _cacheLocal();
-    console.log('✅ Firebase synced:', data.posts.length, 'posts');
-    renderNav(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
-    // Chỉ render trang chủ nếu CMS không mở và không đang xem bài/trang
-    const _cmsOpen = document.getElementById('cms-page').classList.contains('active');
-    const _postOpen = document.getElementById('post-detail-page') && document.getElementById('post-detail-page').style.display !== 'none';
-    const _lpOpen  = document.getElementById('lp-viewer-page') && document.getElementById('lp-viewer-page').style.display !== 'none';
-    if (!_cmsOpen && !_postOpen && !_lpOpen) {
-      // Nếu URL là /page/ hay /lp/ thì thử mở LP thay vì render trang chủ
-      const _path = location.pathname;
-      const _slug = _path.replace(/^\//, '');
-      // Nếu URL là /slug (không phải trang chủ, bài viết, danh mục)
-      const _isPageUrl = _slug && !_path.startsWith('/bai-viet/') && !_path.startsWith('/danh-muc/');
-      if (_isPageUrl) {
-        const _lp = landingPages.find(p => p.slug === _slug && p.status === 'published');
-        if (_lp) { openLandingPage(_slug); }
-        else {
-          const _pg = (data.pages || []).find(p => p.slug === _slug);
-          if (_pg) { openPage(_slug); }
-          else { renderHero(); renderPosts(); }
-        }
-      } else {
-        renderHero(); renderPosts();
-      }
-    }
-    // Re-render sidebar order nếu đang ở trang layout trong CMS
-    if (document.getElementById('cmspage-layout') && document.getElementById('cmspage-layout').style.display !== 'none') {
-      cmsRenderSidebarOrder();
-    }
+    console.log('✅ Firebase synced (full):', data.posts.length, 'posts,', data.images.length, 'images');
   } catch(e) { console.warn('Firebase pull error:', e); }
 }
 
@@ -7286,27 +7286,25 @@ function getTopTags() {
    INITIALIZATION
 ══════════════════════════════════════════════ */
 async function init() {
-  await loadData();
+  // ── BƯỚC 1: Load localStorage + render ngay (0ms delay) ──
+  _loadAndRenderFast();
   applyFavicon();
-  
-  // Apply saved Theme + Layout
+
+  // Apply Theme + Layout từ cache ngay lập tức
   cmsInitTheme();
   applyLayout(getLayout());
   applyMobileCfg(getMobileCfg());
-  // Sync sidebarVisibleHome vào data.settings để renderSidebar dùng đúng
   data.settings.sidebarVisibleHome = getSidebarVisibleHome();
-  
-  // Render nav + filter (dynamic categories)
+
+  // Render giao diện ngay từ dữ liệu cache
   renderNav();
   renderFilterBar();
-
-  // Render sidebar cho mọi trang
   renderSidebar('sidebar');
   renderFooter();
-
-  // Render trang chủ từ dữ liệu local (trước khi Firebase sync)
   renderHero();
   renderPosts();
+
+  // ── BƯỚC 2: Router (dùng data từ cache trước) ──
 
   // Sample data if empty
   if (data.posts.length === 0) {
@@ -7329,17 +7327,39 @@ async function init() {
 
   // Khởi chạy Route sau khi data Firebase đã tải đầy đủ.
   // Lúc này dữ liệu data.posts đã sẵn sàng để router tìm ID hoặc thay đổi giao diện phù hợp.
-  // Ưu tiên: nếu CMS đã được mở (qua #admin / hashchange) thì không route về home
+  // ── Routing từ cache ──
   if (window._cmsOpened) {
-    // CMS đã mở trước khi init() hoàn thành — không override
+    // CMS đã mở trước khi init() hoàn thành
   } else if (window.location.hash === '#admin') {
     openCMS();
   } else {
-    window._routerInit = true;
     const initState = routerParseUrl();
-    routerApplyState(initState);
-    window._routerInit = false;
+    // Nếu URL là /slug (trang hoặc LP), phải đợi Firebase load xong mới biết đây là gì
+    const _needsFirebase = initState.view === 'slug';
+    if (_needsFirebase) {
+      // Hiện loading tạm, đợi Firebase
+      // Firebase sẽ tự gọi openLandingPage/_openBySlug trong _pullFirebase
+    } else {
+      window._routerInit = true;
+      routerApplyState(initState);
+      window._routerInit = false;
+    }
   }
+
+  // ── BƯỚC 3: Firebase sync ngầm ──
+  // Lưu slug cần mở để _pullFirebase xử lý sau khi sync xong
+  const _pendingSlug = (() => {
+    const p = location.pathname.replace(/^\//, '');
+    return (p && !p.startsWith('bai-viet') && !p.startsWith('danh-muc')) ? p : null;
+  })();
+
+  _syncFirebaseBackground().then(() => {
+    // Sau khi Firebase sync xong, mở trang nếu đang chờ
+    if (_pendingSlug && document.getElementById('lp-viewer-page').style.display === 'none'
+        && document.getElementById('post-detail-page').style.display === 'none') {
+      _openBySlug(_pendingSlug);
+    }
+  });
 
   // Reading progress bar + Smart header hide/show
   let lastScrollTop = 0;
