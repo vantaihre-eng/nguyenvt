@@ -41,7 +41,7 @@
 <title>Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&family=Montserrat:wght@400;700&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400&family=PT+Sans:wght@400;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Sans:wght@400;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Source+Sans+Pro:wght@400;700&family=Source+Serif+Pro:wght@400;700&family=Quicksand:wght@400;700&family=Poppins:wght@400;700&family=Ubuntu:wght@400;700&family=Be+Vietnam+Pro:wght@400;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <!-- Quill WYSIWYG Editor -->
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
@@ -2697,19 +2697,6 @@ html, body {
 
   <!-- LOGIN SCREEN -->
 <!-- CMS Login Modal — hiện độc lập, không phủ toàn trang -->
-<div id="cms-login-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center">
-  <div style="background:#2a2a2a;border:1px solid #3a2e1c;border-radius:10px;padding:48px 40px;width:360px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.5)">
-    <div style="font-family:var(--heading-font);font-size:22px;font-weight:900;color:#fff;text-align:center;margin-bottom:6px">Tài Tàng <span style="color:var(--accent)">Au</span></div>
-    <div style="font-size:11px;letter-spacing:2px;color:#888;text-align:center;margin-bottom:32px">CMS DASHBOARD</div>
-    <label style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;display:block;margin-bottom:8px">MẬT KHẨU</label>
-    <input type="password" id="cms-pass-input" placeholder="Nhập mật khẩu..."
-           onkeydown="if(event.key==='Enter')cmsLogin()"
-           style="width:100%;padding:12px 14px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:6px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:16px">
-    <button onclick="cmsLogin()" style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer">Đăng nhập →</button>
-    <div id="cms-login-err" style="display:none;color:#f87171;font-size:13px;text-align:center;margin-top:12px">Mật khẩu không đúng</div>
-    <button onclick="_hideLoginModal()" style="display:block;margin:16px auto 0;background:none;border:none;color:#666;font-size:12px;cursor:pointer">Huỷ</button>
-  </div>
-</div>
 
 
   <!-- MAIN APP -->
@@ -3016,7 +3003,6 @@ html, body {
 
 
 
-
       <!-- IMAGES PAGE -->
       <div id="cmspage-images" class="cms-page-content" style="display:none">
         <div class="cms-topbar">
@@ -3041,16 +3027,16 @@ html, body {
 
             <!-- Upload panel -->
             <div id="cms-img-panel-upload" style="background:#faf7f2;border:1px solid #e0d8cc;border-top:none;border-radius:0 0 8px 8px;padding:24px">
-              <div id="cms-upload-drop" onclick="document.getElementById('cms-file-input').click()"
-                style="border:2px dashed #c5bdb5;border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#fff"
+              <label for="cms-file-input" id="cms-upload-drop"
+                style="display:block;border:2px dashed #c5bdb5;border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#fff"
                 ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='#fef5ec'"
                 ondragleave="this.style.borderColor='#c5bdb5';this.style.background='#fff'"
-                ondrop="cmsHandleDrop(event)">
+                ondrop="event.preventDefault();cmsHandleDrop(event)">
                 <div style="font-size:36px;margin-bottom:10px">🖼️</div>
                 <div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:6px">Kéo ảnh vào đây hoặc nhấn để chọn</div>
                 <div style="font-size:12px;color:#777777">Hỗ trợ JPG, PNG, GIF, WebP. Có thể chọn nhiều ảnh cùng lúc.</div>
-                <input type="file" id="cms-file-input" accept="image/*" multiple style="display:none" onchange="cmsHandleFiles(this.files)">
-              </div>
+              </label>
+              <input type="file" id="cms-file-input" accept="image/*" multiple style="display:none" onchange="cmsHandleFiles(this.files)">
               <div id="cms-upload-progress" style="margin-top:16px;display:none">
                 <div style="height:4px;background:#e0d8cc;border-radius:2px;overflow:hidden">
                   <div id="cms-upload-bar" style="height:100%;background:var(--accent);width:0%;transition:width .3s"></div>
@@ -3177,21 +3163,8 @@ html, body {
                     <option value="'Nunito Sans', sans-serif">Nunito Sans (Default)</option>
                     <option value="'Inter', sans-serif">Inter (Modern, Startup)</option>
                     <option value="'Roboto', sans-serif">Roboto (Clean, Flat)</option>
-                    <option value="'Open Sans', sans-serif">Open Sans (Classic Clean)</option>
-                    <option value="'Lato', sans-serif">Lato (Friendly)</option>
-                    <option value="'Montserrat', sans-serif">Montserrat (Geometric)</option>
-                    <option value="'Raleway', sans-serif">Raleway (Elegant Sans)</option>
-                    <option value="'Poppins', sans-serif">Poppins (Friendly Round)</option>
-                    <option value="'Ubuntu', sans-serif">Ubuntu (Distinctive)</option>
-                    <option value="'Be Vietnam Pro', sans-serif">Be Vietnam Pro (VN Optimized)</option>
-                    <option value="'Noto Sans', sans-serif">Noto Sans (Universal)</option>
-                    <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
-                    <option value="'Quicksand', sans-serif">Quicksand (Soft)</option>
                     <option value="Georgia, serif">Georgia (Newspaper)</option>
-                    <option value="'Merriweather', serif">Merriweather (Readability)</option>
-                    <option value="'Lora', serif">Lora (Modern Serif)</option>
-                    <option value="'PT Serif', serif">PT Serif</option>
-                    <option value="'Noto Serif', serif">Noto Serif</option>
+                    <option value="'Playfair Display', serif">Playfair (Elegant)</option>
                   </select>
                 </div>
 
@@ -3200,17 +3173,8 @@ html, body {
                   <select id="cms-font-heading" class="cms-field" style="font-size:14px;padding:12px;font-weight:600">
                     <option value="'Merriweather', serif">Merriweather (Default)</option>
                     <option value="'Playfair Display', serif">Playfair Display (Premium Classy)</option>
-                    <option value="'Lora', serif">Lora (Elegant Serif)</option>
-                    <option value="'PT Serif', serif">PT Serif</option>
-                    <option value="'Noto Serif', serif">Noto Serif</option>
-                    <option value="'Source Serif Pro', serif">Source Serif Pro</option>
-                    <option value="'Montserrat', sans-serif">Montserrat (Bold Modern)</option>
-                    <option value="'Oswald', sans-serif">Oswald (Narrow Bold)</option>
                     <option value="'Outfit', sans-serif">Outfit (Tech Bold)</option>
-                    <option value="'Raleway', sans-serif">Raleway (Light/Bold Mix)</option>
-                    <option value="'Poppins', sans-serif">Poppins (Playful)</option>
                     <option value="'Inter', sans-serif">Inter Bold (Sleek)</option>
-                    <option value="'Be Vietnam Pro', sans-serif">Be Vietnam Pro</option>
                     <option value="Arial, sans-serif">Arial (Basic)</option>
                   </select>
                 </div>
@@ -3652,18 +3616,7 @@ html, body {
       <button class="modal-close" onclick="closeModal('rte-img-picker')">&times;</button>
     </div>
     <div class="modal-body">
-      <!-- Caption input (Global for all tabs) -->
-      <div id="rte-caption-group" style="background:#faf7f2;border:1px solid #e0d8cc;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
-        <div style="font-size:20px">📝</div>
-        <div style="flex:1">
-          <label style="font-size:11px;font-weight:700;color:#777;display:block;margin-bottom:2px">Chú thích ảnh (tùy chọn)</label>
-          <input type="text" id="rte-img-caption" placeholder="Nhập chú thích cho ảnh..." 
-            style="width:100%;border:none;background:transparent;outline:none;font-size:14px;font-family:var(--body-font);font-weight:600">
-        </div>
-      </div>
-
       <!-- Tabs -->
-
       <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #e0d8cc">
         <button id="rte-tab-lib" onclick="rteImgTabSwitch('lib')"
           style="background:none;border:none;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--body-font);color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px">
@@ -3684,15 +3637,15 @@ html, body {
       </div>
       <!-- Upload panel -->
       <div id="rte-panel-upload" style="display:none">
-        <div onclick="document.getElementById('rte-file-input').click()"
-          style="border:2px dashed #c5bdb5;border-radius:8px;padding:40px;text-align:center;cursor:pointer;background:#faf7f2"
+        <label for="rte-file-input"
+          style="display:block;border:2px dashed #c5bdb5;border-radius:8px;padding:40px;text-align:center;cursor:pointer;background:#faf7f2"
           ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
           ondragleave="this.style.borderColor='#c5bdb5'"
-          ondrop="rteHandleDrop(event)">
+          ondrop="event.preventDefault();rteHandleDrop(event)">
           <div style="font-size:32px;margin-bottom:10px">🖼️</div>
           <div style="font-size:14px;font-weight:600">Kéo ảnh vào đây hoặc nhấn để chọn</div>
-          <input type="file" id="rte-file-input" accept="image/*" style="display:none" onchange="rteHandleFileUpload(this.files)">
-        </div>
+        </label>
+        <input type="file" id="rte-file-input" accept="image/*" style="display:none" onchange="rteHandleFileUpload(this.files)">
         <div id="rte-upload-status"></div>
       </div>
       <!-- URL panel -->
@@ -3769,16 +3722,18 @@ async function loadData() {
 
 // Upload file ảnh lên Firebase Storage, trả về download URL
 async function uploadImageToStorage(file) {
+  // Đảm bảo Firebase đã init trước khi upload (load async)
+  await initFirebase();
   if (!_fbReady || !window._storage) return null;
   try {
-    const ext = file.name.split('.').pop() || 'jpg';
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
     const ref = window._storage.ref(path);
     await ref.put(file);
     const url = await ref.getDownloadURL();
     return url;
   } catch(e) {
-    console.error('Storage upload error:', e);
+    console.error('Storage upload error:', e.code, e.message);
     return null;
   }
 }
@@ -3867,8 +3822,15 @@ async function _pullFirebase() {
     if (!lps.empty) landingPages    = lps.docs.map(d => ({id:d.id,  ...d.data()}));
     _cacheLocal();
     console.log('✅ Firebase synced:', data.posts.length, 'posts');
-    renderNav(); renderFilterBar(); renderHero(); renderPosts(); renderSidebar('sidebar'); renderFooter();
-    // Re-render sidebar order list nếu đang ở trang layout trong CMS
+    renderNav(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
+    // Chỉ render trang chủ nếu CMS không mở và không đang xem bài/trang
+    const _cmsOpen = document.getElementById('cms-page').classList.contains('active');
+    const _postOpen = document.getElementById('post-detail-page') && document.getElementById('post-detail-page').style.display !== 'none';
+    const _lpOpen  = document.getElementById('lp-viewer-page') && document.getElementById('lp-viewer-page').style.display !== 'none';
+    if (!_cmsOpen && !_postOpen && !_lpOpen) {
+      renderHero(); renderPosts();
+    }
+    // Re-render sidebar order nếu đang ở trang layout trong CMS
     if (document.getElementById('cmspage-layout') && document.getElementById('cmspage-layout').style.display !== 'none') {
       cmsRenderSidebarOrder();
     }
@@ -3929,12 +3891,18 @@ function saveImages() {
   });
 }
 
-function saveLandingPages() {
+async function saveLandingPages() {
+  // Lưu localStorage trước (sync fallback)
   try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
+  // Lưu Firebase
+  await initFirebase();
   if (!_fbReady || !_db) return;
-  landingPages.forEach(async lp => {
-    try { const {id, ...d} = lp; await _db.collection('landingPages').doc(id).set(d); } catch(e) {}
-  });
+  try {
+    for (const lp of landingPages) {
+      const {id, ...d} = lp;
+      await _db.collection('landingPages').doc(id).set(d);
+    }
+  } catch(e) { console.error('saveLandingPages Firebase error:', e); }
 }
 
 async function deleteLandingPage(id) {
@@ -4309,25 +4277,25 @@ function goHome(e) {
    CMS FULL-PAGE ADMIN
 ══════════════════════════════════════════════ */
 const CMS_SESSION_KEY = 'taitangau_cms_session';
-let cmsLoggedIn = localStorage.getItem(CMS_SESSION_KEY) === '1';
+const CMS_SESSION_TTL = 24 * 60 * 60 * 1000; // 24 giờ
+function _cmsSessionValid() {
+  try {
+    const t = parseInt(localStorage.getItem(CMS_SESSION_KEY) || '0');
+    return t > 0 && (Date.now() - t) < CMS_SESSION_TTL;
+  } catch(e) { return false; }
+}
+let cmsLoggedIn = _cmsSessionValid();
 let cmsCurrentEditIdx = null;
 
 function openCMS() {
-  // Xóa #admin khỏi URL ngay lập tức
-  if (window.location.hash === '#admin') {
-    history.replaceState(null, '', window.location.pathname + window.location.search);
-  }
-  
-  // LUÔN hiện #cms-page trước (là container cha của login hoặc app)
-  document.getElementById('cms-page').classList.add('active');
-
+  window._cmsOpened = true; // flag để init() không gọi routerApplyState
+  // Xóa #admin khỏi URL
+  try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
   if (cmsLoggedIn) {
-    // Đã đăng nhập → mở thẳng CMS
     loadFirebase();
-    loadData();
+    document.getElementById('cms-page').classList.add('active');
     showCmsApp();
   } else {
-    // Chưa đăng nhập → show login modal (nằm trong #cms-page)
     _showLoginModal();
   }
 }
@@ -4349,13 +4317,12 @@ function cmsLogin() {
   const pass = document.getElementById('cms-pass-input').value;
   if (pass === data.settings.password) {
     cmsLoggedIn = true;
-    localStorage.setItem(CMS_SESSION_KEY, '1');
+    localStorage.setItem(CMS_SESSION_KEY, String(Date.now()));
     document.getElementById('cms-login-err').style.display = 'none';
     document.getElementById('cms-pass-input').value = '';
     _hideLoginModal();
-    // Mở CMS đầy đủ sau khi đăng nhập
+    window._cmsOpened = true;
     loadFirebase();
-    loadData();
     document.getElementById('cms-page').classList.add('active');
     showCmsApp();
   } else {
@@ -4366,15 +4333,19 @@ function cmsLogin() {
 }
 
 function showCmsApp() {
-  document.getElementById('cms-app').classList.add('active');
+  const app = document.getElementById('cms-app');
+  app.style.display = ''; // xóa inline style nếu lpbNavExtend đã set
+  app.classList.add('active');
   cmsNav('dashboard', document.querySelector('.cms-nav-item[data-page="dashboard"]'));
 }
 
 function cmsLogout() {
   cmsLoggedIn = false;
+  window._cmsOpened = false;
   localStorage.removeItem(CMS_SESSION_KEY);
   document.getElementById('cms-page').classList.remove('active');
-  history.replaceState(null, '', window.location.pathname + window.location.search);
+  try { history.replaceState(null, '', window.location.pathname); } catch(e) {}
+  _showHome('all');
 }
 
 function cmsNav(page, el) {
@@ -4785,10 +4756,6 @@ function rteOpenImgPicker() {
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0) _savedRteRange = sel.getRangeAt(0).cloneRange();
   
-  // Clear caption field
-  const capInput = document.getElementById('rte-img-caption');
-  if (capInput) capInput.value = '';
-
   rteImgTabSwitch('lib');
   document.getElementById('rte-img-picker').classList.add('active');
   rteRenderPickerGallery();
@@ -4827,45 +4794,41 @@ function rteInsertImg(idxStr) {
 }
 
 function _rteDoInsert(src, alt) {
-  const caption = (document.getElementById('rte-img-caption')?.value || '').trim();
-  
   // Nếu có Quill editor đang active
   if (window._rteTarget === 'quill') {
-    // Quill doesn't support complex HTML as easily via insertEmbed, 
-    // but we can use clipboard or dangerouslySetInnerHTML approach for captions
-    // For now, let's use a simplified approach for Quill or just alt text.
-    // If caption exists, we insert it after the image or use a custom format.
-    rteInsertPickedImg(src); 
-    if (caption) {
-      const range = postQuill.getSelection(true);
-      postQuill.insertText(range.index,"[" + caption + "]", { 'italic': true, 'color': '#777777' });
-    }
-    document.getElementById('rte-img-picker').classList.remove('active');
+    rteInsertPickedImg(src);
+    document.getElementById('cms-img-picker').style.display='none';
     return;
   }
 
   const targetId = window._rteTarget === 'page' ? 'cms-page-content' : 'cms-post-content';
   window._rteTarget = null;
+  _savedRteRange = null;
+
   const editor = document.getElementById(targetId);
-  editor.focus();
-  if (_savedRteRange) {
+  if (!editor) { showToast('❌ Không tìm thấy editor', true); return; }
+
+  // Dùng DOM trực tiếp — execCommand unreliable sau file dialog
+  const imgEl = document.createElement('img');
+  imgEl.src = src;
+  imgEl.alt = alt || '';
+  imgEl.style.cssText = 'max-width:100%;border-radius:6px;margin:10px 0;display:block';
+  const newLine = document.createElement('p');
+  newLine.innerHTML = '<br>';
+
+  editor.appendChild(imgEl);
+  editor.appendChild(newLine);
+
+  // Đặt cursor sau ảnh
+  try {
+    editor.focus();
+    const range = document.createRange();
+    range.setStartAfter(newLine);
+    range.collapse(true);
     const sel = window.getSelection();
     sel.removeAllRanges();
-    sel.addRange(_savedRteRange);
-  }
-
-  let html = `<img src="${src}" alt="${escHtml(alt || '')}" style="max-width:100%;border-radius:6px;margin:10px 0;display:block">`;
-  if (caption) {
-    html = `
-      <figure style="margin:20px 0;text-align:center">
-        <img src="${src}" alt="${escHtml(alt || '')}" style="max-width:100%;border-radius:6px;display:block;margin:0 auto">
-        <figcaption style="margin-top:8px;font-size:13px;color:#777;font-style:italic">${escHtml(caption)}</figcaption>
-      </figure>
-    `;
-  }
-  
-  document.execCommand('insertHTML', false, html + '<p><br></p>');
-  _savedRteRange = null;
+    sel.addRange(range);
+  } catch(e) {}
 }
 
 function rteHandleDrop(e) {
@@ -4877,25 +4840,17 @@ function rteHandleDrop(e) {
 async function rteHandleFileUpload(files) {
   const file = Array.from(files).find(f => f.type.startsWith('image/'));
   if (!file) return;
-  const status = document.getElementById('rte-upload-status');
-  status.textContent = 'Đang upload...';
 
-  let url = null;
-  if (location.protocol === 'file:') {
-    console.warn('RTE: Running from file:// - bypassing Firebase Storage');
-  } else {
-    try {
-      url = await Promise.race([
-        uploadImageToStorage(file),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('Timeout')), 5000))
-      ]);
-    } catch(err) {
-      console.warn('RTE: Storage upload failed or timed out', err);
-    }
-  }
+  const status = document.getElementById('rte-upload-status');
+  const setStatus = msg => { if (status) status.textContent = msg; };
+  const mb = (file.size / 1024 / 1024).toFixed(1);
+
+  setStatus('⏳ Đang kết nối Firebase...');
+  let url = await uploadImageToStorage(file);
 
   if (!url) {
-    // Fallback base64
+    // Fallback: base64 nén trong browser
+    setStatus(file.size > 1000000 ? '⏳ Đang nén ảnh (' + mb + 'MB)...' : '⏳ Đang xử lý...');
     url = await new Promise(res => {
       const reader = new FileReader();
       reader.onerror = () => res(null);
@@ -4904,12 +4859,21 @@ async function rteHandleFileUpload(files) {
     });
   }
 
+  if (!url) { setStatus('❌ Upload thất bại. Hãy thử lại.'); return; }
+
   const name = file.name.replace(/\.[^.]+$/, '');
   if (!data.images) data.images = [];
   data.images.push({ url, name, createdAt: Date.now() });
   saveImages();
-  status.textContent = '✅ Đã upload! Đang chèn...';
-  setTimeout(() => { _rteDoInsert(url, name); closeModal('rte-img-picker'); }, 500);
+  setStatus('✅ Xong!');
+
+  // Reset file input
+  const fi = document.getElementById('rte-file-input');
+  if (fi) fi.value = '';
+
+  // Đóng modal trước, insert sau (tránh focus conflict)
+  closeModal('rte-img-picker');
+  setTimeout(() => _rteDoInsert(url, name), 80);
 }
 
 function rteInsertImgFromUrl() {
@@ -4980,7 +4944,7 @@ function cmsHandleDrop(e) {
   if (files.length) cmsHandleFiles(files);
 }
 
-function cmsHandleFiles(files) {
+async function cmsHandleFiles(files) {
   const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
   if (!arr.length) return showToast('Chỉ hỗ trợ file ảnh', true);
 
@@ -4991,89 +4955,74 @@ function cmsHandleFiles(files) {
 
   previews.innerHTML = '';
   progress.style.display = 'block';
+  if (!data.images) data.images = [];
+
+  // Đảm bảo Firebase ready trước khi upload batch
+  status.textContent = '⏳ Đang kết nối Firebase...';
+  await initFirebase();
 
   let done = 0;
-  arr.forEach(async (file) => {
+  for (const file of arr) {
     const imgName = file.name.replace(/\.[^.]+$/, '');
-    console.log('Starting upload for:', imgName);
-    status.textContent = `Đang upload ${imgName}...`;
+    const mb = (file.size / 1024 / 1024).toFixed(1);
+    status.textContent = 'Đang upload ' + (done+1) + '/' + arr.length + ': ' + imgName + '...';
 
     // Thử upload lên Firebase Storage
-    let finalUrl = null;
-    if (location.protocol === 'file:') {
-      console.warn('Đang chạy từ file:// - Firebase Storage sẽ bị lỗi CORS. Chuyển sang lưu Base64.');
-    } else {
-      try {
-        // Thêm timeout 5 giây để tránh bị treo nếu Firebase hỏng
-        finalUrl = await Promise.race([
-          uploadImageToStorage(file),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('Timeout')), 5000))
-        ]);
-      } catch(err) {
-        console.warn('Storage upload failed or timed out, falling back to base64', err);
-      }
-    }
+    let finalUrl = await uploadImageToStorage(file);
 
-    // Fallback: nếu chưa có Storage thì dùng base64
+    // Fallback: base64 nén trong browser
     if (!finalUrl) {
-      console.log('Using base64 fallback for:', imgName);
+      status.textContent = (file.size > 1000000 ? 'Đang nén (' + mb + 'MB) ' : 'Đang xử lý ') + imgName + '...';
       finalUrl = await new Promise(res => {
         const reader = new FileReader();
-        reader.onerror = () => { console.error('FileReader error'); res(null); };
-        reader.onload = ev => {
-          compressImage(ev.target.result, file.name, (url) => {
-            console.log('Compression done for:', imgName);
-            res(url);
-          });
-        };
+        reader.onerror = () => res(null);
+        reader.onload = ev => compressImage(ev.target.result, file.name, res);
         reader.readAsDataURL(file);
       });
     }
 
-    if (finalUrl) {
-      if (!data.images) data.images = [];
-      data.images.push({ url: finalUrl, name: imgName, createdAt: Date.now() });
-
-      const thumb = document.createElement('div');
-      thumb.style.cssText = 'position:relative;width:100px;height:80px;border-radius:6px;overflow:hidden;background:#e0d8cc;flex-shrink:0';
-      thumb.innerHTML = `<img src="${finalUrl}" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(28,20,9,.65);color:#fff;font-size:10px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(imgName)}</div>`;
-      previews.appendChild(thumb);
-    } else {
-      console.error('Failed to get URL for:', imgName);
+    if (!finalUrl) {
+      status.textContent = '❌ Không upload được: ' + imgName;
+      done++; continue;
     }
+
+    data.images.push({ url: finalUrl, name: imgName, createdAt: Date.now() });
+
+    const thumb = document.createElement('div');
+    thumb.style.cssText = 'position:relative;width:100px;height:80px;border-radius:6px;overflow:hidden;background:#e0d8cc;flex-shrink:0';
+    thumb.innerHTML = '<img src="' + finalUrl + '" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(28,20,9,.65);color:#fff;font-size:10px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(imgName) + '</div>';
+    previews.appendChild(thumb);
 
     done++;
     bar.style.width = Math.round(done / arr.length * 100) + '%';
-    if (done === arr.length) {
-      saveImages();
-      status.textContent = `✅ Đã xử lý ${done} ảnh!`;
-      setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 2000);
-      cmsRenderImages();
-      showToast(`✅ Đã upload ${done} ảnh`);
-    }
-  });
+  }
+
+  saveImages();
+  status.textContent = '✅ Đã upload ' + done + '/' + arr.length + ' ảnh!';
+  setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 2500);
+  cmsRenderImages();
+  showToast('✅ Đã upload ' + done + ' ảnh');
+
+  // Reset file input
+  const fi = document.getElementById('cms-file-input');
+  if (fi) fi.value = '';
 }
 
 function compressImage(dataUrl, filename, callback) {
+  // Ảnh nhỏ < 1MB — không cần nén, trả về ngay
+  if (dataUrl.length < 1300000) { callback(dataUrl, filename); return; }
   const img = new Image();
-  img.onerror = () => {
-    console.warn('Compression failed for', filename);
-    callback(dataUrl, filename);
-  };
+  img.onerror = () => callback(dataUrl, filename); // decode lỗi → dùng gốc
   img.onload = function() {
-    const MAX = 1200;
-    let w = img.width, h = img.height;
-    if (w <= MAX && dataUrl.length < 800000) {
-      callback(dataUrl, filename);
-      return;
-    }
-    if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
-    const compressed = canvas.toDataURL('image/jpeg', 0.82);
-    callback(compressed, filename);
+    try {
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.82), filename);
+    } catch(e) { callback(dataUrl, filename); }
   };
   img.src = dataUrl;
 }
@@ -5095,58 +5044,6 @@ function cmsImgDelete(i) {
   saveImages();
   cmsRenderImages();
   showToast('Đã xóa');
-}
-
-function cmsAddImageUrl() {
-  const url = document.getElementById('cms-img-url').value.trim();
-  if (!url) return showToast('Vui lòng nhập URL hình ảnh', true);
-  let name = document.getElementById('cms-img-name').value.trim();
-  if (!name) name = url.split('/').pop().split('?')[0] || 'Ảnh từ URL';
-  
-  if (!data.images) data.images = [];
-  data.images.push({ url, name, createdAt: Date.now() });
-  saveImages();
-  cmsRenderImages();
-  
-  document.getElementById('cms-img-url').value = '';
-  document.getElementById('cms-img-name').value = '';
-  document.getElementById('cms-img-add-form').style.display = 'none';
-  showToast('✅ Đã thêm ảnh từ URL');
-}
-
-function cmsRenderImages() {
-  const gallery = document.getElementById('cms-img-gallery-wrap');
-  if (!gallery) return;
-  
-  if (!data.images || data.images.length === 0) {
-    gallery.innerHTML = `
-      <div style="padding:64px;text-align:center;color:#bbb">
-        <div style="font-size:48px;margin-bottom:12px">🖼️</div>
-        <p>Thư viện hình ảnh trống. Hãy upload hoặc thêm từ URL.</p>
-      </div>`;
-    return;
-  }
-  
-  gallery.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px">
-      ${data.images.map((img, i) => `
-        <div class="cms-editor-card" style="padding:0;overflow:hidden;transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
-          <div style="aspect-ratio:1.5;background:#f0ece5;display:flex;align-items:center;justify-content:center;overflow:hidden">
-            <img src="${img.url}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-            <div style="display:none;font-size:32px">🖼️</div>
-          </div>
-          <div style="padding:12px">
-            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px" title="${escHtml(img.name)}">
-              ${escHtml(img.name)}
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="t-btn" style="flex:1" onclick="cmsImgCopy('${escHtml(img.url)}', this)">Copy Link</button>
-              <button class="t-btn danger" onclick="cmsImgDelete(${i})">Xóa</button>
-            </div>
-          </div>
-        </div>
-      `).join('')}
-    </div>`;
 }
 
 /* ── Categories Manager ── */
@@ -5809,9 +5706,7 @@ let lpbSelectedIdx = null;   // index of selected block
 let lpbDragSrcIdx = null;    // drag reorder source index
 let lpbDragType = null;      // 'palette' or 'reorder'
 
-function saveLandingPages() {
-  try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
-}
+// saveLandingPages defined above (with Firebase sync)
 
 // ── Block defaults ──
 const LPB_DEFAULTS = {
@@ -5877,20 +5772,21 @@ function lpbEdit(id) {
   setTimeout(() => { lpbInitDragDrop(); lpbInitPaletteDrag(); }, 50);
 }
 
-function lpbSave() {
+async function lpbSave() {
   const title = document.getElementById('lpb-page-title').value.trim() || 'Untitled';
   const slug = document.getElementById('lpb-page-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'landing-' + Date.now().toString(36);
   const status = document.getElementById('lpb-page-status').value;
   if (lpbEditingId) {
     const idx = landingPages.findIndex(p => p.id === lpbEditingId);
-    if (idx >= 0) landingPages[idx] = Object.assign({}, landingPages[idx], { title: title, slug: slug, status: status, blocks: lpbBlocks, updatedAt: Date.now() });
+    if (idx >= 0) landingPages[idx] = Object.assign({}, landingPages[idx], { title, slug, status, blocks: lpbBlocks, updatedAt: Date.now() });
   } else {
     lpbEditingId = 'lp' + Date.now();
     landingPages.push({ id: lpbEditingId, title, slug, status, blocks: lpbBlocks, createdAt: Date.now(), updatedAt: Date.now() });
   }
-  saveLandingPages();
-  showToast('✅ Đã lưu landing page');
-  // Refresh list nếu có
+  showToast('⏳ Đang lưu...');
+  await saveLandingPages();
+  const statusLabel = status === 'published' ? '✅ Đã lưu & công khai tại /page/' + slug : '✅ Đã lưu (nháp)';
+  showToast(statusLabel);
   if (document.getElementById('lpb-list-wrap')) lpbRenderList();
 }
 
@@ -6661,10 +6557,11 @@ function lpbNavExtend(page, el) {
   const lpbPanel = document.getElementById('cmspage-lpbuilder');
   if (page === 'landing') setTimeout(lpbRenderList, 0);
   if (page === 'lpbuilder') {
-    if (appWrap) appWrap.style.display = 'none';
+    // Dùng classList để không conflict với showCmsApp
+    if (appWrap) { appWrap.classList.remove('active'); appWrap.style.display = ''; }
     if (lpbPanel) lpbPanel.style.display = 'flex';
   } else {
-    if (appWrap) appWrap.style.display = 'flex';
+    if (appWrap) { appWrap.style.display = ''; appWrap.classList.add('active'); }
     if (lpbPanel) lpbPanel.style.display = 'none';
   }
 }
@@ -7294,10 +7191,14 @@ async function init() {
   renderNav();
   renderFilterBar();
 
-// Render sidebar cho mọi trang
+  // Render sidebar cho mọi trang
   renderSidebar('sidebar');
   renderFooter();
-  
+
+  // Render trang chủ từ dữ liệu local (trước khi Firebase sync)
+  renderHero();
+  renderPosts();
+
   // Sample data if empty
   if (data.posts.length === 0) {
     data.posts = [
@@ -7321,12 +7222,16 @@ async function init() {
 
   // Khởi chạy Route sau khi data Firebase đã tải đầy đủ.
   // Lúc này dữ liệu data.posts đã sẵn sàng để router tìm ID hoặc thay đổi giao diện phù hợp.
-  // Ưu tiên: nếu đang truy cập #admin thì mở CMS, không override về home
-  if (window.location.hash === '#admin') {
+  // Ưu tiên: nếu CMS đã được mở (qua #admin / hashchange) thì không route về home
+  if (window._cmsOpened) {
+    // CMS đã mở trước khi init() hoàn thành — không override
+  } else if (window.location.hash === '#admin') {
     openCMS();
   } else {
+    window._routerInit = true;
     const initState = routerParseUrl();
     routerApplyState(initState);
+    window._routerInit = false;
   }
 
   // Reading progress bar + Smart header hide/show
@@ -7396,6 +7301,8 @@ function routerInit() {
 
   // Handle popstate (back/forward button)
   window.addEventListener('popstate', function(e) {
+    // Nếu CMS đang mở, không cho router can thiệp
+    if (document.getElementById('cms-page').classList.contains('active')) return;
     const state = e.state || routerParseUrl();
     window._routerRestoring = true;
     routerApplyState(state);
@@ -7437,6 +7344,8 @@ function routerParseUrl() {
 
 function routerApplyState(state) {
   if (!state) return;
+  // Không override nếu CMS đang mở (trừ lúc init lần đầu)
+  if (!window._routerInit && document.getElementById('cms-page').classList.contains('active')) return;
   if (state.view === 'post') {
     // Find post by slug or index
     let idx = -1;
@@ -7710,6 +7619,21 @@ init();
     <div class="mcs-handle"></div>
     <div class="mcs-title">Danh mục</div>
     <div id="mcs-list" class="mcs-list"></div>
+  </div>
+</div>
+
+
+<div id="cms-login-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center">
+  <div style="background:#2a2a2a;border:1px solid #3a2e1c;border-radius:10px;padding:48px 40px;width:360px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.5)">
+    <div style="font-family:var(--heading-font);font-size:22px;font-weight:900;color:#fff;text-align:center;margin-bottom:6px">Tài Tàng <span style="color:var(--accent)">Au</span></div>
+    <div style="font-size:11px;letter-spacing:2px;color:#888;text-align:center;margin-bottom:32px">CMS DASHBOARD</div>
+    <label style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;display:block;margin-bottom:8px">MẬT KHẨU</label>
+    <input type="password" id="cms-pass-input" placeholder="Nhập mật khẩu..."
+           onkeydown="if(event.key==='Enter')cmsLogin()"
+           style="width:100%;padding:12px 14px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:6px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:16px">
+    <button onclick="cmsLogin()" style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer">Đăng nhập →</button>
+    <div id="cms-login-err" style="display:none;color:#f87171;font-size:13px;text-align:center;margin-top:12px">Mật khẩu không đúng</div>
+    <button onclick="_hideLoginModal()" style="display:block;margin:16px auto 0;background:none;border:none;color:#666;font-size:12px;cursor:pointer">Huỷ</button>
   </div>
 </div>
 </body>
