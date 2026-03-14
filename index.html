@@ -3203,7 +3203,6 @@ html, body {
               <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600;margin-bottom:16px;background:#f8f6f1;padding:12px;border-radius:8px">
                 <input type="checkbox" id="cms-sidebar-visible-home" style="width:16px;height:16px;accent-color:var(--accent)" onchange="cmsSidebarHomeToggle(this.checked)"> Hiển thị Sidebar trên Trang chủ</label>
 
-              <p style="font-size:11px;color:#999;margin:-8px 0 12px">Bật/tắt và sắp xếp thứ tự từng phần trong sidebar:</p>
               <div id="cms-sidebar-order-list" style="display:flex;flex-direction:column;gap:8px">
                 <!-- Rendered by JS -->
               </div>
@@ -3682,6 +3681,7 @@ const STORAGE_KEY = 'taitangau_data';
 const PAGE_LAYOUT_KEY = 'taitangau_page_layout';
 const IMAGES_KEY = 'taitangau_images'; // separate from posts for performance
 const THEME_KEY = 'taitangau_theme';
+const LAYOUT_KEY = 'taitangau_layout';
 
 let data = {
   posts: [],
@@ -3712,12 +3712,11 @@ let data = {
     ],
     priorityPostIds: [],
     sidebarOrder: ['about', 'categories', 'recent', 'tags'],
-    sidebarVisibleHome: true
+    sidebarVisibleHome: false
   }
 };
 let landingPages = []; // stored separately for perf
 const LP_KEY = 'taitangau_landing_pages';
-const LAYOUT_KEY = 'taitangau_layout';
 let customPagesData = {}; // Dữ liệu trang chuyên biệt (Home, About, Profile)
 
 let currentCategory = 'all';
@@ -4007,21 +4006,23 @@ function renderSidebar(containerId, currentIdx) {
   const s = data.settings;
 
   if (containerId === 'sidebar') {
-    // Kiểm tra: sidebar tổng (từ Layout toggle)
+    const mw = document.querySelector('.main-wrap');
+    // 1. Layout tổng tắt sidebar
     const layoutCfg = getLayout();
     if (layoutCfg.sidebar === false) {
       sidebar.style.display = 'none';
-      document.querySelector('.main-wrap').classList.add('sidebar-hidden');
+      if (mw) mw.classList.add('sidebar-hidden');
       return;
     }
-    // Kiểm tra: ẩn sidebar trên trang chủ
+    // 2. Trang chủ: ẩn sidebar nếu sidebarVisibleHome === false
     if (currentCategory === 'all' && s.sidebarVisibleHome === false) {
       sidebar.style.display = 'none';
-      document.querySelector('.main-wrap').classList.add('sidebar-hidden');
+      if (mw) mw.classList.add('sidebar-hidden');
       return;
     }
+    // 3. Hiện sidebar
     sidebar.style.display = '';
-    document.querySelector('.main-wrap').classList.remove('sidebar-hidden');
+    if (mw) mw.classList.remove('sidebar-hidden');
   }
 
   // Hỗ trợ cả sidebarWidgets (mới) và sidebarOrder (cũ)
@@ -5953,14 +5954,13 @@ function cmsLoadLayout() {
   document.getElementById('cms-color-bg-hex').value = bg;
 
   // Sidebar customization
-  const sidebarVisibleHome = data.settings.sidebarVisibleHome !== false;
-  document.getElementById('cms-sidebar-visible-home').checked = sidebarVisibleHome;
-  // Áp dụng trạng thái ẩn/hiện đúng với setting
-  const _sb = document.getElementById('sidebar');
-  const _mw = document.querySelector('.main-wrap');
-  if (_sb) _sb.style.display = sidebarVisibleHome ? '' : 'none';
-  if (_mw) _mw.classList.toggle('sidebar-hidden', !sidebarVisibleHome);
+  document.getElementById('cms-sidebar-visible-home').checked = data.settings.sidebarVisibleHome === true;
   cmsRenderSidebarOrder();
+}
+
+function cmsSidebarHomeToggle(checked) {
+  data.settings.sidebarVisibleHome = checked;
+  renderSidebar('sidebar');
 }
 
 function cmsRenderSidebarOrder() {
@@ -5988,20 +5988,11 @@ function cmsRenderSidebarOrder() {
   `).join('');
 }
 
-function cmsSidebarHomeToggle(visible) {
-  data.settings.sidebarVisibleHome = visible;
-  // Ẩn/hiện sidebar ngay lập tức
-  const sb = document.getElementById('sidebar');
-  const mw = document.querySelector('.main-wrap');
-  if (sb) sb.style.display = visible ? '' : 'none';
-  if (mw) mw.classList.toggle('sidebar-hidden', !visible);
-}
-
 function cmsSidebarWidgetToggle(i, visible) {
   if (!data.settings.sidebarWidgets) return;
   data.settings.sidebarWidgets[i].visible = visible;
   cmsRenderSidebarOrder();
-  renderSidebar('sidebar'); // Live preview
+  renderSidebar('sidebar');
 }
 
 function cmsMoveSidebar(idx, dir) {
@@ -6013,7 +6004,6 @@ function cmsMoveSidebar(idx, dir) {
   widgets[newIdx] = temp;
   data.settings.sidebarWidgets = widgets;
   cmsRenderSidebarOrder();
-  renderSidebar('sidebar'); // Live preview
 }
 
 function cmsSelectLayout(name, el) {
@@ -6037,13 +6027,13 @@ function cmsSaveLayout() {
 
   // Save Sidebar Settings
   data.settings.sidebarVisibleHome = document.getElementById('cms-sidebar-visible-home').checked;
-  // sidebarWidgets đã được cập nhật in-place bởi cmsSidebarWidgetToggle + cmsMoveSidebar
-  // Sync lên Firebase qua saveData
+  // sidebarWidgets updated in-place by cmsSidebarWidgetToggle + cmsMoveSidebar
+  // sidebarOrder is already updated in-place by cmsMoveSidebar
   saveData(data);
 
   applyLayout(cfg);
   renderPosts();
-  renderSidebar('sidebar');
+  renderSidebar('sidebar'); // Refresh sidebar
   showToast('✅ Đã áp dụng giao diện mới');
 }
 
@@ -7212,10 +7202,6 @@ function closeModal(id, e) {
 // ── THEME CUSTOMIZER (New Layout, Typography, Colors) ──
 // THEME_KEY is defined globally at the top of the script
 
-function getTheme() {
-  try { return JSON.parse(localStorage.getItem(THEME_KEY)) || {}; } catch(e) { return {}; }
-}
-
 function getLayout() {
   try { return JSON.parse(localStorage.getItem(LAYOUT_KEY)) || {}; } catch(e) { return {}; }
 }
@@ -7227,18 +7213,25 @@ function applyLayout(cfg) {
   // Filter bar
   const fb = document.querySelector('.filter-bar');
   if (fb) fb.style.display = cfg.filterbar === false ? 'none' : '';
-  // Sidebar
-  const sb = document.getElementById('sidebar');
-  if (sb) {
-    sb.style.display = cfg.sidebar === false ? 'none' : '';
-    const mw = document.querySelector('.main-wrap');
-    if (mw) mw.classList.toggle('sidebar-hidden', cfg.sidebar === false);
-  }
   // Card images
-  const styleId = 'layout-card-img-style';
-  let styleEl = document.getElementById(styleId);
-  if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = styleId; document.head.appendChild(styleEl); }
-  styleEl.textContent = cfg.cardImg === false ? '.post-image-wrap { display:none!important; }' : '';
+  let styleEl = document.getElementById('layout-card-img-style');
+  if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'layout-card-img-style'; document.head.appendChild(styleEl); }
+  styleEl.textContent = cfg.cardImg === false ? '.post-image-wrap{display:none!important}' : '';
+  // Sidebar — gọi renderSidebar để xử lý đúng (bao gồm sidebarVisibleHome)
+  const sb = document.getElementById('sidebar');
+  const mw = document.querySelector('.main-wrap');
+  if (cfg.sidebar === false) {
+    if (sb) sb.style.display = 'none';
+    if (mw) mw.classList.add('sidebar-hidden');
+  } else {
+    // Để renderSidebar quyết định dựa trên sidebarVisibleHome
+    if (sb) sb.style.display = '';
+    if (mw) mw.classList.remove('sidebar-hidden');
+  }
+}
+
+function getTheme() {
+  try { return JSON.parse(localStorage.getItem(THEME_KEY)) || {}; } catch(e) { return {}; }
 }
 
 function cmsSelectLayout(layoutType, el) {
@@ -7772,7 +7765,7 @@ async function init() {
   await loadData();
   applyFavicon();
   
-  // Apply saved Theme Customizer + Layout
+  // Apply saved Theme + Layout
   cmsInitTheme();
   applyLayout(getLayout());
   applyMobileCfg(getMobileCfg());
