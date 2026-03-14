@@ -3814,6 +3814,11 @@ async function _pullFirebase() {
     _cacheLocal();
     console.log('✅ Firebase synced:', data.posts.length, 'posts');
     renderNav(); renderFilterBar(); renderHero(); renderPosts(); renderSidebar('sidebar'); renderFooter();
+    if (document.getElementById('cmspage-layout') && document.getElementById('cmspage-layout').style.display !== 'none') cmsRenderSidebarOrder();
+    // Nếu đang ở trang layout trong CMS, re-render sidebar order list
+    if (document.getElementById('cmspage-layout') && document.getElementById('cmspage-layout').style.display !== 'none') {
+      cmsRenderSidebarOrder();
+    }
   } catch(e) { console.warn('Firebase pull error:', e); }
 }
 
@@ -4862,7 +4867,7 @@ function goHome(e) {
    CMS FULL-PAGE ADMIN
 ══════════════════════════════════════════════ */
 const CMS_SESSION_KEY = 'taitangau_cms_session';
-let cmsLoggedIn = sessionStorage.getItem(CMS_SESSION_KEY) === '1';
+let cmsLoggedIn = localStorage.getItem(CMS_SESSION_KEY) === '1';
 let cmsCurrentEditIdx = null;
 
 function openCMS() {
@@ -4883,7 +4888,7 @@ function cmsLogin() {
   const pass = document.getElementById('cms-pass-input').value;
   if (pass === data.settings.password) {
     cmsLoggedIn = true;
-    sessionStorage.setItem(CMS_SESSION_KEY, '1');
+    localStorage.setItem(CMS_SESSION_KEY, '1');
     document.getElementById('cms-login-screen').style.display = 'none';
     document.getElementById('cms-login-err').style.display = 'none';
     document.getElementById('cms-pass-input').value = '';
@@ -4902,7 +4907,7 @@ function showCmsApp() {
 
 function cmsLogout() {
   cmsLoggedIn = false;
-  sessionStorage.removeItem(CMS_SESSION_KEY);
+  localStorage.removeItem(CMS_SESSION_KEY);
   document.getElementById('cms-page').classList.remove('active');
 }
 
@@ -5960,15 +5965,24 @@ function cmsLoadLayout() {
 
 function cmsSidebarHomeToggle(checked) {
   data.settings.sidebarVisibleHome = checked;
-  renderSidebar('sidebar');
+  const sb = document.getElementById('sidebar');
+  const mw = document.querySelector('.main-wrap');
+  if (!checked) {
+    if (sb) sb.style.display = 'none';
+    if (mw) mw.classList.add('sidebar-hidden');
+  } else {
+    if (sb) sb.style.display = '';
+    if (mw) mw.classList.remove('sidebar-hidden');
+    renderSidebar('sidebar');
+  }
 }
 
 function cmsRenderSidebarOrder() {
   // Dùng sidebarWidgets thay vì chỉ order — mỗi widget có {key, visible}
   const allWidgets = ['about', 'categories', 'recent', 'tags'];
   const labels = { about: '👤 Thông tin tác giả', categories: '📂 Chuyên mục', recent: '🕐 Bài viết gần đây', tags: '🏷 Từ khóa' };
-  if (!data.settings.sidebarWidgets) {
-    data.settings.sidebarWidgets = (data.settings.sidebarOrder || allWidgets).map(k => ({ key: k, visible: true }));
+  if (!data.settings.sidebarWidgets || !data.settings.sidebarWidgets.length) {
+    data.settings.sidebarWidgets = allWidgets.map(k => ({ key: k, visible: true }));
   }
   const widgets = data.settings.sidebarWidgets;
   const wrap = document.getElementById('cms-sidebar-order-list');
@@ -5989,10 +6003,10 @@ function cmsRenderSidebarOrder() {
 }
 
 function cmsSidebarWidgetToggle(i, visible) {
-  if (!data.settings.sidebarWidgets) return;
+  if (!data.settings.sidebarWidgets || !data.settings.sidebarWidgets[i]) return;
   data.settings.sidebarWidgets[i].visible = visible;
   cmsRenderSidebarOrder();
-  renderSidebar('sidebar');
+  if (data.settings.sidebarVisibleHome) renderSidebar('sidebar');
 }
 
 function cmsMoveSidebar(idx, dir) {
