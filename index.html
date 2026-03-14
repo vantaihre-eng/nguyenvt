@@ -21,7 +21,17 @@
   try {
     var t = JSON.parse(localStorage.getItem('taitangau_theme') || '{}');
     var r = document.documentElement;
-    if (t.colorAccent) r.style.setProperty('--accent', t.colorAccent);
+    if (t.colorAccent) {
+      r.style.setProperty('--accent', t.colorAccent);
+      // Tính accent-dark inline (không gọi được JS function vì chưa load)
+      try {
+        var h = t.colorAccent.replace('#','');
+        if (h.length===3) h = h.split('').map(function(x){return x+x}).join('');
+        var rv=parseInt(h.slice(0,2),16), gv=parseInt(h.slice(2,4),16), bv=parseInt(h.slice(4,6),16);
+        var d = function(v){ return Math.max(0,Math.floor(v*0.85)).toString(16).padStart(2,'0'); };
+        r.style.setProperty('--accent-dark', '#'+d(rv)+d(gv)+d(bv));
+      } catch(e) {}
+    }
     if (t.colorBg) { r.style.setProperty('--cream', t.colorBg); r.style.setProperty('--bg-soft', t.colorBg); }
     if (t.colorSurface) r.style.setProperty('--surface', t.colorSurface);
   } catch(e) {}
@@ -316,7 +326,7 @@ function initFirebase() {
     padding: 6px 14px; border-radius: 20px;
     box-shadow: 0 1px 2px rgba(0,0,0,.02);
   }
-  .filter-btn:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 2px 8px rgba(232, 64, 64, .1); }
+  .filter-btn:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 18%, transparent); }
   .filter-btn.active { color: #fff; background: var(--accent); border-color: var(--accent); box-shadow: 0 3px 10px rgba(232, 64, 64, .2); }
 
 
@@ -1224,7 +1234,7 @@ function initFirebase() {
     padding: 10px 12px; margin-bottom: 7px; cursor: grab;
     transition: all .15s; user-select: none;
   }
-  .lpb-block-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(232,64,64,.1); }
+  .lpb-block-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 18%, transparent); }
   .lpb-block-item:active { cursor: grabbing; }
   .lpb-block-item .bi { font-size: 20px; line-height: 1; flex-shrink: 0; }
   .lpb-block-item .bt { font-size: 12px; font-weight: 600; color: #333; }
@@ -3927,6 +3937,12 @@ function renderPosts() {
           <h2 class="post-title">${escHtml(post.title)}</h2>
           <p class="post-excerpt">${escHtml(post.excerpt || '')}</p>
           <div class="post-meta">
+            ${data.settings.avatar
+              ? `<img src="${data.settings.avatar}" class="post-author-avatar" alt="" loading="lazy" onerror="this.style.display='none'">`
+              : `<div class="post-author-avatar-placeholder">${(data.settings.sitename||'T').charAt(0)}</div>`
+            }
+            <span class="post-author-name">${escHtml(data.settings.sitename || data.settings.author || 'Tài Tàng Au')}</span>
+            <div class="dot"></div>
             <span>${formatDate(post.date)}</span>
             ${rt > 0 ? `<div class="dot"></div><span>${rt} phút đọc</span>` : ''}
           </div>
@@ -3998,10 +4014,13 @@ function renderSidebar(containerId, currentIdx) {
     document.querySelector('.main-wrap').classList.remove('sidebar-hidden');
   }
 
-  const order = s.sidebarOrder || ['about', 'categories', 'recent', 'tags'];
+  // Hỗ trợ cả sidebarWidgets (mới) và sidebarOrder (cũ)
+  const widgets = s.sidebarWidgets
+    ? s.sidebarWidgets.filter(w => w.visible !== false).map(w => w.key)
+    : (s.sidebarOrder || ['about', 'categories', 'recent', 'tags']);
   let html = '';
 
-  order.forEach(section => {
+  widgets.forEach(section => {
     if (section === 'about') {
       html += `
         <div class="sidebar-section about-card">
@@ -5929,30 +5948,44 @@ function cmsLoadLayout() {
 }
 
 function cmsRenderSidebarOrder() {
-  const order = data.settings.sidebarOrder || ['about', 'categories', 'recent', 'tags'];
-  const labels = { about: 'Thông tin tác giả', categories: 'Chuyên mục', recent: 'Bài viết gần đây', tags: 'Từ khóa' };
+  // Dùng sidebarWidgets thay vì chỉ order — mỗi widget có {key, visible}
+  const allWidgets = ['about', 'categories', 'recent', 'tags'];
+  const labels = { about: '👤 Thông tin tác giả', categories: '📂 Chuyên mục', recent: '🕐 Bài viết gần đây', tags: '🏷 Từ khóa' };
+  if (!data.settings.sidebarWidgets) {
+    data.settings.sidebarWidgets = (data.settings.sidebarOrder || allWidgets).map(k => ({ key: k, visible: true }));
+  }
+  const widgets = data.settings.sidebarWidgets;
   const wrap = document.getElementById('cms-sidebar-order-list');
   if (!wrap) return;
 
-  wrap.innerHTML = order.map((section, i) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;padding:10px 14px;border:1px solid #d8cfc3;border-radius:6px;font-size:13px;font-weight:600">
-      <span>${labels[section] || section}</span>
-      <div style="display:flex;gap:4px">
+  wrap.innerHTML = widgets.map((w, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;padding:10px 14px;border:1px solid #d8cfc3;border-radius:6px;font-size:13px;font-weight:600;gap:8px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:0">
+        <input type="checkbox" ${w.visible!==false?'checked':''} onchange="cmsSidebarWidgetToggle(${i},this.checked)" style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0">
+        <span style="${w.visible===false?'color:#bbb;text-decoration:line-through':''}">${labels[w.key] || w.key}</span>
+      </label>
+      <div style="display:flex;gap:4px;flex-shrink:0">
         <button onclick="cmsMoveSidebar(${i}, -1)" style="padding:4px 8px;border:1px solid #ddd;background:#f5f5f5;border-radius:4px;cursor:pointer;${i===0?'opacity:.4;cursor:default':''}" ${i===0?'disabled':''}>↑</button>
-        <button onclick="cmsMoveSidebar(${i}, 1)" style="padding:4px 8px;border:1px solid #ddd;background:#f5f5f5;border-radius:4px;cursor:pointer;${i===order.length-1?'opacity:.4;cursor:default':''}" ${i===order.length-1?'disabled':''}>↓</button>
+        <button onclick="cmsMoveSidebar(${i}, 1)" style="padding:4px 8px;border:1px solid #ddd;background:#f5f5f5;border-radius:4px;cursor:pointer;${i===widgets.length-1?'opacity:.4;cursor:default':''}" ${i===widgets.length-1?'disabled':''}>↓</button>
       </div>
     </div>
   `).join('');
 }
 
+function cmsSidebarWidgetToggle(i, visible) {
+  if (!data.settings.sidebarWidgets) return;
+  data.settings.sidebarWidgets[i].visible = visible;
+  cmsRenderSidebarOrder();
+}
+
 function cmsMoveSidebar(idx, dir) {
-  const order = data.settings.sidebarOrder || ['about', 'categories', 'recent', 'tags'];
+  const widgets = data.settings.sidebarWidgets || [];
   const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= order.length) return;
-  const temp = order[idx];
-  order[idx] = order[newIdx];
-  order[newIdx] = temp;
-  data.settings.sidebarOrder = order;
+  if (newIdx < 0 || newIdx >= widgets.length) return;
+  const temp = widgets[idx];
+  widgets[idx] = widgets[newIdx];
+  widgets[newIdx] = temp;
+  data.settings.sidebarWidgets = widgets;
   cmsRenderSidebarOrder();
 }
 
@@ -5977,6 +6010,7 @@ function cmsSaveLayout() {
 
   // Save Sidebar Settings
   data.settings.sidebarVisibleHome = document.getElementById('cms-sidebar-visible-home').checked;
+  // sidebarWidgets updated in-place by cmsSidebarWidgetToggle + cmsMoveSidebar
   // sidebarOrder is already updated in-place by cmsMoveSidebar
   saveData(data);
 
@@ -7237,6 +7271,18 @@ function cmsInitTheme() {
 }
 
 // Bơm StyleSheet động (Dynamic CSS) ra Frontend cho User xem
+function _darkenColor(hex, amount) {
+  try {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(x=>x+x).join('');
+    let r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+    r = Math.max(0, Math.floor(r * (1 - amount)));
+    g = Math.max(0, Math.floor(g * (1 - amount)));
+    b = Math.max(0, Math.floor(b * (1 - amount)));
+    return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  } catch(e) { return hex; }
+}
+
 function applyTheme(cfg) {
   // 1. Setup CSS Layout Classes
   const list = document.getElementById('posts-list');
@@ -7247,7 +7293,11 @@ function applyTheme(cfg) {
 
   // 2. Setup CSS Variables cho Colors
   const root = document.documentElement;
-  if (cfg.colorAccent) root.style.setProperty('--accent', cfg.colorAccent);
+  if (cfg.colorAccent) {
+    root.style.setProperty('--accent', cfg.colorAccent);
+    // Tính accent-dark = accent tối hơn 15% (dùng cho hover states)
+    root.style.setProperty('--accent-dark', _darkenColor(cfg.colorAccent, 0.15));
+  }
   if (cfg.colorBg) {
     root.style.setProperty('--cream', cfg.colorBg); // cream was the original background color var
     root.style.setProperty('--bg-soft', cfg.colorBg);
@@ -7271,6 +7321,8 @@ function applyTheme(cfg) {
 
     /* Surface Card Overrides */
     .post-card, .sidebar-widget { background: var(--surface, #fff) !important; }
+    /* Sidebar sections match page background */
+    .sidebar-section { background: var(--cream, #fff) !important; border-color: color-mix(in srgb, var(--dark, #1a1a1a) 10%, transparent) !important; }
 
     /* Visibility Overrides */
     ${cfg.showProgress === false ? '#reading-progress { display:none!important; }' : ''}
