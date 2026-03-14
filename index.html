@@ -3812,6 +3812,10 @@ async function _pullFirebase() {
       if (fbSettings.sidebarWidgets && Array.isArray(fbSettings.sidebarWidgets) && fbSettings.sidebarWidgets.length === 4) {
         try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(fbSettings.sidebarWidgets)); } catch(e) {}
       }
+      // Lưu sidebarVisibleHome từ Firebase vào localStorage nếu có (và localStorage chưa set)
+      if (fbSettings.sidebarVisibleHome !== undefined && localStorage.getItem('taitangau_sidebar_home') === null) {
+        try { localStorage.setItem('taitangau_sidebar_home', fbSettings.sidebarVisibleHome ? '1' : '0'); } catch(e) {}
+      }
       data.settings = Object.assign({}, data.settings, fbSettings);
       data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, fbSettings?.social||{});
     }
@@ -3823,8 +3827,7 @@ async function _pullFirebase() {
     _cacheLocal();
     console.log('✅ Firebase synced:', data.posts.length, 'posts');
     renderNav(); renderFilterBar(); renderHero(); renderPosts(); renderSidebar('sidebar'); renderFooter();
-    if (document.getElementById('cmspage-layout') && document.getElementById('cmspage-layout').style.display !== 'none') cmsRenderSidebarOrder();
-    // Nếu đang ở trang layout trong CMS, re-render sidebar order list
+    // Re-render sidebar order list nếu đang ở trang layout trong CMS
     if (document.getElementById('cmspage-layout') && document.getElementById('cmspage-layout').style.display !== 'none') {
       cmsRenderSidebarOrder();
     }
@@ -3869,10 +3872,17 @@ async function deletePost(fbId) {
 }
 
 function saveImages() {
-  try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {
-    showToast('⚠️ Hết dung lượng. Dùng URL ảnh thay vì upload.', true);
+  // Chỉ lưu localStorage nếu không có base64 lớn
+  const hasLargeBase64 = data.images.some(i => i.url && i.url.startsWith('data:') && i.url.length > 500000);
+  if (!hasLargeBase64) {
+    try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {
+      showToast('⚠️ Hết dung lượng localStorage. Ảnh chỉ lưu tạm thời.', true);
+    }
   }
-  if (!_fbReady || !_db) return;
+  if (!_fbReady || !_db) {
+    if (hasLargeBase64) showToast('⚠️ Firebase chưa sẵn sàng — ảnh lưu tạm local.', true);
+    return;
+  }
   data.images.filter(i => i.url && !i.url.startsWith('data:')).forEach(async img => {
     try { const {_id, ...d} = img; if (_id) await _db.collection('images').doc(_id).set(d); else { const r = await _db.collection('images').add(d); img._id = r.id; } } catch(e) {}
   });
@@ -4029,7 +4039,7 @@ function renderSidebar(containerId, currentIdx) {
       return;
     }
     // 2. Trang chủ: ẩn sidebar nếu sidebarVisibleHome === false
-    if (currentCategory === 'all' && s.sidebarVisibleHome === false) {
+    if (currentCategory === 'all' && !getSidebarVisibleHome()) {
       sidebar.style.display = 'none';
       if (mw) mw.classList.add('sidebar-hidden');
       return;
@@ -4876,9 +4886,8 @@ let cmsLoggedIn = localStorage.getItem(CMS_SESSION_KEY) === '1';
 let cmsCurrentEditIdx = null;
 
 function openCMS() {
-  loadFirebase(); // lazy-load Firebase SDK only when admin opens CMS
+  loadFirebase();
   document.getElementById('cms-page').classList.add('active');
-  // Reload data in case other tab changed it
   loadData();
   if (!cmsLoggedIn) {
     document.getElementById('cms-login-screen').style.display = 'flex';
@@ -4886,6 +4895,10 @@ function openCMS() {
     setTimeout(() => document.getElementById('cms-pass-input').focus(), 100);
   } else {
     showCmsApp();
+  }
+  // Xóa #admin khỏi URL để tránh mở lại CMS khi reload
+  if (window.location.hash === '#admin') {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
   }
 }
 
@@ -4914,6 +4927,7 @@ function cmsLogout() {
   cmsLoggedIn = false;
   localStorage.removeItem(CMS_SESSION_KEY);
   document.getElementById('cms-page').classList.remove('active');
+  history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 
 function cmsNav(page, el) {
@@ -5384,10 +5398,9 @@ function rteInsertImg(idxStr) {
 }
 
 function _rteDoInsert(src, alt) {
-  // This is the old rtePickerImage function body from before we rewrote rteOpenImgPicker
-  // intercept logic
+  // Nếu có Quill editor đang active
   if (window._rteTarget === 'quill') {
-    rteInsertPickedImg(url);
+    rteInsertPickedImg(src); // FIX: dùng src thay vì url (undefined)
     document.getElementById('cms-img-picker').style.display='none';
     return;
   }
@@ -5460,8 +5473,16 @@ function cmsOpenImgPicker() {
 }
 
 function cmsPickImage(url) {
-  document.getElementById('cms-post-image').value = url;
-  updateImgPreview(url);
+  // Nếu có callback (OG image picker, page image, LP builder...)
+  if (typeof window._lpbImgInsert === 'function') {
+    window._lpbImgInsert(url);
+    window._lpbImgInsert = null;
+    closeModal('cms-img-picker');
+    return;
+  }
+  // Default: set vào ô ảnh bài viết
+  const postImg = document.getElementById('cms-post-image');
+  if (postImg) { postImg.value = url; updateImgPreview(url); }
   closeModal('cms-img-picker');
 }
 
@@ -5563,6 +5584,7 @@ function compressImage(dataUrl, filename, callback) {
     const compressed = canvas.toDataURL('image/jpeg', 0.82);
     callback(compressed, filename);
   };
+  img.src = dataUrl; // FIX: thiếu dòng này khiến onload không bao giờ chạy
 }
 
 function cmsImgCopy(url, btn) {
@@ -5964,12 +5986,12 @@ function cmsLoadLayout() {
   document.getElementById('cms-color-bg-hex').value = bg;
 
   // Sidebar customization
-  document.getElementById('cms-sidebar-visible-home').checked = data.settings.sidebarVisibleHome === true;
+  document.getElementById('cms-sidebar-visible-home').checked = getSidebarVisibleHome();
   cmsRenderSidebarOrder();
 }
 
 function cmsSidebarHomeToggle(checked) {
-  data.settings.sidebarVisibleHome = checked;
+  setSidebarVisibleHome(checked);
   const sb = document.getElementById('sidebar');
   const mw = document.querySelector('.main-wrap');
   if (!checked) {
@@ -6019,14 +6041,15 @@ function cmsSidebarWidgetToggle(i, visible) {
 }
 
 function cmsMoveSidebar(idx, dir) {
-  const widgets = data.settings.sidebarWidgets || [];
+  const widgets = getSidebarWidgets();
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= widgets.length) return;
   const temp = widgets[idx];
   widgets[idx] = widgets[newIdx];
   widgets[newIdx] = temp;
-  data.settings.sidebarWidgets = widgets;
+  saveSidebarWidgets(widgets);
   cmsRenderSidebarOrder();
+  renderSidebar('sidebar');
 }
 
 function cmsSelectLayout(name, el) {
@@ -6049,7 +6072,7 @@ function cmsSaveLayout() {
   if (_fbReady && _db) _db.collection('site').doc('layout').set(cfg).catch(e=>{});
 
   // Save Sidebar Settings
-  data.settings.sidebarVisibleHome = document.getElementById('cms-sidebar-visible-home').checked;
+  setSidebarVisibleHome(document.getElementById('cms-sidebar-visible-home').checked);
   // sidebarWidgets updated in-place by cmsSidebarWidgetToggle + cmsMoveSidebar
   // sidebarOrder is already updated in-place by cmsMoveSidebar
   saveData(data);
@@ -7233,13 +7256,27 @@ function getSidebarWidgets() {
   const ALL = ['about','categories','recent','tags'];
   try {
     const saved = JSON.parse(localStorage.getItem(SIDEBAR_KEY));
-    // Validate: phải là array có đủ 4 items với đúng key
     if (Array.isArray(saved) && saved.length === 4 && saved.every(w => ALL.includes(w.key))) {
       return saved;
     }
   } catch(e) {}
-  // Default: 4 widgets, tất cả visible
   return ALL.map(k => ({ key: k, visible: true }));
+}
+
+function getSidebarVisibleHome() {
+  try {
+    const val = localStorage.getItem('taitangau_sidebar_home');
+    if (val !== null) return val === '1';
+  } catch(e) {}
+  return false; // mặc định ẩn
+}
+
+function setSidebarVisibleHome(visible) {
+  try { localStorage.setItem('taitangau_sidebar_home', visible ? '1' : '0'); } catch(e) {}
+  data.settings.sidebarVisibleHome = visible;
+  if (_fbReady && _db) {
+    _db.collection('site').doc('settings').set({ sidebarVisibleHome: visible }, { merge: true }).catch(e=>{});
+  }
 }
 
 function saveSidebarWidgets(widgets) {
@@ -7813,6 +7850,8 @@ async function init() {
   cmsInitTheme();
   applyLayout(getLayout());
   applyMobileCfg(getMobileCfg());
+  // Sync sidebarVisibleHome vào data.settings để renderSidebar dùng đúng
+  data.settings.sidebarVisibleHome = getSidebarVisibleHome();
   
   // Render nav + filter (dynamic categories)
   renderNav();
