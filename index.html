@@ -3682,6 +3682,7 @@ const PAGE_LAYOUT_KEY = 'taitangau_page_layout';
 const IMAGES_KEY = 'taitangau_images'; // separate from posts for performance
 const THEME_KEY = 'taitangau_theme';
 const LAYOUT_KEY = 'taitangau_layout';
+const SIDEBAR_KEY = 'taitangau_sidebar';
 
 let data = {
   posts: [],
@@ -3805,7 +3806,15 @@ async function _pullFirebase() {
       customPagesData = customPagesSnap.data();
     }
     if (!ps.empty)  data.posts      = ps.docs.map(d => ({_id:d.id, ...d.data()}));
-    if (ss.exists)  { data.settings = Object.assign({}, data.settings, ss.data()); data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, ss.data()?.social||{}); }
+    if (ss.exists)  {
+      const fbSettings = ss.data();
+      // Lưu sidebarWidgets từ Firebase vào localStorage nếu có
+      if (fbSettings.sidebarWidgets && Array.isArray(fbSettings.sidebarWidgets) && fbSettings.sidebarWidgets.length === 4) {
+        try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(fbSettings.sidebarWidgets)); } catch(e) {}
+      }
+      data.settings = Object.assign({}, data.settings, fbSettings);
+      data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, fbSettings?.social||{});
+    }
     if (cs.exists && cs.data().list) data.categories = cs.data().list;
     else if (_defaultCats.length) data.categories = _defaultCats; // Khôi phục default nếu Firebase chưa có categories
     if (!pgs.empty) data.pages      = pgs.docs.map(d => ({_id:d.id, ...d.data()}));
@@ -4030,10 +4039,8 @@ function renderSidebar(containerId, currentIdx) {
     if (mw) mw.classList.remove('sidebar-hidden');
   }
 
-  // Hỗ trợ cả sidebarWidgets (mới) và sidebarOrder (cũ)
-  const widgets = s.sidebarWidgets
-    ? s.sidebarWidgets.filter(w => w.visible !== false).map(w => w.key)
-    : (s.sidebarOrder || ['about', 'categories', 'recent', 'tags']);
+  // Đọc widgets từ localStorage (đáng tin cậy hơn data.settings)
+  const widgets = getSidebarWidgets().filter(w => w.visible !== false).map(w => w.key);
   let html = '';
 
   widgets.forEach(section => {
@@ -4419,7 +4426,6 @@ function renderBlock(block, idx) {
 // Drag & Drop handlers for components
 document.addEventListener('DOMContentLoaded', () => {
   const components = document.querySelectorAll('.component-item');
-  
   components.forEach(comp => {
     comp.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('component-type', comp.dataset.component);
@@ -4427,6 +4433,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   const canvas = document.getElementById('canvas-dropzone');
+  if (!canvas) return; // Element chưa tồn tại thì bỏ qua
   
   canvas.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -4436,9 +4443,7 @@ document.addEventListener('DOMContentLoaded', () => {
   canvas.addEventListener('drop', (e) => {
     e.preventDefault();
     const type = e.dataTransfer.getData('component-type');
-    if (type) {
-      addBlock(type);
-    }
+    if (type) addBlock(type);
   });
 });
 
@@ -5978,35 +5983,39 @@ function cmsSidebarHomeToggle(checked) {
 }
 
 function cmsRenderSidebarOrder() {
-  // Dùng sidebarWidgets thay vì chỉ order — mỗi widget có {key, visible}
-  const allWidgets = ['about', 'categories', 'recent', 'tags'];
-  const labels = { about: '👤 Thông tin tác giả', categories: '📂 Chuyên mục', recent: '🕐 Bài viết gần đây', tags: '🏷 Từ khóa' };
-  if (!data.settings.sidebarWidgets || !data.settings.sidebarWidgets.length) {
-    data.settings.sidebarWidgets = allWidgets.map(k => ({ key: k, visible: true }));
-  }
-  const widgets = data.settings.sidebarWidgets;
   const wrap = document.getElementById('cms-sidebar-order-list');
   if (!wrap) return;
+  const labels = { about: '👤 Thông tin tác giả', categories: '📂 Chuyên mục', recent: '🕐 Bài viết gần đây', tags: '🏷 Từ khóa' };
+  const widgets = getSidebarWidgets();
+  const n = widgets.length;
 
-  wrap.innerHTML = widgets.map((w, i) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;padding:10px 14px;border:1px solid #d8cfc3;border-radius:6px;font-size:13px;font-weight:600;gap:8px">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:0">
-        <input type="checkbox" ${w.visible!==false?'checked':''} onchange="cmsSidebarWidgetToggle(${i},this.checked)" style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0">
-        <span style="${w.visible===false?'color:#bbb;text-decoration:line-through':''}">${labels[w.key] || w.key}</span>
-      </label>
-      <div style="display:flex;gap:4px;flex-shrink:0">
-        <button onclick="cmsMoveSidebar(${i}, -1)" style="padding:4px 8px;border:1px solid #ddd;background:#f5f5f5;border-radius:4px;cursor:pointer;${i===0?'opacity:.4;cursor:default':''}" ${i===0?'disabled':''}>↑</button>
-        <button onclick="cmsMoveSidebar(${i}, 1)" style="padding:4px 8px;border:1px solid #ddd;background:#f5f5f5;border-radius:4px;cursor:pointer;${i===widgets.length-1?'opacity:.4;cursor:default':''}" ${i===widgets.length-1?'disabled':''}>↓</button>
-      </div>
-    </div>
-  `).join('');
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const w = widgets[i];
+    const checked = w.visible !== false ? 'checked' : '';
+    const strikeStyle = w.visible === false ? 'color:#bbb;text-decoration:line-through' : '';
+    const disabledUp = i === 0 ? 'disabled style="opacity:.4"' : '';
+    const disabledDn = i === n-1 ? 'disabled style="opacity:.4"' : '';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;padding:10px 14px;border:1px solid #d8cfc3;border-radius:6px;font-size:13px;font-weight:600;gap:8px;margin-bottom:0">'
+      + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">'
+      + '<input type="checkbox" ' + checked + ' onchange="cmsSidebarWidgetToggle(' + i + ',this.checked)" style="width:15px;height:15px;accent-color:var(--accent)">'
+      + '<span style="' + strikeStyle + '">' + (labels[w.key] || w.key) + '</span>'
+      + '</label>'
+      + '<div style="display:flex;gap:4px">'
+      + '<button onclick="cmsMoveSidebar(' + i + ',-1)" ' + disabledUp + ' style="padding:4px 8px;border:1px solid #ddd;background:#f5f5f5;border-radius:4px;cursor:pointer">↑</button>'
+      + '<button onclick="cmsMoveSidebar(' + i + ',1)" ' + disabledDn + ' style="padding:4px 8px;border:1px solid #ddd;background:#f5f5f5;border-radius:4px;cursor:pointer">↓</button>'
+      + '</div></div>';
+  }
+  wrap.innerHTML = html;
 }
 
 function cmsSidebarWidgetToggle(i, visible) {
-  if (!data.settings.sidebarWidgets || !data.settings.sidebarWidgets[i]) return;
-  data.settings.sidebarWidgets[i].visible = visible;
+  const widgets = getSidebarWidgets();
+  if (!widgets[i]) return;
+  widgets[i].visible = visible;
+  saveSidebarWidgets(widgets);
   cmsRenderSidebarOrder();
-  if (data.settings.sidebarVisibleHome) renderSidebar('sidebar');
+  renderSidebar('sidebar');
 }
 
 function cmsMoveSidebar(idx, dir) {
@@ -7218,6 +7227,27 @@ function closeModal(id, e) {
 
 function getLayout() {
   try { return JSON.parse(localStorage.getItem(LAYOUT_KEY)) || {}; } catch(e) { return {}; }
+}
+
+function getSidebarWidgets() {
+  const ALL = ['about','categories','recent','tags'];
+  try {
+    const saved = JSON.parse(localStorage.getItem(SIDEBAR_KEY));
+    // Validate: phải là array có đủ 4 items với đúng key
+    if (Array.isArray(saved) && saved.length === 4 && saved.every(w => ALL.includes(w.key))) {
+      return saved;
+    }
+  } catch(e) {}
+  // Default: 4 widgets, tất cả visible
+  return ALL.map(k => ({ key: k, visible: true }));
+}
+
+function saveSidebarWidgets(widgets) {
+  try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(widgets)); } catch(e) {}
+  // Sync lên Firebase site/settings để đồng bộ đa thiết bị
+  if (_fbReady && _db) {
+    _db.collection('site').doc('settings').set({ sidebarWidgets: widgets }, { merge: true }).catch(e=>{});
+  }
 }
 
 function applyLayout(cfg) {
