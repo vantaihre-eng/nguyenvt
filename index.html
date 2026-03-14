@@ -41,7 +41,7 @@
 <title>Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&family=Montserrat:wght@400;700&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400&family=PT+Sans:wght@400;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Sans:wght@400;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Source+Sans+Pro:wght@400;700&family=Source+Serif+Pro:wght@400;700&family=Quicksand:wght@400;700&family=Poppins:wght@400;700&family=Ubuntu:wght@400;700&family=Be+Vietnam+Pro:wght@400;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
 <!-- Quill WYSIWYG Editor -->
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
@@ -1185,6 +1185,11 @@ function initFirebase() {
   /* ══════════════════════════════════════════════
      LANDING PAGE BUILDER
   ══════════════════════════════════════════════ */
+  #cmspage-lpbuilder {
+    position: fixed; inset: 0; z-index: 3100;
+    display: none; flex-direction: column; background: #fff;
+  }
+  #cmspage-lpbuilder.active { display: flex; }
   .lpb-wrap {
     display: flex; flex-direction: column; height: 100%;
   }
@@ -1462,6 +1467,13 @@ function initFirebase() {
   }
   .lpb-status-badge.published { background: #dcfce7; color: #16a34a; }
   .lpb-status-badge.draft { background: #f1f5f9; color: #64748b; }
+  .cms-action-btn {
+    padding: 5px 12px; border: 1px solid #e0d8cc; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 12px; font-weight: 600;
+    color: #444; transition: all .15s; white-space: nowrap;
+  }
+  .cms-action-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cms-action-btn.del:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
 
   /* ── Landing page viewer on frontend ── */
   #lp-viewer-page { display: none; }
@@ -2684,17 +2696,21 @@ html, body {
 <div id="cms-page">
 
   <!-- LOGIN SCREEN -->
-  <div id="cms-login-screen" class="cms-login-wrap">
-    <div class="cms-login-card">
-      <div class="cms-login-logo">Tài Tàng <span>Au</span></div>
-      <div class="cms-login-sub">CMS DASHBOARD</div>
-      <label>MẬT KHẨU</label>
-      <input type="password" id="cms-pass-input" placeholder="Nhập mật khẩu..."
-             onkeydown="if(event.key==='Enter')cmsLogin()">
-      <button class="cms-login-btn" onclick="cmsLogin()">Đăng nhập →</button>
-      <div class="cms-login-err" id="cms-login-err">Mật khẩu không đúng</div>
-    </div>
+<!-- CMS Login Modal — hiện độc lập, không phủ toàn trang -->
+<div id="cms-login-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center">
+  <div style="background:#2a2a2a;border:1px solid #3a2e1c;border-radius:10px;padding:48px 40px;width:360px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.5)">
+    <div style="font-family:var(--heading-font);font-size:22px;font-weight:900;color:#fff;text-align:center;margin-bottom:6px">Tài Tàng <span style="color:var(--accent)">Au</span></div>
+    <div style="font-size:11px;letter-spacing:2px;color:#888;text-align:center;margin-bottom:32px">CMS DASHBOARD</div>
+    <label style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;display:block;margin-bottom:8px">MẬT KHẨU</label>
+    <input type="password" id="cms-pass-input" placeholder="Nhập mật khẩu..."
+           onkeydown="if(event.key==='Enter')cmsLogin()"
+           style="width:100%;padding:12px 14px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:6px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:16px">
+    <button onclick="cmsLogin()" style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer">Đăng nhập →</button>
+    <div id="cms-login-err" style="display:none;color:#f87171;font-size:13px;text-align:center;margin-top:12px">Mật khẩu không đúng</div>
+    <button onclick="_hideLoginModal()" style="display:block;margin:16px auto 0;background:none;border:none;color:#666;font-size:12px;cursor:pointer">Huỷ</button>
   </div>
+</div>
+
 
   <!-- MAIN APP -->
   <div id="cms-app" class="cms-app-wrap">
@@ -2719,9 +2735,7 @@ html, body {
         <div class="cms-nav-item" data-page="landing" onclick="cmsNav('landing',this)">
           <span class="nav-icon" style="display:flex;align-items:center"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></span> Landing Pages
         </div>
-        <div class="cms-nav-item" data-page="custompages" onclick="cmsNav('custompages',this)">
-          <span class="nav-icon" style="display:flex;align-items:center"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span> Trang chuyên biệt
-        </div>
+
         <div class="cms-nav-item" data-page="categories" onclick="cmsNav('categories',this)">
           <span class="nav-icon" style="display:flex;align-items:center"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></span> Danh mục
         </div>
@@ -2889,97 +2903,6 @@ html, body {
         </div>
       </div>
 
-      <!-- CUSTOM PAGES (Trang chuyên biệt) -->
-      <div id="cmspage-custompages" class="cms-page-content" style="display:none">
-        <div class="cms-topbar">
-          <h1>Trang chuyên biệt</h1>
-          <div style="font-size:12px;color:#777">Quản lý các box nội dung trên Trang chủ, Giới thiệu, Hồ sơ năng lực</div>
-        </div>
-        <div class="cms-content">
-          <div class="cms-editor-card" style="margin-bottom:20px;">
-            <div class="cms-form-group">
-              <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:block">Chọn trang để chỉnh sửa</label>
-              <select id="cms-cp-select" class="cms-field" onchange="cmsLoadCustomPageBoxes(this.value)">
-                <option value="">-- Chọn trang --</option>
-                <option value="home">Trang chủ (Home)</option>
-                <option value="about">Giới thiệu (About)</option>
-                <option value="profile">Hồ sơ năng lực (Profile)</option>
-              </select>
-            </div>
-          </div>
-
-          <div id="cms-cp-editor-area" style="display:none">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-              <h2 style="font-size:16px;font-weight:700;margin:0">Danh sách các Box</h2>
-              <button class="cms-new-btn" onclick="cmsAddCustomPageBox()">+ Thêm Box</button>
-            </div>
-            
-            <!-- Container for draggable boxes -->
-            <div id="cms-cp-boxes-container" style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px;"></div>
-            
-            <div style="display:flex;gap:12px">
-              <button class="cms-save-btn" onclick="cmsSaveCustomPage()">💾 Lưu thay đổi</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- LANDING PAGE BUILDER EDITOR (full-height, no scroll wrapper) -->
-      <div id="cmspage-lpbuilder" class="cms-page-content" style="display:none;padding:0;overflow:hidden;height:100%">
-        <div class="lpb-wrap">
-          <!-- Top bar -->
-          <div class="lpb-topbar">
-            <div class="lpb-topbar-left">
-              <button class="lpb-btn ghost" onclick="lpbNavExtend('landing',null)">&larr; Quay lại</button>
-              <input type="text" id="lpb-page-title" placeholder="Tên trang..." value="Trang mới">
-              <input type="text" id="lpb-page-slug" placeholder="slug-url" style="width:160px">
-              <select id="lpb-page-status" style="border:1.5px solid #e8e8e8;border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--body-font)">
-                <option value="draft">📝 Nháp</option>
-                <option value="published">✅ Công khai</option>
-              </select>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="lpb-btn ghost" onclick="lpbPreview()">👁 Xem trước</button>
-              <button class="lpb-btn primary" onclick="lpbSave()">💾 Lưu</button>
-            </div>
-          </div>
-          <!-- 3-pane editor -->
-          <div class="lpb-editor">
-            <!-- Left palette -->
-            <div class="lpb-palette" id="lpb-palette">
-              <div class="lpb-palette-section">
-                <div class="lpb-palette-label">Layout</div>
-                <div class="lpb-block-item" draggable="true" data-type="hero"><span class="bi">🌅</span><div><div class="bt">Hero Section</div><div class="bd">Tiêu đề lớn + nền</div></div></div>
-                <div class="lpb-block-item" draggable="true" data-type="2col"><span class="bi">⬛⬜</span><div><div class="bt">2 Cột</div><div class="bd">Bố cục 2 cột</div></div></div>
-                <div class="lpb-block-item" draggable="true" data-type="cards"><span class="bi">🃏</span><div><div class="bt">Cards</div><div class="bd">2–3 thẻ thông tin</div></div></div>
-              </div>
-              <div class="lpb-palette-section">
-                <div class="lpb-palette-label">Nội dung</div>
-                <div class="lpb-block-item" draggable="true" data-type="heading"><span class="bi">H1</span><div><div class="bt">Tiêu đề</div><div class="bd">H1/H2/H3/H4</div></div></div>
-                <div class="lpb-block-item" draggable="true" data-type="text"><span class="bi">¶</span><div><div class="bt">Đoạn văn</div><div class="bd">Văn bản rich-text</div></div></div>
-                <div class="lpb-block-item" draggable="true" data-type="image"><span class="bi">🖼</span><div><div class="bt">Hình ảnh</div><div class="bd">Ảnh đơn + caption</div></div></div>
-                <div class="lpb-block-item" draggable="true" data-type="video"><span class="bi">▶️</span><div><div class="bt">Video</div><div class="bd">YouTube / Vimeo</div></div></div>
-                <div class="lpb-block-item" draggable="true" data-type="button"><span class="bi">🔘</span><div><div class="bt">Nút CTA</div><div class="bd">Button có link</div></div></div>
-              </div>
-              <div class="lpb-palette-section">
-                <div class="lpb-palette-label">Khác</div>
-                <div class="lpb-block-item" draggable="true" data-type="divider"><span class="bi">—</span><div><div class="bt">Đường kẻ</div><div class="bd">Divider ngang</div></div></div>
-                <div class="lpb-block-item" draggable="true" data-type="spacer"><span class="bi">↕</span><div><div class="bt">Khoảng trống</div><div class="bd">Spacer</div></div></div>
-                <div class="lpb-block-item" draggable="true" data-type="html"><span class="bi">&lt;/&gt;</span><div><div class="bt">HTML Tuỳ chỉnh</div><div class="bd">Nhúng code / form</div></div></div>
-              </div>
-            </div>
-            <!-- Canvas -->
-            <div class="lpb-canvas-wrap" id="lpb-canvas-wrap" onclick="lpbDeselectAll(event)">
-              <div class="lpb-canvas" id="lpb-canvas"></div>
-            </div>
-            <!-- Properties -->
-            <div class="lpb-props" id="lpb-props">
-              <div class="lpb-props-header">⚙️ Thuộc tính</div>
-              <div id="lpb-props-body" class="lpb-props-empty">Chọn một block để chỉnh sửa</div>
-            </div>
-          </div>
-        </div>
-      </div>
       <!-- LANDING PAGES LIST (see cmspage-landing below) -->
       <div id="cmspage-categories" class="cms-page-content" style="display:none">
         <div class="cms-topbar">
@@ -3090,6 +3013,9 @@ html, body {
           </div>
         </div>
       </div>
+
+
+
 
       <!-- IMAGES PAGE -->
       <div id="cmspage-images" class="cms-page-content" style="display:none">
@@ -3251,8 +3177,21 @@ html, body {
                     <option value="'Nunito Sans', sans-serif">Nunito Sans (Default)</option>
                     <option value="'Inter', sans-serif">Inter (Modern, Startup)</option>
                     <option value="'Roboto', sans-serif">Roboto (Clean, Flat)</option>
+                    <option value="'Open Sans', sans-serif">Open Sans (Classic Clean)</option>
+                    <option value="'Lato', sans-serif">Lato (Friendly)</option>
+                    <option value="'Montserrat', sans-serif">Montserrat (Geometric)</option>
+                    <option value="'Raleway', sans-serif">Raleway (Elegant Sans)</option>
+                    <option value="'Poppins', sans-serif">Poppins (Friendly Round)</option>
+                    <option value="'Ubuntu', sans-serif">Ubuntu (Distinctive)</option>
+                    <option value="'Be Vietnam Pro', sans-serif">Be Vietnam Pro (VN Optimized)</option>
+                    <option value="'Noto Sans', sans-serif">Noto Sans (Universal)</option>
+                    <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
+                    <option value="'Quicksand', sans-serif">Quicksand (Soft)</option>
                     <option value="Georgia, serif">Georgia (Newspaper)</option>
-                    <option value="'Playfair Display', serif">Playfair (Elegant)</option>
+                    <option value="'Merriweather', serif">Merriweather (Readability)</option>
+                    <option value="'Lora', serif">Lora (Modern Serif)</option>
+                    <option value="'PT Serif', serif">PT Serif</option>
+                    <option value="'Noto Serif', serif">Noto Serif</option>
                   </select>
                 </div>
 
@@ -3261,8 +3200,17 @@ html, body {
                   <select id="cms-font-heading" class="cms-field" style="font-size:14px;padding:12px;font-weight:600">
                     <option value="'Merriweather', serif">Merriweather (Default)</option>
                     <option value="'Playfair Display', serif">Playfair Display (Premium Classy)</option>
+                    <option value="'Lora', serif">Lora (Elegant Serif)</option>
+                    <option value="'PT Serif', serif">PT Serif</option>
+                    <option value="'Noto Serif', serif">Noto Serif</option>
+                    <option value="'Source Serif Pro', serif">Source Serif Pro</option>
+                    <option value="'Montserrat', sans-serif">Montserrat (Bold Modern)</option>
+                    <option value="'Oswald', sans-serif">Oswald (Narrow Bold)</option>
                     <option value="'Outfit', sans-serif">Outfit (Tech Bold)</option>
+                    <option value="'Raleway', sans-serif">Raleway (Light/Bold Mix)</option>
+                    <option value="'Poppins', sans-serif">Poppins (Playful)</option>
                     <option value="'Inter', sans-serif">Inter Bold (Sleek)</option>
+                    <option value="'Be Vietnam Pro', sans-serif">Be Vietnam Pro</option>
                     <option value="Arial, sans-serif">Arial (Basic)</option>
                   </select>
                 </div>
@@ -3600,6 +3548,87 @@ html, body {
       </div>
     </div>
   </div>
+
+  <!-- LANDING PAGE BUILDER (full-screen, outside cms-app) -->
+  <div id="cmspage-lpbuilder">
+    <div class="lpb-wrap">
+      <!-- Top bar -->
+      <div class="lpb-topbar">
+        <div class="lpb-topbar-left">
+          <button class="lpb-btn ghost" onclick="cmsNav('landing',null)" title="Quay lại danh sách">← Danh sách</button>
+          <h2>🏗 Landing Page Builder</h2>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="text" id="lpb-page-title" placeholder="Tên landing page" style="width:200px">
+          <input type="text" id="lpb-page-slug" placeholder="slug-url" style="width:150px">
+          <select id="lpb-page-status" style="border:1.5px solid #e8e8e8;border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--body-font);color:#333">
+            <option value="draft">📝 Nháp</option>
+            <option value="published">✅ Công khai</option>
+          </select>
+          <button class="lpb-btn ghost" onclick="lpbPreview()">👁 Xem thử</button>
+          <button class="lpb-btn primary" onclick="lpbSave()">💾 Lưu</button>
+        </div>
+      </div>
+      <!-- 3-pane editor -->
+      <div class="lpb-editor">
+        <!-- Left: Block palette -->
+        <div class="lpb-palette" id="lpb-palette">
+          <div class="lpb-palette-section">
+            <div class="lpb-palette-label">Nội dung</div>
+            <div class="lpb-block-item" draggable="true" data-type="hero" onclick="lpbBlocks.push(lpbMakeBlock('hero'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">🎯</span><div><div class="bt">Hero</div><div class="bd">Banner đầu trang</div></div>
+            </div>
+            <div class="lpb-block-item" draggable="true" data-type="heading" onclick="lpbBlocks.push(lpbMakeBlock('heading'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">📝</span><div><div class="bt">Tiêu đề</div><div class="bd">H1, H2, H3...</div></div>
+            </div>
+            <div class="lpb-block-item" draggable="true" data-type="text" onclick="lpbBlocks.push(lpbMakeBlock('text'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">📄</span><div><div class="bt">Văn bản</div><div class="bd">Đoạn văn HTML</div></div>
+            </div>
+            <div class="lpb-block-item" draggable="true" data-type="image" onclick="lpbBlocks.push(lpbMakeBlock('image'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">🖼</span><div><div class="bt">Hình ảnh</div><div class="bd">Ảnh đơn</div></div>
+            </div>
+            <div class="lpb-block-item" draggable="true" data-type="video" onclick="lpbBlocks.push(lpbMakeBlock('video'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">▶️</span><div><div class="bt">Video</div><div class="bd">YouTube / Vimeo</div></div>
+            </div>
+            <div class="lpb-block-item" draggable="true" data-type="button" onclick="lpbBlocks.push(lpbMakeBlock('button'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">🔲</span><div><div class="bt">Nút Bấm</div><div class="bd">CTA button</div></div>
+            </div>
+          </div>
+          <div class="lpb-palette-section">
+            <div class="lpb-palette-label">Bố cục</div>
+            <div class="lpb-block-item" draggable="true" data-type="2col" onclick="lpbBlocks.push(lpbMakeBlock('2col'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">⬛</span><div><div class="bt">2 Cột</div><div class="bd">Bố cục 2 cột</div></div>
+            </div>
+            <div class="lpb-block-item" draggable="true" data-type="cards" onclick="lpbBlocks.push(lpbMakeBlock('cards'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">🃏</span><div><div class="bt">Cards</div><div class="bd">Thẻ tính năng</div></div>
+            </div>
+          </div>
+          <div class="lpb-palette-section">
+            <div class="lpb-palette-label">Khác</div>
+            <div class="lpb-block-item" draggable="true" data-type="divider" onclick="lpbBlocks.push(lpbMakeBlock('divider'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">➖</span><div><div class="bt">Đường kẻ</div><div class="bd">Divider</div></div>
+            </div>
+            <div class="lpb-block-item" draggable="true" data-type="spacer" onclick="lpbBlocks.push(lpbMakeBlock('spacer'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">⬜</span><div><div class="bt">Khoảng trống</div><div class="bd">Spacer</div></div>
+            </div>
+            <div class="lpb-block-item" draggable="true" data-type="html" onclick="lpbBlocks.push(lpbMakeBlock('html'));lpbSelectedIdx=lpbBlocks.length-1;lpbRenderCanvas();lpbRenderProps()">
+              <span class="bi">🧩</span><div><div class="bt">HTML</div><div class="bd">Tuỳ chỉnh</div></div>
+            </div>
+          </div>
+        </div>
+        <!-- Center: Canvas -->
+        <div class="lpb-canvas-wrap" id="lpb-canvas-wrap" onclick="lpbDeselectAll(event)">
+          <div class="lpb-canvas" id="lpb-canvas"></div>
+        </div>
+        <!-- Right: Properties -->
+        <div class="lpb-props">
+          <div class="lpb-props-header">⚙️ Thuộc tính</div>
+          <div id="lpb-props-body" class="lpb-props-empty">Chọn một block để chỉnh sửa</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Image picker modal (used in editor) -->
@@ -3623,7 +3652,18 @@ html, body {
       <button class="modal-close" onclick="closeModal('rte-img-picker')">&times;</button>
     </div>
     <div class="modal-body">
+      <!-- Caption input (Global for all tabs) -->
+      <div id="rte-caption-group" style="background:#faf7f2;border:1px solid #e0d8cc;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:20px">📝</div>
+        <div style="flex:1">
+          <label style="font-size:11px;font-weight:700;color:#777;display:block;margin-bottom:2px">Chú thích ảnh (tùy chọn)</label>
+          <input type="text" id="rte-img-caption" placeholder="Nhập chú thích cho ảnh..." 
+            style="width:100%;border:none;background:transparent;outline:none;font-size:14px;font-family:var(--body-font);font-weight:600">
+        </div>
+      </div>
+
       <!-- Tabs -->
+
       <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #e0d8cc">
         <button id="rte-tab-lib" onclick="rteImgTabSwitch('lib')"
           style="background:none;border:none;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--body-font);color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px">
@@ -3718,12 +3758,8 @@ let data = {
 };
 let landingPages = []; // stored separately for perf
 const LP_KEY = 'taitangau_landing_pages';
-let customPagesData = {}; // Dữ liệu trang chuyên biệt (Home, About, Profile)
 
 let currentCategory = 'all';
-let currentEditingPost = null;
-let pageLayout = [];
-let selectedBlock = null;
 
 async function loadData() {
   _loadLocal();
@@ -3763,14 +3799,23 @@ function _loadLocal() {
     }
   } catch(e) {}
   try { const imgs = localStorage.getItem(IMAGES_KEY); if (imgs) data.images = JSON.parse(imgs); } catch(e) {}
-  try { const sl = localStorage.getItem(PAGE_LAYOUT_KEY); if (sl) pageLayout = JSON.parse(sl); } catch(e) {}
-  try { const lp = localStorage.getItem(LP_KEY); if (lp) landingPages = JSON.parse(lp); } catch(e) {}
+  try { 
+    const lp = localStorage.getItem(LP_KEY); 
+    if (lp) {
+      const parsedLp = JSON.parse(lp);
+      landingPages = Array.isArray(parsedLp) ? parsedLp : [];
+    } else {
+      landingPages = [];
+    }
+  } catch(e) {
+    landingPages = [];
+  }
 }
 
 async function _pullFirebase() {
   if (!_db) return;
   try {
-    const [ps, ss, cs, pgs, ims, lps, themeSnap, customPagesSnap, layoutSnap, mobileSnap] = await Promise.all([
+    const [ps, ss, cs, pgs, ims, lps, themeSnap, layoutSnap, mobileSnap] = await Promise.all([
       _db.collection('posts').orderBy('date','desc').get(),
       _db.collection('site').doc('settings').get(),
       _db.collection('site').doc('categories').get(),
@@ -3778,7 +3823,6 @@ async function _pullFirebase() {
       _db.collection('images').get(),
       _db.collection('landingPages').get(),
       _db.collection('site').doc('theme').get(),
-      _db.collection('site').doc('custom_pages').get(),
       _db.collection('site').doc('layout').get(),
       _db.collection('site').doc('mobile').get()
     ]);
@@ -3802,9 +3846,6 @@ async function _pullFirebase() {
       applyMobileCfg(md);
     }
     
-    if (customPagesSnap.exists) {
-      customPagesData = customPagesSnap.data();
-    }
     if (!ps.empty)  data.posts      = ps.docs.map(d => ({_id:d.id, ...d.data()}));
     if (ss.exists)  {
       const fbSettings = ss.data();
@@ -3886,10 +3927,6 @@ function saveImages() {
   data.images.filter(i => i.url && !i.url.startsWith('data:')).forEach(async img => {
     try { const {_id, ...d} = img; if (_id) await _db.collection('images').doc(_id).set(d); else { const r = await _db.collection('images').add(d); img._id = r.id; } } catch(e) {}
   });
-}
-
-function savePageLayoutData() {
-  try { localStorage.setItem(PAGE_LAYOUT_KEY, JSON.stringify(pageLayout)); } catch(e) {}
 }
 
 function saveLandingPages() {
@@ -4205,616 +4242,6 @@ function performSearch() {
 }
 
 /* ══════════════════════════════════════════════
-   PAGE BUILDER
-══════════════════════════════════════════════ */
-function openPageBuilder() {
-  document.getElementById('page-builder').classList.add('active');
-  renderCanvas();
-}
-
-function closePageBuilder() {
-  document.getElementById('page-builder').classList.remove('active');
-  selectedBlock = null;
-}
-
-function renderCanvas() {
-  const canvas = document.getElementById('canvas-dropzone');
-  
-  if (pageLayout.length === 0) {
-    canvas.innerHTML = `
-      <div class="canvas-empty">
-        <div class="icon">🎨</div>
-        <p>Kéo các component từ sidebar vào đây<br>để bắt đầu xây dựng trang của bạn</p>
-      </div>
-    `;
-    return;
-  }
-  
-  canvas.innerHTML = pageLayout.map((block, idx) => {
-    return renderBlock(block, idx);
-  }).join('');
-  
-  // Add drag & drop listeners
-  const blocks = canvas.querySelectorAll('.canvas-block');
-  blocks.forEach((block, idx) => {
-    block.draggable = true;
-    block.addEventListener('dragstart', handleBlockDragStart);
-    block.addEventListener('dragover', handleBlockDragOver);
-    block.addEventListener('drop', handleBlockDrop);
-    block.addEventListener('dragend', handleBlockDragEnd);
-  });
-}
-
-function renderBlock(block, idx) {
-  const config = block.config || {};
-  
-  switch (block.type) {
-    case 'hero':
-      return `
-        <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-          <div class="block-controls">
-            <button class="block-control-btn" onclick="event.stopPropagation(); editBlock(${idx})">✏️</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockUp(${idx})">↑</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockDown(${idx})">↓</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-          </div>
-          <div class="hero" style="background: ${config.bgColor || 'transparent'}">
-            <span class="hero-tag">${config.tag || 'Bài viết nổi bật'}</span>
-            <h1>${config.title || 'Tiêu đề Hero'}</h1>
-            <p class="hero-desc">${config.description || 'Mô tả ngắn về nội dung'}</p>
-          </div>
-        </div>
-      `;
-      
-    case 'posts-grid':
-      const postsToShow = data.posts.slice(0, config.limit || 6);
-      return `
-        <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-          <div class="block-controls">
-            <button class="block-control-btn" onclick="event.stopPropagation(); editBlock(${idx})">✏️</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockUp(${idx})">↑</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockDown(${idx})">↓</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-          </div>
-          <div style="padding: 40px 24px; max-width: 1100px; margin: 0 auto;">
-            ${config.title ? `<h2 style="font-family: var(--heading-font); font-size: 28px; margin-bottom: 24px;">${config.title}</h2>` : ''}
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
-              ${postsToShow.map(post => `
-                <div style="background: var(--card-bg); border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08);">
-                  ${post.image ? `<img src="${post.image}" style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">` : `<div style="width: 100%; aspect-ratio: 4/3; background: var(--tag-bg); display: flex; align-items: center; justify-content: center; font-size: 40px;">${getCatEmoji(post.category)}</div>`}
-                  <div style="padding: 20px;">
-                    <span style="font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1px;">${post.category}</span>
-                    <h3 style="font-family: var(--heading-font); font-size: 18px; margin: 8px 0;">${post.title}</h3>
-                    <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">${(post.excerpt || '').substring(0, 100)}...</p>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-      
-    case 'posts-list':
-      const listPosts = data.posts.slice(0, config.limit || 5);
-      return `
-        <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-          <div class="block-controls">
-            <button class="block-control-btn" onclick="event.stopPropagation(); editBlock(${idx})">✏️</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockUp(${idx})">↑</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockDown(${idx})">↓</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-          </div>
-          <div style="padding: 40px 24px; max-width: 1100px; margin: 0 auto;">
-            ${config.title ? `<h2 style="font-family: var(--heading-font); font-size: 28px; margin-bottom: 24px;">${config.title}</h2>` : ''}
-            ${listPosts.map(post => `
-              <div style="display: grid; grid-template-columns: 1fr 180px; gap: 24px; padding: 28px 0; border-bottom: 1px solid var(--border);">
-                <div>
-                  <span style="font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase;">${post.category}</span>
-                  <h3 style="font-family: var(--heading-font); font-size: 20px; margin: 8px 0;">${post.title}</h3>
-                  <p style="font-size: 13.5px; color: var(--muted);">${(post.excerpt || '').substring(0, 150)}...</p>
-                  <div style="font-size: 12px; color: var(--muted); margin-top: 12px;">${formatDate(post.date)}</div>
-                </div>
-                ${post.image ? `<img src="${post.image}" style="width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 4px;">` : `<div style="width: 100%; aspect-ratio: 16/10; background: var(--tag-bg); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 40px;">${getCatEmoji(post.category)}</div>`}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-      
-    case 'featured':
-      const featured = data.posts[0];
-      if (!featured) {
-        return `
-          <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-            <div class="block-controls">
-              <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-            </div>
-            <div style="padding: 40px 24px; text-align: center; color: var(--muted);">
-              Chưa có bài viết nào
-            </div>
-          </div>
-        `;
-      }
-      return `
-        <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-          <div class="block-controls">
-            <button class="block-control-btn" onclick="event.stopPropagation(); editBlock(${idx})">✏️</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockUp(${idx})">↑</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockDown(${idx})">↓</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-          </div>
-          <div style="padding: 60px 24px; max-width: 1100px; margin: 0 auto; background: ${config.bgColor || 'var(--card-bg)'}; border-radius: 8px;">
-            <div style="max-width: 700px; margin: 0 auto; text-align: center;">
-              <span style="display: inline-block; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; padding: 6px 14px; border-radius: 20px; margin-bottom: 20px;">⭐ NỔI BẬT</span>
-              <h2 style="font-family: var(--heading-font); font-size: 36px; line-height: 1.2; margin-bottom: 16px;">${featured.title}</h2>
-              <p style="font-size: 16px; color: var(--muted); margin-bottom: 24px;">${featured.excerpt || ''}</p>
-              <a href="#" style="display: inline-block; background: var(--dark); color: var(--card-bg); padding: 12px 28px; border-radius: 4px; text-decoration: none; font-weight: 600;">Đọc ngay</a>
-            </div>
-          </div>
-        </div>
-      `;
-      
-    case 'categories':
-      const catCounts = {};
-      data.posts.forEach(p => {
-        catCounts[p.category] = (catCounts[p.category] || 0) + 1;
-      });
-      return `
-        <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-          <div class="block-controls">
-            <button class="block-control-btn" onclick="event.stopPropagation(); editBlock(${idx})">✏️</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockUp(${idx})">↑</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockDown(${idx})">↓</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-          </div>
-          <div style="padding: 40px 24px; max-width: 1100px; margin: 0 auto;">
-            ${config.title ? `<h2 style="font-family: var(--heading-font); font-size: 28px; margin-bottom: 24px; text-align: center;">${config.title}</h2>` : ''}
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-              ${Object.keys(catCounts).map(cat => `
-                <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 24px; text-align: center;">
-                  <div style="font-size: 48px; margin-bottom: 12px;">${getCatEmoji(cat)}</div>
-                  <h3 style="font-size: 18px; margin-bottom: 8px;">${cat}</h3>
-                  <p style="font-size: 13px; color: var(--muted);">${catCounts[cat]} bài viết</p>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-      
-    case 'text':
-      return `
-        <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-          <div class="block-controls">
-            <button class="block-control-btn" onclick="event.stopPropagation(); editBlock(${idx})">✏️</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockUp(${idx})">↑</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockDown(${idx})">↓</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-          </div>
-          <div style="padding: 40px 24px; max-width: ${config.maxWidth || '700px'}; margin: 0 auto; text-align: ${config.align || 'left'};">
-            ${config.content || '<p style="color: var(--muted);">Nhấp vào ✏️ để chỉnh sửa nội dung</p>'}
-          </div>
-        </div>
-      `;
-      
-    case 'image':
-      return `
-        <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-          <div class="block-controls">
-            <button class="block-control-btn" onclick="event.stopPropagation(); editBlock(${idx})">✏️</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockUp(${idx})">↑</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockDown(${idx})">↓</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-          </div>
-          <div style="padding: 20px; text-align: center;">
-            ${config.url 
-              ? `<img src="${config.url}" alt="${config.alt || ''}" style="max-width: ${config.width || '100%'}; border-radius: ${config.rounded ? '8px' : '0'};">`
-              : `<div style="background: var(--tag-bg); padding: 60px; border-radius: 8px; color: var(--muted);">🖼️ Chưa có hình ảnh</div>`
-            }
-          </div>
-        </div>
-      `;
-      
-    case 'spacer':
-      return `
-        <div class="canvas-block" data-index="${idx}" onclick="selectBlock(${idx})">
-          <div class="block-controls">
-            <button class="block-control-btn" onclick="event.stopPropagation(); editBlock(${idx})">✏️</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockUp(${idx})">↑</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); moveBlockDown(${idx})">↓</button>
-            <button class="block-control-btn" onclick="event.stopPropagation(); deleteBlock(${idx})">🗑️</button>
-          </div>
-          <div style="height: ${config.height || '40px'}; background: repeating-linear-gradient(45deg, transparent, transparent 10px, var(--border) 10px, var(--border) 11px);"></div>
-        </div>
-      `;
-      
-    default:
-      return `<div class="canvas-block" data-index="${idx}">Unknown block type: ${block.type}</div>`;
-  }
-}
-
-// Drag & Drop handlers for components
-document.addEventListener('DOMContentLoaded', () => {
-  const components = document.querySelectorAll('.component-item');
-  components.forEach(comp => {
-    comp.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('component-type', comp.dataset.component);
-    });
-  });
-  
-  const canvas = document.getElementById('canvas-dropzone');
-  if (!canvas) return; // Element chưa tồn tại thì bỏ qua
-  
-  canvas.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  });
-  
-  canvas.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const type = e.dataTransfer.getData('component-type');
-    if (type) addBlock(type);
-  });
-});
-
-// Block drag & drop for reordering
-let draggedBlockIndex = null;
-
-function handleBlockDragStart(e) {
-  draggedBlockIndex = parseInt(e.target.dataset.index);
-  e.target.classList.add('dragging');
-}
-
-function handleBlockDragOver(e) {
-  e.preventDefault();
-  const targetIndex = parseInt(e.currentTarget.dataset.index);
-  if (targetIndex !== draggedBlockIndex) {
-    e.currentTarget.classList.add('drag-over');
-  }
-}
-
-function handleBlockDrop(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  const targetIndex = parseInt(e.currentTarget.dataset.index);
-  
-  if (draggedBlockIndex !== null && targetIndex !== draggedBlockIndex) {
-    const draggedBlock = pageLayout[draggedBlockIndex];
-    pageLayout.splice(draggedBlockIndex, 1);
-    const newIndex = draggedBlockIndex < targetIndex ? targetIndex - 1 : targetIndex;
-    pageLayout.splice(newIndex, 0, draggedBlock);
-    renderCanvas();
-  }
-  
-  e.currentTarget.classList.remove('drag-over');
-}
-
-function handleBlockDragEnd(e) {
-  e.target.classList.remove('dragging');
-  document.querySelectorAll('.canvas-block').forEach(el => {
-    el.classList.remove('drag-over');
-  });
-  draggedBlockIndex = null;
-}
-
-function addBlock(type) {
-  const block = {
-    type: type,
-    config: getDefaultConfig(type)
-  };
-  
-  pageLayout.push(block);
-  renderCanvas();
-  showToast('✅ Đã thêm component');
-}
-
-function getDefaultConfig(type) {
-  switch (type) {
-    case 'hero':
-      return {
-        tag: 'Bài viết nổi bật',
-        title: 'Khám phá những câu chuyện nghề và đời đầy cảm hứng',
-        description: 'Nơi chia sẻ kinh nghiệm, góc nhìn và những trải nghiệm thực tế từ cuộc sống và công việc.',
-        bgColor: 'transparent'
-      };
-    case 'posts-grid':
-      return { title: 'Bài viết mới nhất', limit: 6 };
-    case 'posts-list':
-      return { title: '', limit: 5 };
-    case 'featured':
-      return { bgColor: 'var(--card-bg)' };
-    case 'categories':
-      return { title: 'Chuyên mục' };
-    case 'text':
-      return {
-        content: '<h2>Tiêu đề</h2><p>Nội dung văn bản của bạn ở đây...</p>',
-        maxWidth: '700px',
-        align: 'left'
-      };
-    case 'image':
-      return { url: '', alt: '', width: '100%', rounded: true };
-    case 'spacer':
-      return { height: '40px' };
-    default:
-      return {};
-  }
-}
-
-function selectBlock(idx) {
-  selectedBlock = idx;
-  renderProperties(idx);
-  
-  // Visual feedback
-  document.querySelectorAll('.canvas-block').forEach((el, i) => {
-    if (i === idx) {
-      el.style.outline = '2px solid var(--accent)';
-    } else {
-      el.style.outline = '';
-    }
-  });
-}
-
-function renderProperties(idx) {
-  const block = pageLayout[idx];
-  const container = document.getElementById('properties-content');
-  
-  if (!block) {
-    container.innerHTML = '<p style="color: var(--muted); font-size: 13px;">Chọn một component để chỉnh sửa</p>';
-    return;
-  }
-  
-  let html = `<h4 style="margin-bottom: 16px; color: var(--accent);">${getBlockTypeName(block.type)}</h4>`;
-  
-  switch (block.type) {
-    case 'hero':
-      html += `
-        <div class="property-group">
-          <label class="property-label">Tag</label>
-          <input type="text" class="property-input" value="${escHtml(block.config.tag || '')}" 
-                 onchange="updateBlockConfig(${idx}, 'tag', this.value)">
-        </div>
-        <div class="property-group">
-          <label class="property-label">Tiêu đề</label>
-          <textarea class="property-input" rows="3" 
-                    onchange="updateBlockConfig(${idx}, 'title', this.value)">${escHtml(block.config.title || '')}</textarea>
-        </div>
-        <div class="property-group">
-          <label class="property-label">Mô tả</label>
-          <textarea class="property-input" rows="3" 
-                    onchange="updateBlockConfig(${idx}, 'description', this.value)">${escHtml(block.config.description || '')}</textarea>
-        </div>
-        <div class="property-group">
-          <label class="property-label">Màu nền</label>
-          <input type="text" class="property-input" value="${block.config.bgColor || 'transparent'}" 
-                 onchange="updateBlockConfig(${idx}, 'bgColor', this.value)">
-        </div>
-      `;
-      break;
-      
-    case 'posts-grid':
-    case 'posts-list':
-      html += `
-        <div class="property-group">
-          <label class="property-label">Tiêu đề (tùy chọn)</label>
-          <input type="text" class="property-input" value="${escHtml(block.config.title || '')}" 
-                 onchange="updateBlockConfig(${idx}, 'title', this.value)">
-        </div>
-        <div class="property-group">
-          <label class="property-label">Số lượng bài viết</label>
-          <input type="number" class="property-input" value="${block.config.limit || 5}" min="1" max="20"
-                 onchange="updateBlockConfig(${idx}, 'limit', parseInt(this.value))">
-        </div>
-      `;
-      break;
-      
-    case 'featured':
-      html += `
-        <div class="property-group">
-          <label class="property-label">Màu nền</label>
-          <input type="text" class="property-input" value="${block.config.bgColor || 'var(--card-bg)'}" 
-                 onchange="updateBlockConfig(${idx}, 'bgColor', this.value)">
-        </div>
-      `;
-      break;
-      
-    case 'categories':
-      html += `
-        <div class="property-group">
-          <label class="property-label">Tiêu đề</label>
-          <input type="text" class="property-input" value="${escHtml(block.config.title || '')}" 
-                 onchange="updateBlockConfig(${idx}, 'title', this.value)">
-        </div>
-      `;
-      break;
-      
-    case 'text':
-      html += `
-        <div class="property-group">
-          <label class="property-label">Nội dung HTML</label>
-          <textarea class="property-input" rows="6" 
-                    onchange="updateBlockConfig(${idx}, 'content', this.value)">${escHtml(block.config.content || '')}</textarea>
-        </div>
-        <div class="property-group">
-          <label class="property-label">Chiều rộng tối đa</label>
-          <input type="text" class="property-input" value="${block.config.maxWidth || '700px'}" 
-                 onchange="updateBlockConfig(${idx}, 'maxWidth', this.value)">
-        </div>
-        <div class="property-group">
-          <label class="property-label">Căn chỉnh</label>
-          <select class="property-input" onchange="updateBlockConfig(${idx}, 'align', this.value)">
-            <option value="left" ${block.config.align === 'left' ? 'selected' : ''}>Trái</option>
-            <option value="center" ${block.config.align === 'center' ? 'selected' : ''}>Giữa</option>
-            <option value="right" ${block.config.align === 'right' ? 'selected' : ''}>Phải</option>
-          </select>
-        </div>
-      `;
-      break;
-      
-    case 'image':
-      html += `
-        <div class="property-group">
-          <label class="property-label">URL hình ảnh</label>
-          <input type="text" class="property-input" value="${escHtml(block.config.url || '')}" 
-                 onchange="updateBlockConfig(${idx}, 'url', this.value)">
-        </div>
-        <div class="property-group">
-          <label class="property-label">Alt text</label>
-          <input type="text" class="property-input" value="${escHtml(block.config.alt || '')}" 
-                 onchange="updateBlockConfig(${idx}, 'alt', this.value)">
-        </div>
-        <div class="property-group">
-          <label class="property-label">Chiều rộng</label>
-          <input type="text" class="property-input" value="${block.config.width || '100%'}" 
-                 onchange="updateBlockConfig(${idx}, 'width', this.value)">
-        </div>
-        <div class="property-group">
-          <label class="property-toggle">
-            <input type="checkbox" ${block.config.rounded ? 'checked' : ''} 
-                   onchange="updateBlockConfig(${idx}, 'rounded', this.checked)">
-            <span>Bo góc</span>
-          </label>
-        </div>
-      `;
-      break;
-      
-    case 'spacer':
-      html += `
-        <div class="property-group">
-          <label class="property-label">Chiều cao (px)</label>
-          <input type="text" class="property-input" value="${block.config.height || '40px'}" 
-                 onchange="updateBlockConfig(${idx}, 'height', this.value)">
-        </div>
-      `;
-      break;
-  }
-  
-  container.innerHTML = html;
-}
-
-function getBlockTypeName(type) {
-  const names = {
-    'hero': 'Hero Section',
-    'posts-grid': 'Posts Grid',
-    'posts-list': 'Posts List',
-    'featured': 'Featured Post',
-    'categories': 'Categories',
-    'text': 'Text Block',
-    'image': 'Image',
-    'spacer': 'Spacer'
-  };
-  return names[type] || type;
-}
-
-function updateBlockConfig(idx, key, value) {
-  if (!pageLayout[idx]) return;
-  pageLayout[idx].config[key] = value;
-  renderCanvas();
-  if (selectedBlock === idx) {
-    selectBlock(idx);
-  }
-}
-
-function editBlock(idx) {
-  selectBlock(idx);
-}
-
-function moveBlockUp(idx) {
-  if (idx === 0) return;
-  const block = pageLayout[idx];
-  pageLayout.splice(idx, 1);
-  pageLayout.splice(idx - 1, 0, block);
-  renderCanvas();
-  if (selectedBlock === idx) {
-    selectedBlock = idx - 1;
-    selectBlock(selectedBlock);
-  }
-}
-
-function moveBlockDown(idx) {
-  if (idx === pageLayout.length - 1) return;
-  const block = pageLayout[idx];
-  pageLayout.splice(idx, 1);
-  pageLayout.splice(idx + 1, 0, block);
-  renderCanvas();
-  if (selectedBlock === idx) {
-    selectedBlock = idx + 1;
-    selectBlock(selectedBlock);
-  }
-}
-
-function deleteBlock(idx) {
-  if (!confirm('Xóa component này?')) return;
-  pageLayout.splice(idx, 1);
-  renderCanvas();
-  selectedBlock = null;
-  document.getElementById('properties-content').innerHTML = '<p style="color: var(--muted); font-size: 13px;">Chọn một component để chỉnh sửa</p>';
-  showToast('🗑️ Đã xóa component');
-}
-
-function savePageLayout() {
-  savePageLayoutData();
-  showToast('💾 Đã lưu layout');
-}
-
-function previewPage() {
-  // Apply layout to main page
-  const appRoot = document.getElementById('blog-home');
-  const canvas = document.getElementById('canvas-dropzone');
-  // Clone canvas content and inject (keep hero + filter bar intact, only replace posts area)
-  const heroEl = document.getElementById('hero-section');
-  const postsEl = document.getElementById('posts-list');
-  if (postsEl && canvas) {
-    postsEl.innerHTML = canvas.innerHTML;
-    postsEl.querySelectorAll('.block-controls').forEach(el => el.remove());
-    postsEl.querySelectorAll('.canvas-block').forEach(el => {
-      el.style.outline = 'none';
-      el.onclick = null;
-      el.draggable = false;
-    });
-  }
-  closePageBuilder();
-  showToast('👁️ Xem trước layout mới');
-}
-
-function loadLayoutPreset() {
-  const presets = [
-    {
-      name: 'Blog Classic',
-      layout: [
-        { type: 'hero', config: getDefaultConfig('hero') },
-        { type: 'posts-list', config: { title: 'Bài viết mới nhất', limit: 10 } }
-      ]
-    },
-    {
-      name: 'Magazine',
-      layout: [
-        { type: 'featured', config: getDefaultConfig('featured') },
-        { type: 'posts-grid', config: { title: 'Đọc thêm', limit: 6 } }
-      ]
-    },
-    {
-      name: 'Portfolio',
-      layout: [
-        { type: 'hero', config: getDefaultConfig('hero') },
-        { type: 'categories', config: { title: 'Chuyên mục' } },
-        { type: 'posts-grid', config: { title: '', limit: 9 } }
-      ]
-    }
-  ];
-  
-  const choice = prompt('Chọn preset:\n1. Blog Classic\n2. Magazine\n3. Portfolio\n\nNhập số (1-3):');
-  const idx = parseInt(choice) - 1;
-  
-  if (idx >= 0 && idx < presets.length) {
-    if (confirm(`Áp dụng preset "${presets[idx].name}"? Layout hiện tại sẽ bị thay thế.`)) {
-      pageLayout = JSON.parse(JSON.stringify(presets[idx].layout));
-      renderCanvas();
-      showToast(`✨ Đã tải preset: ${presets[idx].name}`);
-    }
-  }
-}
-
-/* ══════════════════════════════════════════════
    NAVIGATION & FILTERS
 ══════════════════════════════════════════════ */
 function filterCat(cat, elem, e) {
@@ -4886,20 +4313,36 @@ let cmsLoggedIn = localStorage.getItem(CMS_SESSION_KEY) === '1';
 let cmsCurrentEditIdx = null;
 
 function openCMS() {
-  loadFirebase();
-  document.getElementById('cms-page').classList.add('active');
-  loadData();
-  if (!cmsLoggedIn) {
-    document.getElementById('cms-login-screen').style.display = 'flex';
-    document.getElementById('cms-app').classList.remove('active');
-    setTimeout(() => document.getElementById('cms-pass-input').focus(), 100);
-  } else {
-    showCmsApp();
-  }
-  // Xóa #admin khỏi URL để tránh mở lại CMS khi reload
+  // Xóa #admin khỏi URL ngay lập tức
   if (window.location.hash === '#admin') {
     history.replaceState(null, '', window.location.pathname + window.location.search);
   }
+  
+  // LUÔN hiện #cms-page trước (là container cha của login hoặc app)
+  document.getElementById('cms-page').classList.add('active');
+
+  if (cmsLoggedIn) {
+    // Đã đăng nhập → mở thẳng CMS
+    loadFirebase();
+    loadData();
+    showCmsApp();
+  } else {
+    // Chưa đăng nhập → show login modal (nằm trong #cms-page)
+    _showLoginModal();
+  }
+}
+
+function _showLoginModal() {
+  const modal = document.getElementById('cms-login-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('cms-pass-input').focus(), 100);
+  }
+}
+
+function _hideLoginModal() {
+  const modal = document.getElementById('cms-login-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 function cmsLogin() {
@@ -4907,9 +4350,13 @@ function cmsLogin() {
   if (pass === data.settings.password) {
     cmsLoggedIn = true;
     localStorage.setItem(CMS_SESSION_KEY, '1');
-    document.getElementById('cms-login-screen').style.display = 'none';
     document.getElementById('cms-login-err').style.display = 'none';
     document.getElementById('cms-pass-input').value = '';
+    _hideLoginModal();
+    // Mở CMS đầy đủ sau khi đăng nhập
+    loadFirebase();
+    loadData();
+    document.getElementById('cms-page').classList.add('active');
     showCmsApp();
   } else {
     document.getElementById('cms-login-err').style.display = 'block';
@@ -4952,7 +4399,6 @@ function cmsNav(page, el) {
   if (page === 'mobile') cmsLoadMobile();
   if (page === 'settings') cmsLoadSettings();
   if (page === 'landing') lpbRenderList();
-  if (page === 'custompages') { document.getElementById('cms-cp-select').value = ''; document.getElementById('cms-cp-editor-area').style.display = 'none'; }
   if (page === 'urlmanager') cmsRenderUrlManager();
 }
 
@@ -5233,27 +4679,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Compress image before saving to avoid filling localStorage
-function compressImage(base64Str, filename, callback) {
-  const img = new Image();
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    let width = img.width;
-    let height = img.height;
-    const MAX_WIDTH = 1200;
-    if (width > MAX_WIDTH) {
-      height = Math.floor(height * MAX_WIDTH / width);
-      width = MAX_WIDTH;
-    }
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, width, height);
-    callback(canvas.toDataURL('image/jpeg', 0.85));
-  };
-  img.src = base64Str;
-}
-
 function cmsSavePost() {
   const title = document.getElementById('cms-post-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
@@ -5360,6 +4785,10 @@ function rteOpenImgPicker() {
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0) _savedRteRange = sel.getRangeAt(0).cloneRange();
   
+  // Clear caption field
+  const capInput = document.getElementById('rte-img-caption');
+  if (capInput) capInput.value = '';
+
   rteImgTabSwitch('lib');
   document.getElementById('rte-img-picker').classList.add('active');
   rteRenderPickerGallery();
@@ -5398,10 +4827,20 @@ function rteInsertImg(idxStr) {
 }
 
 function _rteDoInsert(src, alt) {
+  const caption = (document.getElementById('rte-img-caption')?.value || '').trim();
+  
   // Nếu có Quill editor đang active
   if (window._rteTarget === 'quill') {
-    rteInsertPickedImg(src); // FIX: dùng src thay vì url (undefined)
-    document.getElementById('cms-img-picker').style.display='none';
+    // Quill doesn't support complex HTML as easily via insertEmbed, 
+    // but we can use clipboard or dangerouslySetInnerHTML approach for captions
+    // For now, let's use a simplified approach for Quill or just alt text.
+    // If caption exists, we insert it after the image or use a custom format.
+    rteInsertPickedImg(src); 
+    if (caption) {
+      const range = postQuill.getSelection(true);
+      postQuill.insertText(range.index,"[" + caption + "]", { 'italic': true, 'color': '#777777' });
+    }
+    document.getElementById('rte-img-picker').classList.remove('active');
     return;
   }
 
@@ -5414,7 +4853,18 @@ function _rteDoInsert(src, alt) {
     sel.removeAllRanges();
     sel.addRange(_savedRteRange);
   }
-  document.execCommand('insertHTML', false, `<img src="${src}" alt="${escHtml(alt || '')}" style="max-width:100%;border-radius:6px;margin:10px 0;display:block"><p><br></p>`);
+
+  let html = `<img src="${src}" alt="${escHtml(alt || '')}" style="max-width:100%;border-radius:6px;margin:10px 0;display:block">`;
+  if (caption) {
+    html = `
+      <figure style="margin:20px 0;text-align:center">
+        <img src="${src}" alt="${escHtml(alt || '')}" style="max-width:100%;border-radius:6px;display:block;margin:0 auto">
+        <figcaption style="margin-top:8px;font-size:13px;color:#777;font-style:italic">${escHtml(caption)}</figcaption>
+      </figure>
+    `;
+  }
+  
+  document.execCommand('insertHTML', false, html + '<p><br></p>');
   _savedRteRange = null;
 }
 
@@ -5430,11 +4880,25 @@ async function rteHandleFileUpload(files) {
   const status = document.getElementById('rte-upload-status');
   status.textContent = 'Đang upload...';
 
-  let url = await uploadImageToStorage(file);
+  let url = null;
+  if (location.protocol === 'file:') {
+    console.warn('RTE: Running from file:// - bypassing Firebase Storage');
+  } else {
+    try {
+      url = await Promise.race([
+        uploadImageToStorage(file),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('Timeout')), 5000))
+      ]);
+    } catch(err) {
+      console.warn('RTE: Storage upload failed or timed out', err);
+    }
+  }
+
   if (!url) {
     // Fallback base64
     url = await new Promise(res => {
       const reader = new FileReader();
+      reader.onerror = () => res(null);
       reader.onload = ev => compressImage(ev.target.result, file.name, res);
       reader.readAsDataURL(file);
     });
@@ -5531,35 +4995,58 @@ function cmsHandleFiles(files) {
   let done = 0;
   arr.forEach(async (file) => {
     const imgName = file.name.replace(/\.[^.]+$/, '');
+    console.log('Starting upload for:', imgName);
     status.textContent = `Đang upload ${imgName}...`;
 
     // Thử upload lên Firebase Storage
-    let finalUrl = await uploadImageToStorage(file);
+    let finalUrl = null;
+    if (location.protocol === 'file:') {
+      console.warn('Đang chạy từ file:// - Firebase Storage sẽ bị lỗi CORS. Chuyển sang lưu Base64.');
+    } else {
+      try {
+        // Thêm timeout 5 giây để tránh bị treo nếu Firebase hỏng
+        finalUrl = await Promise.race([
+          uploadImageToStorage(file),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('Timeout')), 5000))
+        ]);
+      } catch(err) {
+        console.warn('Storage upload failed or timed out, falling back to base64', err);
+      }
+    }
 
     // Fallback: nếu chưa có Storage thì dùng base64
     if (!finalUrl) {
+      console.log('Using base64 fallback for:', imgName);
       finalUrl = await new Promise(res => {
         const reader = new FileReader();
+        reader.onerror = () => { console.error('FileReader error'); res(null); };
         reader.onload = ev => {
-          compressImage(ev.target.result, file.name, (url) => res(url));
+          compressImage(ev.target.result, file.name, (url) => {
+            console.log('Compression done for:', imgName);
+            res(url);
+          });
         };
         reader.readAsDataURL(file);
       });
     }
 
-    if (!data.images) data.images = [];
-    data.images.push({ url: finalUrl, name: imgName, createdAt: Date.now() });
+    if (finalUrl) {
+      if (!data.images) data.images = [];
+      data.images.push({ url: finalUrl, name: imgName, createdAt: Date.now() });
 
-    const thumb = document.createElement('div');
-    thumb.style.cssText = 'position:relative;width:100px;height:80px;border-radius:6px;overflow:hidden;background:#e0d8cc;flex-shrink:0';
-    thumb.innerHTML = `<img src="${finalUrl}" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(28,20,9,.65);color:#fff;font-size:10px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(imgName)}</div>`;
-    previews.appendChild(thumb);
+      const thumb = document.createElement('div');
+      thumb.style.cssText = 'position:relative;width:100px;height:80px;border-radius:6px;overflow:hidden;background:#e0d8cc;flex-shrink:0';
+      thumb.innerHTML = `<img src="${finalUrl}" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(28,20,9,.65);color:#fff;font-size:10px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(imgName)}</div>`;
+      previews.appendChild(thumb);
+    } else {
+      console.error('Failed to get URL for:', imgName);
+    }
 
     done++;
     bar.style.width = Math.round(done / arr.length * 100) + '%';
     if (done === arr.length) {
       saveImages();
-      status.textContent = `✅ Đã upload ${done} ảnh lên Firebase!`;
+      status.textContent = `✅ Đã xử lý ${done} ảnh!`;
       setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 2000);
       cmsRenderImages();
       showToast(`✅ Đã upload ${done} ảnh`);
@@ -5569,6 +5056,10 @@ function cmsHandleFiles(files) {
 
 function compressImage(dataUrl, filename, callback) {
   const img = new Image();
+  img.onerror = () => {
+    console.warn('Compression failed for', filename);
+    callback(dataUrl, filename);
+  };
   img.onload = function() {
     const MAX = 1200;
     let w = img.width, h = img.height;
@@ -5584,7 +5075,7 @@ function compressImage(dataUrl, filename, callback) {
     const compressed = canvas.toDataURL('image/jpeg', 0.82);
     callback(compressed, filename);
   };
-  img.src = dataUrl; // FIX: thiếu dòng này khiến onload không bao giờ chạy
+  img.src = dataUrl;
 }
 
 function cmsImgCopy(url, btn) {
@@ -5604,6 +5095,58 @@ function cmsImgDelete(i) {
   saveImages();
   cmsRenderImages();
   showToast('Đã xóa');
+}
+
+function cmsAddImageUrl() {
+  const url = document.getElementById('cms-img-url').value.trim();
+  if (!url) return showToast('Vui lòng nhập URL hình ảnh', true);
+  let name = document.getElementById('cms-img-name').value.trim();
+  if (!name) name = url.split('/').pop().split('?')[0] || 'Ảnh từ URL';
+  
+  if (!data.images) data.images = [];
+  data.images.push({ url, name, createdAt: Date.now() });
+  saveImages();
+  cmsRenderImages();
+  
+  document.getElementById('cms-img-url').value = '';
+  document.getElementById('cms-img-name').value = '';
+  document.getElementById('cms-img-add-form').style.display = 'none';
+  showToast('✅ Đã thêm ảnh từ URL');
+}
+
+function cmsRenderImages() {
+  const gallery = document.getElementById('cms-img-gallery-wrap');
+  if (!gallery) return;
+  
+  if (!data.images || data.images.length === 0) {
+    gallery.innerHTML = `
+      <div style="padding:64px;text-align:center;color:#bbb">
+        <div style="font-size:48px;margin-bottom:12px">🖼️</div>
+        <p>Thư viện hình ảnh trống. Hãy upload hoặc thêm từ URL.</p>
+      </div>`;
+    return;
+  }
+  
+  gallery.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px">
+      ${data.images.map((img, i) => `
+        <div class="cms-editor-card" style="padding:0;overflow:hidden;transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
+          <div style="aspect-ratio:1.5;background:#f0ece5;display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <img src="${img.url}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div style="display:none;font-size:32px">🖼️</div>
+          </div>
+          <div style="padding:12px">
+            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px" title="${escHtml(img.name)}">
+              ${escHtml(img.name)}
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="t-btn" style="flex:1" onclick="cmsImgCopy('${escHtml(img.url)}', this)">Copy Link</button>
+              <button class="t-btn danger" onclick="cmsImgDelete(${i})">Xóa</button>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
 }
 
 /* ── Categories Manager ── */
@@ -5684,102 +5227,6 @@ function refreshCategorySelects() {
 
 /* ── Pages Manager ── */
 let cmsCurrentEditPageIdx = null;
-
-/* ── Trang chuyên biệt (Custom Pages: Home, About, Profile) ── */
-let _cpCurrentPage = null;
-
-function cmsLoadCustomPageBoxes(pageKey) {
-  const area = document.getElementById('cms-cp-editor-area');
-  const container = document.getElementById('cms-cp-boxes-container');
-  if (!pageKey) { area.style.display = 'none'; return; }
-  _cpCurrentPage = pageKey;
-  area.style.display = '';
-  const boxes = (customPagesData[pageKey] && customPagesData[pageKey].boxes) || [];
-  _cpRenderBoxes(boxes);
-}
-
-function _cpRenderBoxes(boxes) {
-  const container = document.getElementById('cms-cp-boxes-container');
-  if (!boxes.length) {
-    container.innerHTML = '<p style="color:#999;text-align:center;padding:24px;border:2px dashed #e0d8cc;border-radius:8px">Chưa có box nào. Nhấn "+ Thêm Box" để bắt đầu.</p>';
-    return;
-  }
-  container.innerHTML = boxes.map((box, i) => `
-    <div style="background:#fff;border:1px solid #e0d8cc;border-radius:10px;padding:20px;position:relative">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-        <div style="flex:1">
-          <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:8px">${escHtml(box.type || 'text')}</div>
-          <div class="cms-form-group" style="margin-bottom:10px">
-            <label style="font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:4px;display:block">Tiêu đề</label>
-            <input class="cms-field" type="text" value="${escHtml(box.title||'')}" style="margin:0" onchange="_cpUpdateBox(${i},'title',this.value)">
-          </div>
-          <div class="cms-form-group" style="margin-bottom:10px">
-            <label style="font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:4px;display:block">Nội dung</label>
-            <textarea class="cms-field" rows="3" style="resize:vertical;margin:0" onchange="_cpUpdateBox(${i},'content',this.value)">${escHtml(box.content||'')}</textarea>
-          </div>
-          <div class="cms-form-group">
-            <label style="font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:4px;display:block">URL hình ảnh (tuỳ chọn)</label>
-            <input class="cms-field" type="text" value="${escHtml(box.image||'')}" placeholder="https://..." style="margin:0" onchange="_cpUpdateBox(${i},'image',this.value)">
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-          ${i > 0 ? `<button class="cms-cancel-btn" style="padding:4px 10px;font-size:11px" onclick="_cpMoveBox(${i},-1)">↑</button>` : ''}
-          ${i < boxes.length-1 ? `<button class="cms-cancel-btn" style="padding:4px 10px;font-size:11px" onclick="_cpMoveBox(${i},1)">↓</button>` : ''}
-          <button class="t-btn danger" style="font-size:11px" onclick="_cpDeleteBox(${i})">Xóa</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function _cpGetBoxes() {
-  if (!_cpCurrentPage) return [];
-  return (customPagesData[_cpCurrentPage] && customPagesData[_cpCurrentPage].boxes) || [];
-}
-
-function _cpUpdateBox(i, field, val) {
-  if (!_cpCurrentPage) return;
-  if (!customPagesData[_cpCurrentPage]) customPagesData[_cpCurrentPage] = { boxes: [] };
-  if (!customPagesData[_cpCurrentPage].boxes[i]) return;
-  customPagesData[_cpCurrentPage].boxes[i][field] = val;
-}
-
-function _cpMoveBox(i, dir) {
-  if (!_cpCurrentPage) return;
-  const boxes = _cpGetBoxes();
-  const j = i + dir;
-  if (j < 0 || j >= boxes.length) return;
-  [boxes[i], boxes[j]] = [boxes[j], boxes[i]];
-  customPagesData[_cpCurrentPage].boxes = boxes;
-  _cpRenderBoxes(boxes);
-}
-
-function _cpDeleteBox(i) {
-  if (!_cpCurrentPage) return;
-  const boxes = _cpGetBoxes();
-  boxes.splice(i, 1);
-  customPagesData[_cpCurrentPage].boxes = boxes;
-  _cpRenderBoxes(boxes);
-}
-
-function cmsAddCustomPageBox() {
-  if (!_cpCurrentPage) return;
-  if (!customPagesData[_cpCurrentPage]) customPagesData[_cpCurrentPage] = { boxes: [] };
-  customPagesData[_cpCurrentPage].boxes.push({ type: 'text', title: 'Box mới', content: '', image: '' });
-  _cpRenderBoxes(customPagesData[_cpCurrentPage].boxes);
-}
-
-async function cmsSaveCustomPage() {
-  if (!_cpCurrentPage) return;
-  try {
-    if (_fbReady && _db) {
-      await _db.collection('site').doc('custom_pages').set(customPagesData, { merge: true });
-    }
-    showToast('✅ Đã lưu trang chuyên biệt');
-  } catch(e) {
-    showToast('❌ Lỗi lưu: ' + e.message, true);
-  }
-}
 
 function cmsOpenPageEditor(idx) {
   cmsCurrentEditPageIdx = idx !== undefined ? idx : null;
@@ -6443,6 +5890,8 @@ function lpbSave() {
   }
   saveLandingPages();
   showToast('✅ Đã lưu landing page');
+  // Refresh list nếu có
+  if (document.getElementById('lpb-list-wrap')) lpbRenderList();
 }
 
 function lpbDelete(id) {
@@ -6463,6 +5912,10 @@ function lpbPreview() {
 function lpbRenderList() {
   const wrap = document.getElementById('lpb-list-wrap');
   if (!wrap) return;
+  
+  // Ensure landingPages is an array
+  if (!Array.isArray(landingPages)) landingPages = [];
+  
   if (landingPages.length === 0) {
     wrap.innerHTML = `<div style="padding:48px;text-align:center;color:#bbb">
       <div style="font-size:48px;margin-bottom:12px">🏗</div>
@@ -7020,8 +6473,16 @@ function lpbInitDragDrop() {
   wrap.addEventListener('drop', (e) => {
     e.preventDefault();
     wrap.classList.remove('lpb-drag-over');
-    const type = e.dataTransfer.getData('lpb-type');
-    const reorderFrom = e.dataTransfer.getData('lpb-reorder');
+    let type = e.dataTransfer.getData('lpb-type');
+    let reorderFrom = e.dataTransfer.getData('lpb-reorder');
+    if (!type && !reorderFrom) {
+      const text = e.dataTransfer.getData('text/plain');
+      if (text && text.startsWith('reorder:')) {
+        reorderFrom = text.split(':')[1];
+      } else if (text) {
+        type = text;
+      }
+    }
 
     if (type) {
       const newBlock = lpbMakeBlock(type);
@@ -7059,6 +6520,7 @@ function lpbInitPaletteDrag() {
     el.removeEventListener('dragstart', el._lpbDragStart);
     el._lpbDragStart = (e) => {
       e.dataTransfer.setData('lpb-type', el.dataset.type);
+      e.dataTransfer.setData('text/plain', el.dataset.type);
       e.dataTransfer.effectAllowed = 'copy';
     };
     el.addEventListener('dragstart', el._lpbDragStart);
@@ -7084,6 +6546,7 @@ function lpbInitBlockDrag() {
     el.removeEventListener('dragstart', el._lpbReorderDrag);
     el._lpbReorderDrag = (e) => {
       e.dataTransfer.setData('lpb-reorder', el.dataset.reorder);
+      e.dataTransfer.setData('text/plain', 'reorder:' + el.dataset.reorder);
       e.dataTransfer.effectAllowed = 'move';
       e.stopPropagation();
     };
@@ -7166,38 +6629,14 @@ body{font-family:'Nunito Sans',sans-serif;color:#333;background:#fff}
 </head>
 <body>
 ${bodyHTML}
-
-<!-- ── MOBILE BOTTOM NAV BAR ── -->
-<nav id="mobile-bottom-nav" class="mobile-bottom-nav" style="display:none" aria-label="Điều hướng mobile">
-  <a class="mbn-item active" id="mbn-home" href="#" onclick="goHome(event)">
-    <span class="mbn-icon">🏠</span><span class="mbn-label">Trang chủ</span>
-  </a>
-  <a class="mbn-item" id="mbn-search" href="#" onclick="openMobileSearch(event)">
-    <span class="mbn-icon">🔍</span><span class="mbn-label">Tìm kiếm</span>
-  </a>
-  <a class="mbn-item" id="mbn-cats" href="#" onclick="openMobileCats(event)">
-    <span class="mbn-icon">📚</span><span class="mbn-label">Danh mục</span>
-  </a>
-  <a class="mbn-item" id="mbn-top" href="#" onclick="mobileScrollTop(event)">
-    <span class="mbn-icon">↑</span><span class="mbn-label">Lên đầu</span>
-  </a>
-</nav>
-<!-- ── MOBILE CATS SHEET ── -->
-<div id="mobile-cats-sheet" class="mobile-cats-sheet" style="display:none">
-  <div class="mcs-backdrop" onclick="closeMobileCats()"></div>
-  <div class="mcs-inner">
-    <div class="mcs-handle"></div>
-    <div class="mcs-title">Danh mục</div>
-    <div id="mcs-list" class="mcs-list"></div>
-  </div>
-</div>
-
 </body></html>`;
 }
 
 // ── Frontend viewer ──
 function openLandingPage(slug) {
-  const lp = landingPages.find(p => p.slug === slug && p.status === 'published');
+  // Tìm LP: published cho visitor, cả draft nếu đang trong CMS
+  const isInCms = document.getElementById('cms-page')?.classList.contains('active');
+  const lp = landingPages.find(p => p.slug === slug && (p.status === 'published' || isInCms));
   if (!lp) return showToast('Trang không tồn tại hoặc chưa công khai', true);
   document.getElementById('blog-home').style.display = 'none';
   document.getElementById('post-detail-page').style.display = 'none';
@@ -7216,24 +6655,22 @@ function openLandingPage(slug) {
 
 // ── Hook into cmsNav — extend for landing pages ──
 const _origCmsNav = cmsNav;
-// Override after original is defined (see below — we patch via DOMContentLoaded hook)
 function lpbNavExtend(page, el) {
   _origCmsNav(page, el);
   const appWrap = document.getElementById('cms-app');
-  const cmspage = document.getElementById('cms-page');
-  
+  const lpbPanel = document.getElementById('cmspage-lpbuilder');
   if (page === 'landing') setTimeout(lpbRenderList, 0);
-  
-  // Khi mở Page Builder
   if (page === 'lpbuilder') {
-    if (appWrap) appWrap.style.display = 'none'; // Ẩn hoàn toàn Admin Sidebar & Main Content
-    if (cmspage) cmspage.style.background = '#ffffff'; // Xóa nền xám của login panel
-  // Khi thoát Page Builder về các Tab khác
+    if (appWrap) appWrap.style.display = 'none';
+    if (lpbPanel) lpbPanel.style.display = 'flex';
   } else {
-    if (appWrap) appWrap.style.display = 'flex'; // Hiện lại Layout Admin
-    if (cmspage) cmspage.style.background = '#f0ece5'; // Phục hồi nền xám login
+    if (appWrap) appWrap.style.display = 'flex';
+    if (lpbPanel) lpbPanel.style.display = 'none';
   }
 }
+
+// Patch cmsNav để LP builder quản lý full-screen mode
+cmsNav = lpbNavExtend;
 
 function openSearch() {
   document.getElementById('search-modal').classList.add('active');
@@ -7884,8 +7321,13 @@ async function init() {
 
   // Khởi chạy Route sau khi data Firebase đã tải đầy đủ.
   // Lúc này dữ liệu data.posts đã sẵn sàng để router tìm ID hoặc thay đổi giao diện phù hợp.
-  const initState = routerParseUrl();
-  routerApplyState(initState);
+  // Ưu tiên: nếu đang truy cập #admin thì mở CMS, không override về home
+  if (window.location.hash === '#admin') {
+    openCMS();
+  } else {
+    const initState = routerParseUrl();
+    routerApplyState(initState);
+  }
 
   // Reading progress bar + Smart header hide/show
   let lastScrollTop = 0;
@@ -8245,5 +7687,30 @@ if(data.posts.length === 0) {
 
 init();
 </script>
+
+<!-- ── MOBILE BOTTOM NAV BAR ── -->
+<nav id="mobile-bottom-nav" class="mobile-bottom-nav" style="display:none" aria-label="Điều hướng mobile">
+  <a class="mbn-item active" id="mbn-home" href="#" onclick="goHome(event)">
+    <span class="mbn-icon">🏠</span><span class="mbn-label">Trang chủ</span>
+  </a>
+  <a class="mbn-item" id="mbn-search" href="#" onclick="openMobileSearch(event)">
+    <span class="mbn-icon">🔍</span><span class="mbn-label">Tìm kiếm</span>
+  </a>
+  <a class="mbn-item" id="mbn-cats" href="#" onclick="openMobileCats(event)">
+    <span class="mbn-icon">📚</span><span class="mbn-label">Danh mục</span>
+  </a>
+  <a class="mbn-item" id="mbn-top" href="#" onclick="mobileScrollTop(event)">
+    <span class="mbn-icon">↑</span><span class="mbn-label">Lên đầu</span>
+  </a>
+</nav>
+<!-- ── MOBILE CATS SHEET ── -->
+<div id="mobile-cats-sheet" class="mobile-cats-sheet" style="display:none">
+  <div class="mcs-backdrop" onclick="closeMobileCats()"></div>
+  <div class="mcs-inner">
+    <div class="mcs-handle"></div>
+    <div class="mcs-title">Danh mục</div>
+    <div id="mcs-list" class="mcs-list"></div>
+  </div>
+</div>
 </body>
 </html>
