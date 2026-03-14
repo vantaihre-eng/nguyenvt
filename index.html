@@ -3857,12 +3857,17 @@ async function _pullFirebase() {
     if (!_cmsOpen && !_postOpen && !_lpOpen) {
       // Nếu URL là /page/ hay /lp/ thì thử mở LP thay vì render trang chủ
       const _path = location.pathname;
-      const _isLpUrl = _path.startsWith('/page/') || _path.startsWith('/lp/');
-      if (_isLpUrl) {
-        const _lpSlug = _path.replace('/page/','').replace('/lp/','');
-        const _lp = landingPages.find(p => p.slug === _lpSlug && p.status === 'published');
-        if (_lp) { openLandingPage(_lpSlug); }
-        else { renderHero(); renderPosts(); }
+      const _slug = _path.replace(/^\//, '');
+      // Nếu URL là /slug (không phải trang chủ, bài viết, danh mục)
+      const _isPageUrl = _slug && !_path.startsWith('/bai-viet/') && !_path.startsWith('/danh-muc/');
+      if (_isPageUrl) {
+        const _lp = landingPages.find(p => p.slug === _slug && p.status === 'published');
+        if (_lp) { openLandingPage(_slug); }
+        else {
+          const _pg = (data.pages || []).find(p => p.slug === _slug);
+          if (_pg) { openPage(_slug); }
+          else { renderHero(); renderPosts(); }
+        }
       } else {
         renderHero(); renderPosts();
       }
@@ -5361,6 +5366,25 @@ function cmsDeletePage(idx) {
 }
 
 /* ── Page Viewer (frontend) ── */
+// Mở trang theo slug — tự động detect LP hay trang tĩnh
+function _openBySlug(slug) {
+  if (!slug) { _showHome('all'); return; }
+  // Ưu tiên landing page (published)
+  const lp = (window.landingPages || []).find(p => p.slug === slug && p.status === 'published');
+  if (lp) { openLandingPage(slug); return; }
+  // Trang tĩnh
+  const pg = (data.pages || []).find(p => p.slug === slug);
+  if (pg) { openPage(slug); return; }
+  // Data chưa load — thử lại sau 2 giây
+  setTimeout(() => {
+    const lp2 = (window.landingPages || []).find(p => p.slug === slug && p.status === 'published');
+    if (lp2) { openLandingPage(slug); return; }
+    const pg2 = (data.pages || []).find(p => p.slug === slug);
+    if (pg2) { openPage(slug); return; }
+    showToast('Không tìm thấy trang: /' + slug, true);
+  }, 2000);
+}
+
 function openPage(slug) {
   const pg = (data.pages || []).find(p => p.slug === slug);
   if (!pg) return showToast('Không tìm thấy trang', true);
@@ -5378,6 +5402,10 @@ function openPage(slug) {
   document.getElementById('post-detail-page').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.title = pg.title + ' – ' + data.settings.sitename;
+  // URL: /ten-page (không có /page/ prefix)
+  if (!window._routerRestoring) {
+    try { history.pushState({ view: 'page', slug: slug }, '', '/' + slug); } catch(e) {}
+  }
 }
 
 /* ── Layout ── */
@@ -6626,7 +6654,7 @@ function openLandingPage(slug) {
   document.title = lp.title + ' – ' + (data.settings.sitename || '');
   document.getElementById('main-nav').querySelectorAll('a').forEach(a => a.classList.remove('active'));
   if (!window._routerRestoring) {
-    try { history.pushState({ view: 'lp', slug: slug }, '', '/page/' + slug); } catch(e) {}
+    try { history.pushState({ view: 'lp', slug: slug }, '', '/' + slug); } catch(e) {}
   }
 }
 
@@ -7181,13 +7209,13 @@ function renderNav() {
       href: '/danh-muc/' + (c.slug || encodeURIComponent(c.name)),
       action: `filterCat('${escHtml(c.name)}',this,event)` 
     })),
-    ...navPages.map(p => ({ label: escHtml(p.title), action: `openPage('${escHtml(p.slug)}')`, href: '/page/' + p.slug })),
+    ...navPages.map(p => ({ label: escHtml(p.title), action: `openPage('${escHtml(p.slug)}')`, href: '/' + p.slug })),
     ...headerLinks.filter(lk => lk.label).map(lk => {
       const isSlug = lk.url && !lk.url.startsWith('#') && !lk.url.startsWith('http');
       return {
         label: escHtml(lk.label),
         action: isSlug ? `openPage('${escHtml(lk.url.replace(/^\//, ''))}')` : null,
-        href: !isSlug ? escHtml(lk.url||'#') : (lk.url.startsWith('/lp/') ? lk.url : (lk.url.startsWith('/page/') ? lk.url : '/page/' + lk.url.replace(/^\//, ''))),
+        href: !isSlug ? escHtml(lk.url||'#') : ('/' + lk.url.replace(/^\//, '').replace(/^page\//, '').replace(/^lp\//, '')),
         external: lk.url && lk.url.startsWith('http')
       };
     })
@@ -7404,14 +7432,11 @@ function routerParseUrl() {
     const found = (data.categories || []).find(c => c.slug === slug);
     return { view: 'home', cat: found ? found.name : slug };
   }
-  // /page/slug — có thể là landing page HOẶC trang tĩnh
-  // Ưu tiên check landing page trước
+  // Legacy: /page/slug và /lp/slug vẫn hỗ trợ
   if (path.startsWith('/page/')) {
     const slug = path.replace('/page/', '');
-    const isLp = (window.landingPages || []).some(p => p.slug === slug && p.status === 'published');
-    return isLp ? { view: 'lp', slug: slug } : { view: 'page', slug: slug };
+    return { view: 'page', slug: slug }; // routerApplyState sẽ fallback sang LP
   }
-  // /lp/slug (legacy)
   if (path.startsWith('/lp/')) {
     const slug = path.replace('/lp/', '');
     return { view: 'lp', slug: slug };
@@ -7419,6 +7444,11 @@ function routerParseUrl() {
   // /?cat=... (fallback)
   if (params.has('cat')) {
     return { view: 'home', cat: params.get('cat') };
+  }
+  // /slug — có thể là trang tĩnh hoặc landing page
+  if (path.length > 1 && !path.includes('.')) {
+    const slug = path.replace(/^\//, '');
+    return { view: 'slug', slug: slug };
   }
   return { view: 'home', cat: 'all' };
 }
@@ -7447,26 +7477,8 @@ function routerApplyState(state) {
     } else {
       _showHome('all');
     }
-  } else if (state.view === 'page') {
-    const _slug = state.slug;
-    // Thử trang tĩnh trước
-    const staticPage = (data.pages || []).find(p => p.slug === _slug);
-    if (staticPage) {
-      openPage(_slug);
-    } else {
-      // Thử landing page — nếu chưa load xong thì thử lại sau 1 giây
-      const lp = (window.landingPages || []).find(p => p.slug === _slug);
-      if (lp) {
-        openLandingPage(_slug);
-      } else {
-        // Data chưa load từ Firebase - thử lại sau khi sync xong
-        setTimeout(() => {
-          const lp2 = (window.landingPages || []).find(p => p.slug === _slug);
-          if (lp2) openLandingPage(_slug);
-          else showToast('Không tìm thấy trang: ' + _slug, true);
-        }, 2000);
-      }
-    }
+  } else if (state.view === 'slug' || state.view === 'page') {
+    _openBySlug(state.slug);
   } else if (state.view === 'lp') {
     openLandingPage(state.slug);
   } else {
