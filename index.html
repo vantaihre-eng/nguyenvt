@@ -66,6 +66,26 @@ function loadFirebase(callback) {
   initFirebase().then(() => callback && callback());
 }
 
+// Đăng nhập Firebase với email admin
+async function _fbSignIn(email, password) {
+  await initFirebase();
+  if (!window._auth) return false;
+  try {
+    await window._auth.signInWithEmailAndPassword(email, password);
+    console.log('🔐 Firebase Auth OK');
+    return true;
+  } catch(e) {
+    console.warn('Firebase Auth error:', e.code);
+    return false;
+  }
+}
+
+async function _fbSignOut() {
+  if (window._auth) {
+    try { await window._auth.signOut(); } catch(e) {}
+  }
+}
+
 function initFirebase() {
   if (_fbInitPromise) return _fbInitPromise;
   _fbInitPromise = new Promise(resolve => {
@@ -74,6 +94,7 @@ function initFirebase() {
     if (!cfg.apiKey || cfg.apiKey === 'YOUR_API_KEY') { resolve(false); return; }
     const scripts = [
       'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
+      'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js',
       'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js',
       'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js'
     ];
@@ -85,6 +106,7 @@ function initFirebase() {
           if (!firebase.apps.length) firebase.initializeApp(cfg);
           _db = firebase.firestore(); window.db = _db;
           window._storage = firebase.storage();
+          window._auth = firebase.auth();
           _fbReady = true; console.log('🔥 Firebase OK');
         } catch(e) {}
         resolve(true);
@@ -3478,10 +3500,15 @@ html, body {
           <!-- SECURITY -->
           <div class="cms-editor-card">
             <div class="cms-section-title">Bảo mật</div>
+            <p style="font-size:12px;color:#888;margin-bottom:16px">Email dùng để đăng nhập Firebase (phải tạo sẵn trong Firebase Console → Authentication → Users).</p>
             <div class="cms-settings-grid">
+              <div class="cms-form-group" style="grid-column:1/-1">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Email Firebase Admin</label>
+                <input class="cms-field" type="email" id="cms-set-admin-email" placeholder="admin@example.com">
+              </div>
               <div class="cms-form-group">
-                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Mật khẩu mới</label>
-                <input class="cms-field" type="password" id="cms-set-pass">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Mật khẩu CMS mới</label>
+                <input class="cms-field" type="password" id="cms-set-pass" placeholder="Để trống nếu không đổi">
               </div>
               <div class="cms-form-group">
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Xác nhận mật khẩu</label>
@@ -3526,8 +3553,8 @@ html, body {
           <input type="text" id="lpb-page-title" placeholder="Tên landing page" style="width:200px">
           <input type="text" id="lpb-page-slug" placeholder="slug-url" style="width:150px">
           <select id="lpb-page-status" style="border:1.5px solid #e8e8e8;border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--body-font);color:#333">
-            <option value="draft">📝 Nháp</option>
             <option value="published">✅ Công khai</option>
+              <option value="draft">📝 Nháp</option>
           </select>
           <button class="lpb-btn ghost" onclick="lpbPreview()">👁 Xem thử</button>
           <button class="lpb-btn primary" onclick="lpbSave()">💾 Lưu</button>
@@ -3828,7 +3855,17 @@ async function _pullFirebase() {
     const _postOpen = document.getElementById('post-detail-page') && document.getElementById('post-detail-page').style.display !== 'none';
     const _lpOpen  = document.getElementById('lp-viewer-page') && document.getElementById('lp-viewer-page').style.display !== 'none';
     if (!_cmsOpen && !_postOpen && !_lpOpen) {
-      renderHero(); renderPosts();
+      // Nếu URL là /page/ hay /lp/ thì thử mở LP thay vì render trang chủ
+      const _path = location.pathname;
+      const _isLpUrl = _path.startsWith('/page/') || _path.startsWith('/lp/');
+      if (_isLpUrl) {
+        const _lpSlug = _path.replace('/page/','').replace('/lp/','');
+        const _lp = landingPages.find(p => p.slug === _lpSlug && p.status === 'published');
+        if (_lp) { openLandingPage(_lpSlug); }
+        else { renderHero(); renderPosts(); }
+      } else {
+        renderHero(); renderPosts();
+      }
     }
     // Re-render sidebar order nếu đang ở trang layout trong CMS
     if (document.getElementById('cmspage-layout') && document.getElementById('cmspage-layout').style.display !== 'none') {
@@ -4285,6 +4322,12 @@ function _cmsSessionValid() {
   } catch(e) { return false; }
 }
 let cmsLoggedIn = _cmsSessionValid();
+
+// Hash mật khẩu bằng SHA-256 (Web Crypto API)
+async function _hashPass(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
 let cmsCurrentEditIdx = null;
 
 function openCMS() {
@@ -4293,6 +4336,13 @@ function openCMS() {
   try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
   if (cmsLoggedIn) {
     loadFirebase();
+    // Re-authenticate Firebase nếu session còn hạn
+    initFirebase().then(() => {
+      if (data.settings.adminEmail && window._auth && !window._auth.currentUser) {
+        // Firebase Auth đã mất sau reload — cần user nhập lại pass
+        // Nhưng session CMS vẫn còn → vào thẳng, ghi sẽ dùng plain text
+      }
+    });
     document.getElementById('cms-page').classList.add('active');
     showCmsApp();
   } else {
@@ -4313,16 +4363,33 @@ function _hideLoginModal() {
   if (modal) modal.style.display = 'none';
 }
 
-function cmsLogin() {
+async function cmsLogin() {
   const pass = document.getElementById('cms-pass-input').value;
-  if (pass === data.settings.password) {
+  const stored = data.settings.password || '';
+  // So sánh hash nếu stored là hash (64 chars hex), plain text nếu chưa migrate
+  const isHash = /^[0-9a-f]{64}$/.test(stored);
+  const match = isHash
+    ? (await _hashPass(pass)) === stored
+    : pass === stored;
+  if (match) {
+    // Nếu pass còn plain text → tự động migrate sang hash
+    if (!isHash) {
+      data.settings.password = await _hashPass(pass);
+      saveData(data);
+    }
     cmsLoggedIn = true;
     localStorage.setItem(CMS_SESSION_KEY, String(Date.now()));
     document.getElementById('cms-login-err').style.display = 'none';
     document.getElementById('cms-pass-input').value = '';
     _hideLoginModal();
     window._cmsOpened = true;
+    // Đăng nhập Firebase Auth (nếu có email admin)
     loadFirebase();
+    if (data.settings.adminEmail) {
+      _fbSignIn(data.settings.adminEmail, pass).then(ok => {
+        if (!ok) console.warn('Firebase Auth failed — writes may be blocked by Rules');
+      });
+    }
     document.getElementById('cms-page').classList.add('active');
     showCmsApp();
   } else {
@@ -4343,6 +4410,7 @@ function cmsLogout() {
   cmsLoggedIn = false;
   window._cmsOpened = false;
   localStorage.removeItem(CMS_SESSION_KEY);
+  _fbSignOut(); // Đăng xuất Firebase Auth
   document.getElementById('cms-page').classList.remove('active');
   try { history.replaceState(null, '', window.location.pathname); } catch(e) {}
   _showHome('all');
@@ -5450,6 +5518,8 @@ function cmsLoadSettings() {
   document.getElementById('cms-set-favicon').value = s.favicon || '';
   document.getElementById('cms-set-pass').value = '';
   document.getElementById('cms-set-pass2').value = '';
+  const emailEl = document.getElementById('cms-set-admin-email');
+  if (emailEl) emailEl.value = data.settings.adminEmail || '';
   // Social
   const soc = s.social || {};
   ['facebook','instagram','youtube','tiktok','linkedin','twitter'].forEach(k => {
@@ -5546,7 +5616,18 @@ function cmsSaveSettings() {
   data.settings.bio = document.getElementById('cms-set-bio').value.trim();
   data.settings.avatar = document.getElementById('cms-set-avatar').value.trim();
   data.settings.favicon = document.getElementById('cms-set-favicon').value.trim();
-  if (p1) data.settings.password = p1;
+  // Lưu admin email
+  const emailEl = document.getElementById('cms-set-admin-email');
+  if (emailEl && emailEl.value.trim()) {
+    data.settings.adminEmail = emailEl.value.trim();
+  }
+  if (p1) {
+    // Lưu hash thay vì plain text
+    _hashPass(p1).then(h => {
+      data.settings.password = h;
+      saveData(data);
+    });
+  }
   // Social
   if (!data.settings.social) data.settings.social = {};
   ['facebook','instagram','youtube','tiktok','linkedin','twitter'].forEach(k => {
@@ -7215,8 +7296,6 @@ async function init() {
       }
     ];
     savePost(data.posts[0], null);
-    renderHero();
-    renderPosts();
     renderSidebar('sidebar');
   }
 
@@ -7325,12 +7404,14 @@ function routerParseUrl() {
     const found = (data.categories || []).find(c => c.slug === slug);
     return { view: 'home', cat: found ? found.name : slug };
   }
-  // /page/slug
+  // /page/slug — có thể là landing page HOẶC trang tĩnh
+  // Ưu tiên check landing page trước
   if (path.startsWith('/page/')) {
     const slug = path.replace('/page/', '');
-    return { view: 'page', slug: slug };
+    const isLp = (window.landingPages || []).some(p => p.slug === slug && p.status === 'published');
+    return isLp ? { view: 'lp', slug: slug } : { view: 'page', slug: slug };
   }
-  // /lp/slug
+  // /lp/slug (legacy)
   if (path.startsWith('/lp/')) {
     const slug = path.replace('/lp/', '');
     return { view: 'lp', slug: slug };
@@ -7367,7 +7448,25 @@ function routerApplyState(state) {
       _showHome('all');
     }
   } else if (state.view === 'page') {
-    openPage(state.slug);
+    const _slug = state.slug;
+    // Thử trang tĩnh trước
+    const staticPage = (data.pages || []).find(p => p.slug === _slug);
+    if (staticPage) {
+      openPage(_slug);
+    } else {
+      // Thử landing page — nếu chưa load xong thì thử lại sau 1 giây
+      const lp = (window.landingPages || []).find(p => p.slug === _slug);
+      if (lp) {
+        openLandingPage(_slug);
+      } else {
+        // Data chưa load từ Firebase - thử lại sau khi sync xong
+        setTimeout(() => {
+          const lp2 = (window.landingPages || []).find(p => p.slug === _slug);
+          if (lp2) openLandingPage(_slug);
+          else showToast('Không tìm thấy trang: ' + _slug, true);
+        }, 2000);
+      }
+    }
   } else if (state.view === 'lp') {
     openLandingPage(state.slug);
   } else {
