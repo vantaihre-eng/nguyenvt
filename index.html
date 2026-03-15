@@ -11,8 +11,9 @@
 <meta property="og:title" id="og-title" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
 <meta property="og:description" id="og-desc" content="Chuyện Nghề &amp; Chuyện Đời">
 <meta property="og:image" id="og-image" content="https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image:secure_url" id="og-image-secure" content="https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg">
+<meta property="og:image:width" id="og-width" content="1200">
+<meta property="og:image:height" id="og-height" content="630">
 <meta property="og:url" id="og-url" content="https://website-532.pages.dev/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" id="tw-title" content="Tài Tàng Au">
@@ -4516,14 +4517,36 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
     set('tw-desc', desc); 
   }
   
-  // Xử lý ảnh (đảm bảo URL tuyệt đối)
-  let _imgToUse = image || data.settings.ogImage || '';
+  // Xử lý ảnh (đảm bảo URL tuyệt đối, kiểm tra ảnh lỗi)
+  const _defaultImg = (data.settings.ogImage || '').startsWith('http') ? data.settings.ogImage : 'https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg';
+  let _imgToUse = image || _defaultImg;
   if (_imgToUse && !_imgToUse.startsWith('http')) {
     _imgToUse = domain + (_imgToUse.startsWith('/') ? '' : '/') + _imgToUse;
   }
-  if (_imgToUse) { 
-    set('og-image', _imgToUse); 
-    set('tw-image', _imgToUse); 
+  
+  const _applyImg = (src) => {
+    set('og-image', src); 
+    set('og-image-secure', src); 
+    set('tw-image', src);
+  };
+  
+  if (_imgToUse) {
+    // Nếu ảnh bài viết khác ảnh mặc định → kiểm tra xem ảnh có hợp lệ không
+    if (_imgToUse !== _defaultImg) {
+      const _testImg = new Image();
+      _testImg.onload = () => {
+        // Ảnh quá nhỏ (< 200px) → dùng ảnh mặc định
+        if (_testImg.naturalWidth < 200 || _testImg.naturalHeight < 200) {
+          _applyImg(_defaultImg);
+        } else {
+          _applyImg(_imgToUse);
+        }
+      };
+      _testImg.onerror = () => { _applyImg(_defaultImg); }; // Ảnh lỗi → dùng mặc định
+      _testImg.src = _imgToUse;
+    } else {
+      _applyImg(_imgToUse);
+    }
   }
   
   // Xử lý URL trang (đảm bảo URL tuyệt đối)
