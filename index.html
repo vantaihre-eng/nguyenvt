@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.quilljs.com https://www.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebasestorage.app https://*.firebasestorage.googleapis.com https://*.cloudfunctions.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.quilljs.com https://cdnjs.cloudflare.com https://www.gstatic.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.quilljs.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http:; font-src 'self' data: https://fonts.gstatic.com https://cdn.quilljs.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasestorage.app https://*.firebasestorage.googleapis.com https://*.cloudfunctions.net;">
+
 <meta name="description" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
 <!-- Open Graph / Social sharing -->
 <meta property="og:type" content="website">
@@ -4582,17 +4582,8 @@ function goHome(e) {
 const CMS_SESSION_KEY = 'taitangau_cms_session';
 const CMS_SECRET_KEY  = 'taitangau_cms_secret';
 
-// Lấy secret path hiện tại (tạo random nếu chưa có)
-function getCmsSecret() {
-  let s = localStorage.getItem(CMS_SECRET_KEY);
-  if (!s) {
-    // Tạo token ngẫu nhiên 16 ký tự
-    s = Array.from(crypto.getRandomValues(new Uint8Array(12)))
-      .map(b => b.toString(16).padStart(2,'0')).join('').substring(0,16);
-    localStorage.setItem(CMS_SECRET_KEY, s);
-  }
-  return s;
-}
+// Entry point: dùng #admin (đơn giản, bảo mật bằng username+password)
+function getCmsSecret() { return 'admin'; }
 const CMS_SESSION_TTL = 24 * 60 * 60 * 1000; // 24 giờ
 function _cmsSessionValid() {
   try {
@@ -6223,10 +6214,9 @@ function applyFavicon() {
 
 // Hash-based routing: dùng secret token thay vì #admin cố định
 window.addEventListener('hashchange', () => {
-  const secret = getCmsSecret();
-  if (window.location.hash === '#' + secret) openCMS();
+  if (window.location.hash === '#admin') openCMS();
 });
-if (window.location.hash === '#' + getCmsSecret()) {
+if (window.location.hash === '#admin') {
   document.addEventListener('DOMContentLoaded', openCMS);
 }
 
