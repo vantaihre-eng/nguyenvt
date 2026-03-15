@@ -4141,6 +4141,21 @@ async function deletePost(fbId) {
   }
 }
 
+async function uploadImageToStorage(file) {
+  if (!_fbReady || !window._storage) return null;
+  try {
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
+    const ref = window._storage.ref(path);
+    await ref.put(file);
+    const url = await ref.getDownloadURL();
+    return url;
+  } catch(e) {
+    console.error('Storage upload error:', e);
+    return null;
+  }
+}
+
 async function saveImages() {
   try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
   await initFirebase();
@@ -5416,6 +5431,35 @@ async function cmsHandleFiles(files) {
   // Reset file input
   const fi = document.getElementById('cms-file-input');
   if (fi) fi.value = '';
+}
+
+function cmsAddImageUrl() {
+  const urlEl = document.getElementById('cms-img-url');
+  const nameEl = document.getElementById('cms-img-name');
+  if (!urlEl) return;
+  const url = urlEl.value.trim();
+  const name = nameEl ? nameEl.value.trim() : 'Ảnh từ URL';
+  
+  if (!url) {
+    showToast('Vui lòng nhập URL ảnh', true);
+    return;
+  }
+  
+  if (!data.images) data.images = [];
+  data.images.push({
+    url: url,
+    name: name || 'Ảnh từ URL',
+    createdAt: Date.now()
+  });
+  
+  saveImages();
+  cmsRenderImages();
+  
+  // Clear inputs
+  urlEl.value = '';
+  if (nameEl) nameEl.value = '';
+  
+  showToast('✅ Đã thêm ảnh từ URL');
 }
 
 function compressImage(dataUrl, filename, callback) {
