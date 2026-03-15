@@ -4504,30 +4504,43 @@ function renderFooter() {
 function updateMetaTags({ title, desc, image, url, type, author, date, modified }) {
   const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.setAttribute('content', val); };
   const sitename = data.settings.sitename || 'Tài Tàng Au';
+  const domain = (data.settings.domain || window.location.origin).replace(/\/$/, '');
   const fullTitle = title ? title + ' – ' + sitename : sitename + ' – ' + (data.settings.tagline || '');
-  document.title = fullTitle;
-  set('og-title', fullTitle); set('tw-title', fullTitle);
-  if (desc) { set('og-desc', desc); set('tw-desc', desc); }
   
+  document.title = fullTitle;
+  set('og-title', fullTitle); 
+  set('tw-title', fullTitle);
+  
+  if (desc) { 
+    set('og-desc', desc); 
+    set('tw-desc', desc); 
+  }
+  
+  // Xử lý ảnh (đảm bảo URL tuyệt đối)
   let _imgToUse = image || data.settings.ogImage || '';
   if (_imgToUse && !_imgToUse.startsWith('http')) {
-    _imgToUse = window.location.origin + (_imgToUse.startsWith('/') ? '' : '/') + _imgToUse;
+    _imgToUse = domain + (_imgToUse.startsWith('/') ? '' : '/') + _imgToUse;
   }
-  if (_imgToUse) { set('og-image', _imgToUse); set('tw-image', _imgToUse); }
-  if (url) {
-    set('og-url', url);
-    // Canonical URL
+  if (_imgToUse) { 
+    set('og-image', _imgToUse); 
+    set('tw-image', _imgToUse); 
+  }
+  
+  // Xử lý URL trang (đảm bảo URL tuyệt đối)
+  let _urlToUse = url || window.location.href;
+  if (_urlToUse && !_urlToUse.startsWith('http')) {
+    _urlToUse = domain + (_urlToUse.startsWith('/') ? '' : '/') + _urlToUse;
+  }
+  
+  if (_urlToUse) {
+    set('og-url', _urlToUse);
     const canon = document.getElementById('canonical-url');
-    if (canon) canon.setAttribute('href', url);
+    if (canon) canon.setAttribute('href', _urlToUse);
   }
+  
   // JSON-LD Schema
   const schemaEl = document.getElementById('json-ld-schema');
   if (schemaEl) {
-    const domain = data.settings.domain || window.location.origin;
-    let _imgSchema = _imgToUse;
-    if (_imgSchema && !_imgSchema.startsWith('http')) {
-      _imgSchema = domain + (_imgSchema.startsWith('/') ? '' : '/') + _imgSchema;
-    }
     let schema;
     if (type === 'article') {
       schema = {
@@ -4536,7 +4549,7 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
         'headline': title || '',
         'description': desc || '',
         'image': _imgToUse || '',
-        'url': url || '',
+        'url': _urlToUse || '',
         'datePublished': date ? new Date(date).toISOString() : '',
         'dateModified': modified ? new Date(modified).toISOString() : (date ? new Date(date).toISOString() : ''),
         'author': { '@type': 'Person', 'name': author || data.settings.author || sitename },
@@ -4545,7 +4558,7 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
           'name': sitename,
           'url': domain
         },
-        'mainEntityOfPage': { '@type': 'WebPage', '@id': url || '' }
+        'mainEntityOfPage': { '@type': 'WebPage', '@id': _urlToUse || '' }
       };
     } else {
       schema = {
@@ -4564,6 +4577,7 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
     schemaEl.textContent = JSON.stringify(schema);
   }
 }
+
 
 
 
