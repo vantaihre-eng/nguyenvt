@@ -10,14 +10,14 @@
 <meta property="og:site_name" content="Tài Tàng Au">
 <meta property="og:title" id="og-title" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
 <meta property="og:description" id="og-desc" content="Chuyện Nghề &amp; Chuyện Đời">
-<meta property="og:image" id="og-image" content="">
+<meta property="og:image" id="og-image" content="https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" id="og-url" content="">
+<meta property="og:url" id="og-url" content="https://website-532.pages.dev/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" id="tw-title" content="Tài Tàng Au">
 <meta name="twitter:description" id="tw-desc" content="Chuyện Nghề &amp; Chuyện Đời">
-<meta name="twitter:image" id="tw-image" content="">
+<meta name="twitter:image" id="tw-image" content="https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg">
 <script>
 // Anti-FOUC: Apply saved theme colors NGAY TRONG <head> trước khi render
 (function() {
@@ -4673,8 +4673,8 @@ let cmsCurrentEditIdx = null;
 
 function openCMS() {
   window._cmsOpened = true; // flag để init() không gọi routerApplyState
-  // Xóa secret hash khỏi URL
-  try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
+  // Giữ lại secret hash để F5 không bị mất trang CMS
+  // try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
   const _hasPassword = !!(data.settings.password);
   const _firstTime = !_hasPassword;
 
