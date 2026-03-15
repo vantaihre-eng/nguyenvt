@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://fonts.googleapis.com https://fonts.gstatic.com https://*.firebaseio.com https://*.googleapis.com https://www.gstatic.com https://*.firebasestorage.app https://*.cloudfunctions.net; img-src 'self' data: blob: https: http:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net;">
 <meta name="description" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
 <!-- Open Graph / Social sharing -->
 <meta property="og:type" content="website">
@@ -397,9 +398,18 @@ function initFirebase() {
   .post-card:hover .post-img { transform: scale(1.05); }
   .post-img-placeholder {
     width: 100%; height: 180px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 52px; background: #e8e8e8;
-    color: #bbb;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; position: relative; overflow: hidden;
+  }
+  .post-img-placeholder .ph-emoji { font-size: 40px; line-height: 1; position: relative; z-index: 1; }
+  .post-img-placeholder .ph-label {
+    font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+    color: rgba(255,255,255,0.85); position: relative; z-index: 1;
+    font-family: var(--body-font);
+  }
+  .post-img-placeholder::before {
+    content: ''; position: absolute; inset: 0;
+    background: inherit; filter: brightness(0.92);
   }
   /* content — always BELOW image (flex order 1) */
   .post-content {
@@ -658,7 +668,7 @@ function initFirebase() {
     /* Mobile nav drawer */
     .mobile-nav {
       display: none; position: fixed;
-      top: 56px; left: 0; right: 0;
+      top: 54px; left: 0; right: 0;
       background: #fff; border-bottom: 2px solid var(--accent);
       box-shadow: 0 8px 24px rgba(0,0,0,.12);
       z-index: 999; padding: 12px 16px 16px;
@@ -2001,9 +2011,15 @@ function initFirebase() {
   /* ── Reading progress bar thinner on mobile ── */
   #reading-progress { height: 2px; }
 
-  /* ── No hero padding wastage on mobile ── */
+  /* ── Hero: không bị header sticky che ── */
   #hero-section {
     margin-bottom: 0;
+    scroll-margin-top: 54px;
+  }
+
+  /* ── blog-home bắt đầu sát header, không bị tụt ── */
+  #blog-home {
+    padding-top: 0;
   }
 
   /* ── Posts area: full bleed to edges ── */
@@ -3542,6 +3558,10 @@ html, body {
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Avatar URL</label>
                 <input class="cms-field" type="text" id="cms-set-avatar">
               </div>
+              <div class="cms-form-group">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Ảnh OG mặc định <span style="font-weight:400;color:#888">(dùng khi share bài chưa có ảnh)</span></label>
+                <input class="cms-field" type="text" id="cms-set-og-image" placeholder="https://... (tỷ lệ 1200×630px)">
+              </div>
               <div class="cms-form-group" style="grid-column:1/-1">
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Favicon URL</label>
                 <input class="cms-field" type="text" id="cms-set-favicon" placeholder="Đường dẫn đến ảnh icon...">
@@ -3632,8 +3652,21 @@ html, body {
           <!-- SECURITY -->
           <div class="cms-editor-card">
             <div class="cms-section-title">Bảo mật</div>
+            <div style="background:#f0f7ff;border:1.5px solid #bdd7f5;border-radius:8px;padding:14px 16px;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:#1a5276;letter-spacing:1px;margin-bottom:6px">🔑 ĐƯỜNG DẪN VÀO CMS (BÍ MẬT)</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <code id="cms-secret-display" style="font-size:13px;background:#fff;padding:6px 10px;border-radius:5px;border:1px solid #ccc;flex:1;color:#1a305e;font-weight:700">loading...</code>
+                <button onclick="copyCmsSecret()" style="background:#1a305e;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700">Copy</button>
+                <button onclick="regenerateCmsSecret()" style="background:#fff;color:#c0392b;border:1.5px solid #c0392b;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700" title="Đổi secret path mới">↻ Đổi</button>
+              </div>
+              <div style="font-size:11px;color:#555;margin-top:6px">Truy cập CMS tại: <code style="background:#fff;padding:2px 5px;border-radius:3px">tenmien.com/#[secret]</code> — Không chia sẻ link này.</div>
+            </div>
             <p style="font-size:12px;color:#888;margin-bottom:16px">Email dùng để đăng nhập Firebase (phải tạo sẵn trong Firebase Console → Authentication → Users).</p>
             <div class="cms-settings-grid">
+              <div class="cms-form-group" style="grid-column:1/-1">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Tên đăng nhập CMS</label>
+                <input class="cms-field" type="text" id="cms-set-username" placeholder="admin">
+              </div>
               <div class="cms-form-group" style="grid-column:1/-1">
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Email Firebase Admin</label>
                 <input class="cms-field" type="email" id="cms-set-admin-email" placeholder="admin@example.com">
@@ -3852,7 +3885,7 @@ let data = {
     author: 'Tài Tàng Au',
     bio: 'Người viết lách và chia sẻ',
     avatar: '',
-    password: 'admin123',
+    password: '',
     social: {
       facebook: '', instagram: '', youtube: '',
       tiktok: '', linkedin: '', twitter: ''
@@ -3887,39 +3920,25 @@ function _loadAndRenderFast() {
 
 async function _syncFirebaseBackground() {
   try {
-    // Cache TTL: nếu cache mới hơn 5 phút → skip Firebase fetch, dùng cache
-    const CACHE_TTL = 5 * 60 * 1000; // 5 phút
-    const lastSync = parseInt(localStorage.getItem('taitangau_last_sync') || '0');
-    const cacheAge = Date.now() - lastSync;
-    const hasFreshCache = cacheAge < CACHE_TTL && !!localStorage.getItem('taitangau_data');
-    // Load LP từ cache
-    try {
-      const lpCache = localStorage.getItem('taitangau_landing_pages');
-      if (lpCache) landingPages = JSON.parse(lpCache);
-    } catch(e) {}
+    const _path = location.pathname.replace(/^\//, '');
+    const _isSlugUrl = !!_path
+      && !_path.startsWith('bai-viet')
+      && !_path.startsWith('danh-muc');
 
-    const _needLp = (() => {
-      const p = location.pathname.replace(/^\//, '');
-      return !!p && !p.startsWith('bai-viet') && !p.startsWith('danh-muc');
-    })();
-
-    // Dùng cache nếu: cache còn tươi VÀ (không cần LP hoặc đã có LP trong cache)
-    if (hasFreshCache && (!_needLp || landingPages.length > 0)) {
-      console.log('⚡ Cache hit (' + Math.round(cacheAge/1000) + 's), LPs:', landingPages.length);
-      window._fbFullyLoaded = true;
-      if (_needLp) {
-        const _p = location.pathname.replace(/^\//, '');
-        _openBySlug(_p);
+    // Nếu URL là /slug → LUÔN fetch Firebase (cần LP data chính xác)
+    // Nếu trang chủ → dùng cache nếu còn tươi (< 5 phút)
+    if (!_isSlugUrl) {
+      const CACHE_TTL = 5 * 60 * 1000;
+      const lastSync = parseInt(localStorage.getItem('taitangau_last_sync') || '0');
+      if ((Date.now() - lastSync) < CACHE_TTL && !!localStorage.getItem('taitangau_data')) {
+        console.log('⚡ Home cache hit, skip Firebase');
+        window._fbFullyLoaded = true;
+        return;
       }
-      return;
     }
-    // Cache tươi nhưng LP trống → vẫn fetch Firebase để lấy LP
-    if (hasFreshCache && _needLp && landingPages.length === 0) {
-      console.log('⚡ Cache hit but LP empty, fetching Firebase for LP...');
-    }
+
     const ok = await initFirebase();
     if (ok) await _pullFirebase();
-    // Lưu thời điểm sync
     try { localStorage.setItem('taitangau_last_sync', String(Date.now())); } catch(e) {}
   } catch(e) { console.warn('Background sync error:', e); }
 }
@@ -4177,7 +4196,10 @@ function renderPosts() {
             ? `<img src="${post.image}" alt="${escHtml(post.title)}" class="post-img" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
             : ''
           }
-          <div class="post-img-placeholder" ${post.image ? 'style="display:none"' : ''}>${getCatEmoji(post.category)}</div>
+          <div class="post-img-placeholder" ${post.image ? 'style="display:none"' : ''} style="${post.image ? 'display:none' : 'background:' + getCatGradient(post.category)}">
+            <span class="ph-emoji">${getCatEmoji(post.category)}</span>
+            <span class="ph-label">${escHtml(post.category || '')}</span>
+          </div>
         </div>
         <div class="post-content">
           <a href="#" class="post-category" onclick="event.stopPropagation(); filterCat('${escHtml(post.category)}', null, event)">
@@ -4384,7 +4406,7 @@ function renderFooter() {
       </div>
     </div>
     <div class="footer-bottom">
-      <p>&copy; ${new Date().getFullYear()} ${escHtml(s.sitename)}. All rights reserved. &nbsp;·&nbsp; <a href="#admin" onclick="window.open(location.href.split('#')[0]+'#admin','_blank');return false" style="color:#444;font-size:11px;text-decoration:none;opacity:.35" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.35" title="Mở CMS">⚙</a></p>
+      <p>&copy; ${new Date().getFullYear()} ${escHtml(s.sitename)}. All rights reserved. &nbsp;·&nbsp; </p>
     </div>
   `;
 }
@@ -4396,7 +4418,8 @@ function updateMetaTags({ title, desc, image, url }) {
   document.title = fullTitle;
   set('og-title', fullTitle); set('tw-title', fullTitle);
   if (desc) { set('og-desc', desc); set('tw-desc', desc); }
-  if (image) { set('og-image', image); set('tw-image', image); }
+  const _imgToUse = image || data.settings.ogImage || '';
+  if (_imgToUse) { set('og-image', _imgToUse); set('tw-image', _imgToUse); }
   if (url)   { set('og-url', url); }
 }
 
@@ -4496,6 +4519,19 @@ function goHome(e) {
    CMS FULL-PAGE ADMIN
 ══════════════════════════════════════════════ */
 const CMS_SESSION_KEY = 'taitangau_cms_session';
+const CMS_SECRET_KEY  = 'taitangau_cms_secret';
+
+// Lấy secret path hiện tại (tạo random nếu chưa có)
+function getCmsSecret() {
+  let s = localStorage.getItem(CMS_SECRET_KEY);
+  if (!s) {
+    // Tạo token ngẫu nhiên 16 ký tự
+    s = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+      .map(b => b.toString(16).padStart(2,'0')).join('').substring(0,16);
+    localStorage.setItem(CMS_SECRET_KEY, s);
+  }
+  return s;
+}
 const CMS_SESSION_TTL = 24 * 60 * 60 * 1000; // 24 giờ
 function _cmsSessionValid() {
   try {
@@ -4514,7 +4550,7 @@ let cmsCurrentEditIdx = null;
 
 function openCMS() {
   window._cmsOpened = true; // flag để init() không gọi routerApplyState
-  // Xóa #admin khỏi URL
+  // Xóa secret hash khỏi URL
   try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
   if (cmsLoggedIn) {
     loadFirebase();
@@ -4546,13 +4582,40 @@ function _hideLoginModal() {
 }
 
 async function cmsLogin() {
+  const user = (document.getElementById('cms-user-input')?.value || '').trim();
   const pass = document.getElementById('cms-pass-input').value;
+  const storedUser = data.settings.adminUsername || 'admin';
   const stored = data.settings.password || '';
-  // So sánh hash nếu stored là hash (64 chars hex), plain text nếu chưa migrate
+
+  // Nếu chưa có mật khẩu → buộc setup lần đầu
+  if (!stored) {
+    showToast('⚠️ Chưa có mật khẩu. Vào Cài đặt → Bảo mật để thiết lập.', true);
+    return;
+  }
+
+  // Check username
+  if (user !== storedUser) {
+    document.getElementById('cms-login-err').style.display = 'block';
+    document.getElementById('cms-pass-input').value = '';
+    if (document.getElementById('cms-user-input')) document.getElementById('cms-user-input').value = '';
+    return;
+  }
+
   const isHash = /^[0-9a-f]{64}$/.test(stored);
   const match = isHash
     ? (await _hashPass(pass)) === stored
     : pass === stored;
+  // Brute-force protection
+  const BF_KEY = 'cms_login_attempts';
+  const BF_LOCK = 'cms_login_lock';
+  const lockUntil = parseInt(localStorage.getItem(BF_LOCK) || '0');
+  if (Date.now() < lockUntil) {
+    const mins = Math.ceil((lockUntil - Date.now()) / 60000);
+    document.getElementById('cms-login-err').textContent = 'Tài khoản bị khóa ' + mins + ' phút. Thử lại sau.';
+    document.getElementById('cms-login-err').style.display = 'block';
+    return;
+  }
+
   if (match) {
     // Nếu pass còn plain text → tự động migrate sang hash
     if (!isHash) {
@@ -4561,6 +4624,8 @@ async function cmsLogin() {
     }
     cmsLoggedIn = true;
     localStorage.setItem(CMS_SESSION_KEY, String(Date.now()));
+    localStorage.removeItem(BF_KEY);
+    localStorage.removeItem(BF_LOCK);
     document.getElementById('cms-login-err').style.display = 'none';
     document.getElementById('cms-pass-input').value = '';
     _hideLoginModal();
@@ -4575,6 +4640,15 @@ async function cmsLogin() {
     document.getElementById('cms-page').classList.add('active');
     showCmsApp();
   } else {
+    const attempts = parseInt(localStorage.getItem(BF_KEY) || '0') + 1;
+    localStorage.setItem(BF_KEY, String(attempts));
+    if (attempts >= 5) {
+      localStorage.setItem(BF_LOCK, String(Date.now() + 15 * 60 * 1000));
+      localStorage.removeItem(BF_KEY);
+      document.getElementById('cms-login-err').textContent = 'Sai quá 5 lần. Tài khoản khóa 15 phút.';
+    } else {
+      document.getElementById('cms-login-err').textContent = 'Sai thông tin đăng nhập (' + attempts + '/5)';
+    }
     document.getElementById('cms-login-err').style.display = 'block';
     document.getElementById('cms-pass-input').value = '';
     document.getElementById('cms-pass-input').focus();
@@ -4891,13 +4965,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // Global keyboard shortcut Ctrl+Shift+A
-  document.addEventListener('keydown', e => {
-    if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-      e.preventDefault();
-      window.open(location.href.split('#')[0] + '#admin', '_blank');
-    }
-  });
+  // Keyboard shortcut removed for security
 });
 
 function cmsSavePost() {
@@ -5829,11 +5897,18 @@ function cmsLoadSettings() {
   document.getElementById('cms-set-author').value = s.author || '';
   document.getElementById('cms-set-bio').value = s.bio || '';
   document.getElementById('cms-set-avatar').value = s.avatar || '';
+  const ogEl = document.getElementById('cms-set-og-image');
+  if (ogEl) ogEl.value = s.ogImage || '';
   document.getElementById('cms-set-favicon').value = s.favicon || '';
   document.getElementById('cms-set-pass').value = '';
   document.getElementById('cms-set-pass2').value = '';
   const emailEl = document.getElementById('cms-set-admin-email');
   if (emailEl) emailEl.value = data.settings.adminEmail || '';
+  // Hiển thị secret path
+  const secretEl = document.getElementById('cms-secret-display');
+  if (secretEl) secretEl.textContent = location.origin + '/#' + getCmsSecret();
+  const unEl = document.getElementById('cms-set-username');
+  if (unEl) unEl.value = data.settings.adminUsername || 'admin';
   // Social
   const soc = s.social || {};
   ['facebook','instagram','youtube','tiktok','linkedin','twitter'].forEach(k => {
@@ -5929,12 +6004,14 @@ function cmsSaveSettings() {
   data.settings.author = document.getElementById('cms-set-author').value.trim();
   data.settings.bio = document.getElementById('cms-set-bio').value.trim();
   data.settings.avatar = document.getElementById('cms-set-avatar').value.trim();
+  const _ogEl = document.getElementById('cms-set-og-image');
+  if (_ogEl) data.settings.ogImage = _ogEl.value.trim();
   data.settings.favicon = document.getElementById('cms-set-favicon').value.trim();
-  // Lưu admin email
+  // Lưu admin username + email
+  const unEl = document.getElementById('cms-set-username');
+  if (unEl && unEl.value.trim()) data.settings.adminUsername = unEl.value.trim();
   const emailEl = document.getElementById('cms-set-admin-email');
-  if (emailEl && emailEl.value.trim()) {
-    data.settings.adminEmail = emailEl.value.trim();
-  }
+  if (emailEl && emailEl.value.trim()) data.settings.adminEmail = emailEl.value.trim();
   if (p1) {
     // Lưu hash thay vì plain text
     _hashPass(p1).then(h => {
@@ -5962,6 +6039,13 @@ function cmsSaveSettings() {
 
   saveData(data);
   applyFavicon();
+  // Set OG image mặc định ngay khi load
+  if (data.settings.ogImage) {
+    const _m1 = document.getElementById('og-image');
+    const _m2 = document.getElementById('tw-image');
+    if (_m1 && !_m1.content) _m1.setAttribute('content', data.settings.ogImage);
+    if (_m2 && !_m2.content) _m2.setAttribute('content', data.settings.ogImage);
+  }
   renderSidebar('sidebar');
   renderFooter();
   renderNav();
@@ -6060,11 +6144,14 @@ function applyFavicon() {
   link.href = url;
 }
 
-// Hash-based routing: go to #admin to open CMS
+// Hash-based routing: dùng secret token thay vì #admin cố định
 window.addEventListener('hashchange', () => {
-  if (window.location.hash === '#admin') openCMS();
+  const secret = getCmsSecret();
+  if (window.location.hash === '#' + secret) openCMS();
 });
-if (window.location.hash === '#admin') { document.addEventListener('DOMContentLoaded', openCMS); }
+if (window.location.hash === '#' + getCmsSecret()) {
+  document.addEventListener('DOMContentLoaded', openCMS);
+}
 
 // Cross-tab sync: when CMS saves in another tab, reload data on this tab
 window.addEventListener('storage', (e) => {
@@ -6980,6 +7067,21 @@ function openSearch() {
   document.getElementById('search-input').focus();
 }
 
+function copyCmsSecret() {
+  const secret = location.origin + '/#' + getCmsSecret();
+  if (navigator.clipboard) navigator.clipboard.writeText(secret);
+  showToast('✅ Đã copy link CMS');
+}
+
+function regenerateCmsSecret() {
+  if (!confirm('Đổi secret path mới? Link CMS cũ sẽ KHÔNG còn hoạt động.')) return;
+  localStorage.removeItem(CMS_SECRET_KEY);
+  getCmsSecret(); // tạo mới
+  const el = document.getElementById('cms-secret-display');
+  if (el) el.textContent = location.origin + '/#' + getCmsSecret();
+  showToast('✅ Đã đổi secret path mới');
+}
+
 function closeModal(id, e) {
   if (e && e.target !== e.currentTarget) return;
   document.getElementById(id).classList.remove('active');
@@ -7462,6 +7564,24 @@ function escHtml(s) {
   return (s == null ? '' : String(s)).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Gradient palette cho từng danh mục
+function getCatGradient(cat) {
+  const gradients = {
+    'Chuyện Nghề':      'linear-gradient(135deg, #1a305e 0%, #2d4a8a 100%)',
+    'Chuyện Đời':       'linear-gradient(135deg, #2d6a4f 0%, #52b788 100%)',
+    'Nhật Ký Sự Kiện':  'linear-gradient(135deg, #7b2d8b 0%, #c77dff 100%)',
+    'Sự Kiện':          'linear-gradient(135deg, #7b2d8b 0%, #c77dff 100%)',
+  };
+  // Tìm theo tên hoặc dùng màu accent mặc định
+  const found = gradients[cat];
+  if (found) return found;
+  // Fallback: sinh gradient từ hash tên danh mục
+  let hash = 0;
+  for (let i = 0; i < (cat||'').length; i++) hash = cat.charCodeAt(i) + ((hash<<5)-hash);
+  const h = Math.abs(hash) % 360;
+  return 'linear-gradient(135deg, hsl(' + h + ',50%,25%) 0%, hsl(' + ((h+40)%360) + ',55%,45%) 100%)';
+}
+
 function getCatEmoji(cat) {
   const found = (data.categories || []).find(c => c.name === cat);
   if (found) return found.emoji || '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
@@ -7588,6 +7708,13 @@ async function init() {
   // ── BƯỚC 1: Load localStorage + render ngay (0ms delay) ──
   _loadAndRenderFast();
   applyFavicon();
+  // Set OG image mặc định ngay khi load
+  if (data.settings.ogImage) {
+    const _m1 = document.getElementById('og-image');
+    const _m2 = document.getElementById('tw-image');
+    if (_m1 && !_m1.content) _m1.setAttribute('content', data.settings.ogImage);
+    if (_m2 && !_m2.content) _m2.setAttribute('content', data.settings.ogImage);
+  }
 
   // Apply Theme + Layout từ cache ngay lập tức
   cmsInitTheme();
@@ -7620,7 +7747,7 @@ async function init() {
   // ── Routing từ cache ──
   if (window._cmsOpened) {
     // CMS đã mở trước khi init() hoàn thành
-  } else if (window.location.hash === '#admin') {
+  } else if (window.location.hash === '#' + getCmsSecret()) {
     openCMS();
   } else {
     const initState = routerParseUrl();
@@ -7670,8 +7797,10 @@ async function init() {
     const header = document.querySelector('header');
     const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
     
-    // Nếu ở top của trang (< 100px), luôn hiện header
-    if (currentScroll < 100) {
+    // Nếu ở top của trang (< hero height), luôn hiện header
+    const heroEl = document.getElementById('hero-section');
+    const heroBottom = heroEl ? heroEl.offsetHeight : 300;
+    if (currentScroll < heroBottom + 54) {
       header.classList.remove('header-hidden');
       lastScrollTop = currentScroll;
       return;
@@ -7690,13 +7819,7 @@ async function init() {
   });
 }
 
-// Keyboard shortcut: Ctrl+Shift+A to open CMS
-document.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-    e.preventDefault();
-    openCMS();
-  }
-});
+// Keyboard shortcut removed for security
 
 
 /* ══════════════════════════════════════════════
@@ -8013,8 +8136,13 @@ init();
   <div style="background:#2a2a2a;border:1px solid #3a2e1c;border-radius:10px;padding:48px 40px;width:360px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.5)">
     <div style="font-family:var(--heading-font);font-size:22px;font-weight:900;color:#fff;text-align:center;margin-bottom:6px">Tài Tàng <span style="color:var(--accent)">Au</span></div>
     <div style="font-size:11px;letter-spacing:2px;color:#888;text-align:center;margin-bottom:32px">CMS DASHBOARD</div>
+    <label style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;display:block;margin-bottom:8px">TÊN ĐĂNG NHẬP</label>
+    <input type="text" id="cms-user-input" placeholder="Username..."
+           onkeydown="if(event.key==='Enter')document.getElementById('cms-pass-input').focus()"
+           autocomplete="off"
+           style="width:100%;padding:12px 14px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:6px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:12px">
     <label style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;display:block;margin-bottom:8px">MẬT KHẨU</label>
-    <input type="password" id="cms-pass-input" placeholder="Nhập mật khẩu..."
+    <input type="password" id="cms-pass-input" placeholder="Mật khẩu..."
            onkeydown="if(event.key==='Enter')cmsLogin()"
            style="width:100%;padding:12px 14px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:6px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:16px">
     <button onclick="cmsLogin()" style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer">Đăng nhập →</button>
