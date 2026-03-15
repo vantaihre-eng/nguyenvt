@@ -4141,17 +4141,28 @@ async function deletePost(fbId) {
   }
 }
 
-async function uploadImageToStorage(file) {
-  if (!_fbReady || !window._storage) return null;
+const IMGBB_API_KEY = 'b6b0bf9b6cac7fe4b10562aa747ed984';
+
+async function uploadToImgBB(file) {
+  if (!IMGBB_API_KEY) return null;
   try {
-    const ext = file.name.split('.').pop() || 'jpg';
-    const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
-    const ref = window._storage.ref(path);
-    await ref.put(file);
-    const url = await ref.getDownloadURL();
-    return url;
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const res = await response.json();
+    if (res && res.success) {
+      return res.data.url;
+    } else {
+      console.error('ImgBB upload error:', res.error ? res.error.message : 'Unknown error');
+      return null;
+    }
   } catch(e) {
-    console.error('Storage upload error:', e);
+    console.error('ImgBB fetch error:', e);
     return null;
   }
 }
@@ -4174,8 +4185,8 @@ async function saveImages() {
     } catch(e) {}
   });
 
-  // 2. Base64 images: upload lên Firebase Storage rồi đổi URL
-  if (b64Images.length > 0 && window._storage) {
+  // 2. Base64 images: upload lên ImgBB rồi đổi URL
+  if (b64Images.length > 0) {
     b64Images.forEach(async img => {
       try {
         // Convert base64 → Blob
@@ -4185,13 +4196,10 @@ async function saveImages() {
         const arr = new Uint8Array(bytes.length);
         for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
         const blob = new Blob([arr], {type: mime});
-        const ext = mime.split('/')[1] || 'jpg';
-        const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
-
-        // Upload lên Storage
-        const ref = window._storage.ref(path);
-        await ref.put(blob);
-        const storageUrl = await ref.getDownloadURL();
+        
+        // Upload lên ImgBB
+        const storageUrl = await uploadToImgBB(blob);
+        if (!storageUrl) throw new Error('ImgBB upload failed');
 
         // Đổi URL trong data.images
         img.url = storageUrl;
@@ -4203,7 +4211,7 @@ async function saveImages() {
 
         // Cập nhật localStorage sau khi đổi URL
         try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
-        console.log('✅ Migrated base64 → Firebase Storage:', img.name);
+        console.log('✅ Migrated base64 → ImgBB:', img.name);
       } catch(e) {
         console.warn('Could not migrate base64 image to Storage:', e.message);
       }
@@ -5392,8 +5400,8 @@ async function cmsHandleFiles(files) {
     const mb = (file.size / 1024 / 1024).toFixed(1);
     status.textContent = 'Đang upload ' + (done+1) + '/' + arr.length + ': ' + imgName + '...';
 
-    // Thử upload lên Firebase Storage
-    let finalUrl = await uploadImageToStorage(file);
+    // Thử upload lên ImgBB
+    let finalUrl = await uploadToImgBB(file);
 
     // Fallback: base64 nén trong browser
     if (!finalUrl) {
