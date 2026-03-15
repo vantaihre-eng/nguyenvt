@@ -122,11 +122,11 @@ function initFirebase() {
       s.onload = () => { if (++loaded === scripts.length) {
         try {
           if (!firebase.apps.length) firebase.initializeApp(cfg);
-          _db = firebase.firestore(); window.db = _db;
-          window._storage = firebase.storage();
-          window._auth = firebase.auth();
+          if (typeof firebase.firestore === 'function') { _db = firebase.firestore(); window.db = _db; }
+          if (typeof firebase.storage === 'function') window._storage = firebase.storage();
+          if (typeof firebase.auth === 'function') window._auth = firebase.auth();
           _fbReady = true; console.log('🔥 Firebase OK');
-        } catch(e) {}
+        } catch(e) { console.warn('Firebase init error:', e); }
         resolve(true);
       }};
       s.onerror = () => { if (++loaded === scripts.length) resolve(false); };
@@ -4485,7 +4485,11 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
   document.title = fullTitle;
   set('og-title', fullTitle); set('tw-title', fullTitle);
   if (desc) { set('og-desc', desc); set('tw-desc', desc); }
-  const _imgToUse = image || data.settings.ogImage || '';
+  
+  let _imgToUse = image || data.settings.ogImage || '';
+  if (_imgToUse && !_imgToUse.startsWith('http')) {
+    _imgToUse = window.location.origin + (_imgToUse.startsWith('/') ? '' : '/') + _imgToUse;
+  }
   if (_imgToUse) { set('og-image', _imgToUse); set('tw-image', _imgToUse); }
   if (url) {
     set('og-url', url);
@@ -4497,6 +4501,10 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
   const schemaEl = document.getElementById('json-ld-schema');
   if (schemaEl) {
     const domain = data.settings.domain || window.location.origin;
+    let _imgSchema = _imgToUse;
+    if (_imgSchema && !_imgSchema.startsWith('http')) {
+      _imgSchema = domain + (_imgSchema.startsWith('/') ? '' : '/') + _imgSchema;
+    }
     let schema;
     if (type === 'article') {
       schema = {
@@ -5446,6 +5454,41 @@ function cmsImgDelete(i) {
   saveImages();
   cmsRenderImages();
   showToast('Đã xóa');
+}
+
+function cmsRenderImages() {
+  const gallery = document.getElementById('cms-img-gallery-wrap');
+  if (!gallery) return;
+  
+  if (!data.images || data.images.length === 0) {
+    gallery.innerHTML = `
+      <div style="padding:64px;text-align:center;color:#bbb">
+        <div style="font-size:48px;margin-bottom:12px">🖼️</div>
+        <p>Thư viện hình ảnh trống. Hãy upload hoặc thêm từ URL.</p>
+      </div>`;
+    return;
+  }
+  
+  gallery.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px">
+      ${data.images.map((img, i) => `
+        <div class="cms-editor-card" style="padding:0;overflow:hidden;transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
+          <div style="aspect-ratio:1.5;background:#f0ece5;display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <img src="${img.url}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div style="display:none;font-size:32px">🖼️</div>
+          </div>
+          <div style="padding:12px">
+            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px" title="${escHtml(img.name)}">
+              ${escHtml(img.name)}
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="t-btn" style="flex:1" onclick="cmsImgCopy('${escHtml(img.url)}', this)">Copy Link</button>
+              <button class="t-btn danger" onclick="cmsImgDelete(${i})">Xóa</button>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
 }
 
 /* ── Categories Manager ── */
