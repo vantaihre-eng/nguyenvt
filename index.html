@@ -4534,33 +4534,7 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
   }
 }
 
-function performSearch() {
-  const q = document.getElementById('search-input').value.toLowerCase().trim();
-  const res = document.getElementById('search-results');
-  if (!q) { res.innerHTML = ''; return; }
-  
-  const matches = data.posts.filter(p => 
-    (p.title && p.title.toLowerCase().includes(q)) || 
-    (p.excerpt && p.excerpt.toLowerCase().includes(q)) || 
-    (p.category && p.category.toLowerCase().includes(q))
-  );
-  
-  if (matches.length === 0) {
-    res.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 14px;">Không tìm thấy kết quả nào cho "'+escHtml(q)+'"</div>';
-    return;
-  }
-  
-  res.innerHTML = matches.map(p => {
-    // Find absolute index in original array
-    const absoluteIdx = data.posts.findIndex(post => post === p);
-    return `
-    <div class="search-item" onclick="closeModal('search-modal'); openPost(${absoluteIdx});">
-      <div class="s-cat">${escHtml(p.category)}</div>
-      <div class="s-title">${escHtml(p.title)}</div>
-      <div class="s-excerpt">${escHtml(p.excerpt || '').substring(0, 100)}...</div>
-    </div>
-  `}).join('');
-}
+
 
 /* ══════════════════════════════════════════════
    NAVIGATION & FILTERS
@@ -4939,11 +4913,7 @@ function initQuillEditors() {
 
 // Override original img picker callback to inject into Quill if it's open
 const origLpbPickImgCb = window.rteOpenImgPicker; // We keep original picker UI, but intercept the result
-function rteOpenImgPicker() {
-  window._rteTarget = 'quill'; 
-  document.getElementById('cms-img-picker').style.display = 'flex';
-  loadImgPicker();
-}
+
 
 function rteInsertPickedImg(url) {
   if (imgPickerCallback && window._rteTarget === 'quill') {
@@ -5960,10 +5930,7 @@ function cmsMoveSidebar(idx, dir) {
   renderSidebar('sidebar');
 }
 
-function cmsSelectLayout(name, el) {
-  document.querySelectorAll('.cms-layout-opt').forEach(o => o.classList.remove('active'));
-  el.classList.add('active');
-}
+
 
 function cmsSaveLayout() {
   const sel = document.querySelector('.cms-layout-opt.active');
@@ -6145,9 +6112,10 @@ function cmsSaveSettings() {
 
   if (p1) {
     // Hash password rồi mới save - tránh race condition
-    _hashPass(p1).then(h => {
+    _hashPass(p1).then(async h => {
       data.settings.password = h;
-      await initFirebase(); saveData(data); // lưu với password mới
+      await initFirebase();
+      await saveData(data);
       showToast('✅ Đã lưu cài đặt (kể cả mật khẩu mới)');
     });
   } else {
