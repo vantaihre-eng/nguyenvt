@@ -41,10 +41,13 @@
 })();
 </script>
 <meta http-equiv="Cache-Control" content="no-cache">
+<link rel="canonical" id="canonical-url" href="">
+<script id="json-ld-schema" type="application/ld+json">{}</script>
 <title>Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"></noscript>
 <!-- Quill WYSIWYG Editor -->
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
@@ -4105,7 +4108,7 @@ function _cacheLocal() {
 async function saveData(d) {
   try { const o = Object.assign({}, d); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
   try { localStorage.removeItem('taitangau_last_sync'); } catch(e) {}
-  await initFirebase(); // đảm bảo Firebase sẵn sàng
+  await initFirebase();
   if (!_fbReady || !_db) return;
   try {
     // Lưu password hash lên Firebase - an toàn vì đã hash + pepper
@@ -4475,7 +4478,7 @@ function renderFooter() {
   `;
 }
 
-function updateMetaTags({ title, desc, image, url }) {
+function updateMetaTags({ title, desc, image, url, type, author, date, modified }) {
   const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.setAttribute('content', val); };
   const sitename = data.settings.sitename || 'Tài Tàng Au';
   const fullTitle = title ? title + ' – ' + sitename : sitename + ' – ' + (data.settings.tagline || '');
@@ -4484,7 +4487,51 @@ function updateMetaTags({ title, desc, image, url }) {
   if (desc) { set('og-desc', desc); set('tw-desc', desc); }
   const _imgToUse = image || data.settings.ogImage || '';
   if (_imgToUse) { set('og-image', _imgToUse); set('tw-image', _imgToUse); }
-  if (url)   { set('og-url', url); }
+  if (url) {
+    set('og-url', url);
+    // Canonical URL
+    const canon = document.getElementById('canonical-url');
+    if (canon) canon.setAttribute('href', url);
+  }
+  // JSON-LD Schema
+  const schemaEl = document.getElementById('json-ld-schema');
+  if (schemaEl) {
+    const domain = data.settings.domain || window.location.origin;
+    let schema;
+    if (type === 'article') {
+      schema = {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        'headline': title || '',
+        'description': desc || '',
+        'image': _imgToUse || '',
+        'url': url || '',
+        'datePublished': date ? new Date(date).toISOString() : '',
+        'dateModified': modified ? new Date(modified).toISOString() : (date ? new Date(date).toISOString() : ''),
+        'author': { '@type': 'Person', 'name': author || data.settings.author || sitename },
+        'publisher': {
+          '@type': 'Organization',
+          'name': sitename,
+          'url': domain
+        },
+        'mainEntityOfPage': { '@type': 'WebPage', '@id': url || '' }
+      };
+    } else {
+      schema = {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        'name': sitename,
+        'url': domain,
+        'description': data.settings.tagline || '',
+        'potentialAction': {
+          '@type': 'SearchAction',
+          'target': { '@type': 'EntryPoint', 'urlTemplate': domain + '/?q={search_term_string}' },
+          'query-input': 'required name=search_term_string'
+        }
+      };
+    }
+    schemaEl.textContent = JSON.stringify(schema);
+  }
 }
 
 function performSearch() {
@@ -5930,9 +5977,7 @@ function cmsSaveLayout() {
     bgColor: document.getElementById('cms-color-bg-hex').value.trim() || document.getElementById('cms-color-bg').value
   };
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(cfg));
-  initFirebase().then(() => {
-    if (_fbReady && _db) _db.collection('site').doc('layout').set(cfg).catch(e=>{});
-  });
+  initFirebase().then(() => { if (_fbReady && _db) _db.collection('site').doc('layout').set(cfg).catch(e=>{}); });
 
   // Save Sidebar Settings
   setSidebarVisibleHome(document.getElementById('cms-sidebar-visible-home').checked);
@@ -6098,21 +6143,15 @@ function cmsSaveSettings() {
     document.getElementById('cms-priority-3').value
   ].filter(id => id);
 
-  // Đảm bảo Firebase đã init trước khi lưu ogImage + settings
-  const _doSaveSettings = async () => {
-    await initFirebase();
-    await saveData(data);
-    try { localStorage.removeItem('taitangau_last_sync'); } catch(e) {}
-  };
-
   if (p1) {
-    _hashPass(p1).then(async h => {
+    // Hash password rồi mới save - tránh race condition
+    _hashPass(p1).then(h => {
       data.settings.password = h;
-      await _doSaveSettings();
+      await initFirebase(); saveData(data); // lưu với password mới
       showToast('✅ Đã lưu cài đặt (kể cả mật khẩu mới)');
     });
   } else {
-    _doSaveSettings().then(() => showToast('✅ Đã lưu cài đặt'));
+    initFirebase().then(() => saveData(data)); // lưu không đổi password
   }
   applyFavicon();
   // Set OG image mặc định ngay khi load
@@ -6125,7 +6164,7 @@ function cmsSaveSettings() {
   renderSidebar('sidebar');
   renderFooter();
   renderNav();
-
+  if (!p1) showToast('✅ Đã lưu cài đặt'); // nếu không đổi pass thì toast ngay
 }
 
 /* ── URL Manager ── */
@@ -7203,20 +7242,21 @@ function getSidebarVisibleHome() {
   return false; // mặc định ẩn
 }
 
-function setSidebarVisibleHome(visible) {
+async function setSidebarVisibleHome(visible) {
   try { localStorage.setItem('taitangau_sidebar_home', visible ? '1' : '0'); } catch(e) {}
   data.settings.sidebarVisibleHome = visible;
-  initFirebase().then(() => {
-    if (_fbReady && _db) _db.collection('site').doc('settings').set({ sidebarVisibleHome: visible }, { merge: true }).catch(e=>{});
-  });
+  await initFirebase();
+  if (_fbReady && _db) {
+    _db.collection('site').doc('settings').set({ sidebarVisibleHome: visible }, { merge: true }).catch(e=>{});
+  }
 }
 
-function saveSidebarWidgets(widgets) {
+async function saveSidebarWidgets(widgets) {
   try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(widgets)); } catch(e) {}
-  // Sync lên Firebase site/settings để đồng bộ đa thiết bị
-  initFirebase().then(() => {
-    if (_fbReady && _db) _db.collection('site').doc('settings').set({ sidebarWidgets: widgets }, { merge: true }).catch(e=>{});
-  });
+  await initFirebase();
+  if (_fbReady && _db) {
+    _db.collection('site').doc('settings').set({ sidebarWidgets: widgets }, { merge: true }).catch(e=>{});
+  }
 }
 
 function applyLayout(cfg) {
@@ -7272,7 +7312,6 @@ function cmsSaveTheme() {
     colorSurface: document.getElementById('cms-color-surface')?.value || '#f7f7f7'
   };
   localStorage.setItem(THEME_KEY, JSON.stringify(cfg));
-  
   initFirebase().then(() => {
     if (_fbReady && _db) _db.collection('site').doc('theme').set(cfg).catch(e => console.error('Save theme error:', e));
   });
@@ -7558,7 +7597,7 @@ function openPost(idx) {
   const _rp = document.getElementById('reading-progress'); if(_rp) _rp.style.width = '0%';
   window.scrollTo({ top: 0, behavior: 'smooth' });
   const postUrl = window.location.origin + '/bai-viet/' + (post.slug || String(idx));
-  updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: postUrl });
+  updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: postUrl, type: 'article', author: data.settings.author, date: post.date, modified: post.updatedAt || post.date });
   if (!window._routerRestoring) {
     const slug = post.slug || String(idx);
     try { history.pushState({ view: 'post', idx: idx, slug: slug }, '', '/bai-viet/' + slug); } catch(e) {}
@@ -7617,6 +7656,14 @@ function goBack() {
   _showHome('all');
 }
 function _showHome(cat) {
+  // Reset canonical về trang chủ
+  const _ch = document.getElementById('canonical-url');
+  if (_ch) _ch.setAttribute('href', window.location.origin + '/');
+  const schemaEl = document.getElementById('json-ld-schema');
+  if (schemaEl && data.settings) {
+    const sitename = data.settings.sitename || 'Tài Tàng Au';
+    schemaEl.textContent = JSON.stringify({ '@context':'https://schema.org','@type':'WebSite','name':sitename,'url':data.settings.domain||window.location.origin });
+  }
   cat = cat || 'all';
   currentCategory = cat;
   document.getElementById('post-detail-page').style.display = 'none';
@@ -7815,6 +7862,10 @@ async function init() {
   // Render nav luôn, chỉ render home nếu URL không phải /slug
   renderNav();
   renderFilterBar();
+  // Set canonical + WebSite schema cho trang chủ
+  const _canonEl = document.getElementById('canonical-url');
+  if (_canonEl) _canonEl.setAttribute('href', window.location.origin + '/');
+  updateMetaTags({ title: '', desc: data.settings.tagline, image: data.settings.ogImage || '', url: window.location.origin + '/' });
   renderSidebar('sidebar');
   renderFooter();
   const _initPath = location.pathname.replace(/^\//, '');
@@ -8129,9 +8180,7 @@ function cmsSaveMobile() {
     cardStyle: activeCardOpt ? activeCardOpt.dataset.val : 'full',
   };
   localStorage.setItem(MOBILE_KEY, JSON.stringify(cfg));
-  initFirebase().then(() => {
-    if (_fbReady && _db) _db.collection('site').doc('mobile').set(cfg).catch(e=>{});
-  });
+  initFirebase().then(() => { if (_fbReady && _db) _db.collection('site').doc('mobile').set(cfg).catch(e=>{}); });
   applyMobileCfg(cfg);
   // Update preview phone
   const bb = document.getElementById('mpv-bottombar');
