@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://fonts.googleapis.com https://fonts.gstatic.com https://*.firebaseio.com https://*.googleapis.com https://www.gstatic.com https://*.firebasestorage.app https://*.cloudfunctions.net; img-src 'self' data: blob: https: http:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.quilljs.com https://www.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebasestorage.app https://*.firebasestorage.googleapis.com https://*.cloudfunctions.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.quilljs.com https://cdnjs.cloudflare.com https://www.gstatic.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.quilljs.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http:; font-src 'self' data: https://fonts.gstatic.com https://cdn.quilljs.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasestorage.app https://*.firebasestorage.googleapis.com https://*.cloudfunctions.net;">
 <meta name="description" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
 <!-- Open Graph / Social sharing -->
 <meta property="og:type" content="website">
@@ -634,6 +634,20 @@ function initFirebase() {
     .post-detail-wrap { grid-template-columns: 1fr; gap: 32px; padding: 28px 20px 60px; }
     #post-detail-sidebar { display: none; }
     .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px 48px; }
+  }
+
+  /* ── Tablet nhỏ (641px - 768px): ẩn sidebar, 1 cột ── */
+  @media (max-width: 768px) {
+    .main-wrap {
+      grid-template-columns: 1fr !important;
+      padding: 24px 20px 48px;
+      gap: 24px;
+    }
+    #sidebar { display: none; }
+    .post-detail-wrap {
+      grid-template-columns: 1fr !important;
+    }
+    #post-detail-sidebar { display: none; }
   }
 
   /* ── Mobile (≤640px) ── */
@@ -4022,6 +4036,7 @@ async function _pullFirebase() {
     if (ss.exists) {
       const s = ss.data();
       if (s.sidebarWidgets) try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(s.sidebarWidgets)); } catch(e) {}
+      // Merge settings từ Firebase, bao gồm password hash
       data.settings = Object.assign({}, data.settings, s);
       data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, s.social||{});
     }
@@ -4090,8 +4105,9 @@ async function saveData(d) {
   try { localStorage.removeItem('taitangau_last_sync'); } catch(e) {} // force next visitor to re-fetch
   if (!_fbReady || !_db) return;
   try {
-    const {password, ...pub} = d.settings;
-    await _db.collection('site').doc('settings').set(pub, {merge:true});
+    // Lưu password hash lên Firebase - an toàn vì đã hash + pepper
+    const settingsToSave = Object.assign({}, d.settings);
+    await _db.collection('site').doc('settings').set(settingsToSave, {merge:true});
     await _db.collection('site').doc('categories').set({list: d.categories}, {merge:true});
     for (const pg of (d.pages||[])) {
       const {_id, ...pd} = pg;
@@ -4119,20 +4135,59 @@ async function deletePost(fbId) {
 }
 
 function saveImages() {
-  // Chỉ lưu localStorage nếu không có base64 lớn
-  const hasLargeBase64 = data.images.some(i => i.url && i.url.startsWith('data:') && i.url.length > 500000);
-  if (!hasLargeBase64) {
-    try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {
-      showToast('⚠️ Hết dung lượng localStorage. Ảnh chỉ lưu tạm thời.', true);
-    }
-  }
-  if (!_fbReady || !_db) {
-    if (hasLargeBase64) showToast('⚠️ Firebase chưa sẵn sàng — ảnh lưu tạm local.', true);
-    return;
-  }
-  data.images.filter(i => i.url && !i.url.startsWith('data:')).forEach(async img => {
-    try { const {_id, ...d} = img; if (_id) await _db.collection('images').doc(_id).set(d); else { const r = await _db.collection('images').add(d); img._id = r.id; } } catch(e) {}
+  // Lưu localStorage (snapshot nhanh)
+  try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
+
+  if (!_fbReady || !_db) return;
+
+  // Tách URL-based và base64-based
+  const urlImages  = data.images.filter(i => i.url && !i.url.startsWith('data:'));
+  const b64Images  = data.images.filter(i => i.url && i.url.startsWith('data:'));
+
+  // 1. Lưu URL images lên Firestore ngay
+  urlImages.forEach(async img => {
+    try {
+      const {_id, ...d} = img;
+      if (_id) await _db.collection('images').doc(_id).set(d);
+      else { const r = await _db.collection('images').add(d); img._id = r.id; }
+    } catch(e) {}
   });
+
+  // 2. Base64 images: upload lên Firebase Storage rồi đổi URL
+  if (b64Images.length > 0 && window._storage) {
+    b64Images.forEach(async img => {
+      try {
+        // Convert base64 → Blob
+        const [meta, b64data] = img.url.split(',');
+        const mime = meta.match(/:(.*?);/)?.[1] || 'image/jpeg';
+        const bytes = atob(b64data);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const blob = new Blob([arr], {type: mime});
+        const ext = mime.split('/')[1] || 'jpg';
+        const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
+
+        // Upload lên Storage
+        const ref = window._storage.ref(path);
+        await ref.put(blob);
+        const storageUrl = await ref.getDownloadURL();
+
+        // Đổi URL trong data.images
+        img.url = storageUrl;
+
+        // Lưu lên Firestore
+        const {_id, ...d} = img;
+        if (_id) await _db.collection('images').doc(_id).set(d);
+        else { const r = await _db.collection('images').add(d); img._id = r.id; }
+
+        // Cập nhật localStorage sau khi đổi URL
+        try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
+        console.log('✅ Migrated base64 → Firebase Storage:', img.name);
+      } catch(e) {
+        console.warn('Could not migrate base64 image to Storage:', e.message);
+      }
+    });
+  }
 }
 
 async function saveLandingPages() {
@@ -4549,7 +4604,9 @@ let cmsLoggedIn = _cmsSessionValid();
 
 // Hash mật khẩu bằng SHA-256 (Web Crypto API)
 async function _hashPass(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  // Pepper chống rainbow table dù hash bị lộ từ Firebase
+  const _pepper = 'taitangau-7c2bb:cms:v2';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + _pepper));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 let cmsCurrentEditIdx = null;
@@ -4608,9 +4665,22 @@ async function cmsLogin() {
   }
 
   const isHash = /^[0-9a-f]{64}$/.test(stored);
-  const match = isHash
-    ? (await _hashPass(pass)) === stored
-    : pass === stored;
+  let match = false;
+  if (isHash) {
+    match = (await _hashPass(pass)) === stored;
+    if (!match) {
+      // Migration: thử hash cũ (không pepper)
+      const _buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+      const _oldHash = Array.from(new Uint8Array(_buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      if (_oldHash === stored) {
+        match = true;
+        // Auto-migrate: lưu lại với pepper mới
+        _hashPass(pass).then(h => { data.settings.password = h; saveData(data); });
+      }
+    }
+  } else {
+    match = pass === stored;
+  }
   // Brute-force protection
   const BF_KEY = 'cms_login_attempts';
   const BF_LOCK = 'cms_login_lock';
@@ -6017,14 +6087,7 @@ function cmsSaveSettings() {
   if (unEl && unEl.value.trim()) data.settings.adminUsername = unEl.value.trim();
   const emailEl = document.getElementById('cms-set-admin-email');
   if (emailEl && emailEl.value.trim()) data.settings.adminEmail = emailEl.value.trim();
-  if (p1) {
-    // Lưu hash thay vì plain text
-    _hashPass(p1).then(h => {
-      data.settings.password = h;
-      saveData(data);
-    });
-  }
-  // Social
+  // Social (trước khi save)
   if (!data.settings.social) data.settings.social = {};
   ['facebook','instagram','youtube','tiktok','linkedin','twitter'].forEach(k => {
     const el = document.getElementById('cms-social-' + k);
@@ -6042,7 +6105,16 @@ function cmsSaveSettings() {
     document.getElementById('cms-priority-3').value
   ].filter(id => id);
 
-  saveData(data);
+  if (p1) {
+    // Hash password rồi mới save - tránh race condition
+    _hashPass(p1).then(h => {
+      data.settings.password = h;
+      saveData(data); // lưu với password mới
+      showToast('✅ Đã lưu cài đặt (kể cả mật khẩu mới)');
+    });
+  } else {
+    saveData(data); // lưu không đổi password
+  }
   applyFavicon();
   // Set OG image mặc định ngay khi load
   if (data.settings.ogImage) {
@@ -6054,7 +6126,7 @@ function cmsSaveSettings() {
   renderSidebar('sidebar');
   renderFooter();
   renderNav();
-  showToast('✅ Đã lưu cài đặt');
+  if (!p1) showToast('✅ Đã lưu cài đặt'); // nếu không đổi pass thì toast ngay
 }
 
 /* ── URL Manager ── */
