@@ -4606,15 +4606,18 @@ function openCMS() {
   window._cmsOpened = true; // flag để init() không gọi routerApplyState
   // Xóa secret hash khỏi URL
   try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
-  if (cmsLoggedIn) {
+  const _hasPassword = !!(data.settings.password);
+  const _firstTime = !_hasPassword;
+
+  if (cmsLoggedIn || _firstTime) {
+    if (_firstTime) {
+      // Lần đầu chưa có mật khẩu → vào thẳng, set session
+      cmsLoggedIn = true;
+      localStorage.setItem(CMS_SESSION_KEY, String(Date.now()));
+      showToast('👋 Chào mừng! Hãy vào Cài đặt → Bảo mật để đặt mật khẩu.');
+    }
     loadFirebase();
-    // Re-authenticate Firebase nếu session còn hạn
-    initFirebase().then(() => {
-      if (data.settings.adminEmail && window._auth && !window._auth.currentUser) {
-        // Firebase Auth đã mất sau reload — cần user nhập lại pass
-        // Nhưng session CMS vẫn còn → vào thẳng, ghi sẽ dùng plain text
-      }
-    });
+    initFirebase().then(() => {});
     document.getElementById('cms-page').classList.add('active');
     showCmsApp();
   } else {
@@ -4640,12 +4643,6 @@ async function cmsLogin() {
   const pass = document.getElementById('cms-pass-input').value;
   const storedUser = data.settings.adminUsername || 'admin';
   const stored = data.settings.password || '';
-
-  // Nếu chưa có mật khẩu → buộc setup lần đầu
-  if (!stored) {
-    showToast('⚠️ Chưa có mật khẩu. Vào Cài đặt → Bảo mật để thiết lập.', true);
-    return;
-  }
 
   // Check username
   if (user !== storedUser) {
