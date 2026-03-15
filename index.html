@@ -4104,7 +4104,8 @@ function _cacheLocal() {
 
 async function saveData(d) {
   try { const o = Object.assign({}, d); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
-  try { localStorage.removeItem('taitangau_last_sync'); } catch(e) {} // force next visitor to re-fetch
+  try { localStorage.removeItem('taitangau_last_sync'); } catch(e) {}
+  await initFirebase(); // đảm bảo Firebase sẵn sàng
   if (!_fbReady || !_db) return;
   try {
     // Lưu password hash lên Firebase - an toàn vì đã hash + pepper
@@ -4120,6 +4121,7 @@ async function saveData(d) {
 }
 
 async function savePost(post, existingId) {
+  await initFirebase();
   if (_fbReady && _db) {
     try {
       const {_id, ...pd} = post;
@@ -4136,10 +4138,9 @@ async function deletePost(fbId) {
   }
 }
 
-function saveImages() {
-  // Lưu localStorage (snapshot nhanh)
+async function saveImages() {
   try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
-
+  await initFirebase();
   if (!_fbReady || !_db) return;
 
   // Tách URL-based và base64-based
@@ -5929,7 +5930,9 @@ function cmsSaveLayout() {
     bgColor: document.getElementById('cms-color-bg-hex').value.trim() || document.getElementById('cms-color-bg').value
   };
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(cfg));
-  if (_fbReady && _db) _db.collection('site').doc('layout').set(cfg).catch(e=>{});
+  initFirebase().then(() => {
+    if (_fbReady && _db) _db.collection('site').doc('layout').set(cfg).catch(e=>{});
+  });
 
   // Save Sidebar Settings
   setSidebarVisibleHome(document.getElementById('cms-sidebar-visible-home').checked);
@@ -6095,15 +6098,21 @@ function cmsSaveSettings() {
     document.getElementById('cms-priority-3').value
   ].filter(id => id);
 
+  // Đảm bảo Firebase đã init trước khi lưu ogImage + settings
+  const _doSaveSettings = async () => {
+    await initFirebase();
+    await saveData(data);
+    try { localStorage.removeItem('taitangau_last_sync'); } catch(e) {}
+  };
+
   if (p1) {
-    // Hash password rồi mới save - tránh race condition
-    _hashPass(p1).then(h => {
+    _hashPass(p1).then(async h => {
       data.settings.password = h;
-      saveData(data); // lưu với password mới
+      await _doSaveSettings();
       showToast('✅ Đã lưu cài đặt (kể cả mật khẩu mới)');
     });
   } else {
-    saveData(data); // lưu không đổi password
+    _doSaveSettings().then(() => showToast('✅ Đã lưu cài đặt'));
   }
   applyFavicon();
   // Set OG image mặc định ngay khi load
@@ -6116,7 +6125,7 @@ function cmsSaveSettings() {
   renderSidebar('sidebar');
   renderFooter();
   renderNav();
-  if (!p1) showToast('✅ Đã lưu cài đặt'); // nếu không đổi pass thì toast ngay
+
 }
 
 /* ── URL Manager ── */
@@ -7197,17 +7206,17 @@ function getSidebarVisibleHome() {
 function setSidebarVisibleHome(visible) {
   try { localStorage.setItem('taitangau_sidebar_home', visible ? '1' : '0'); } catch(e) {}
   data.settings.sidebarVisibleHome = visible;
-  if (_fbReady && _db) {
-    _db.collection('site').doc('settings').set({ sidebarVisibleHome: visible }, { merge: true }).catch(e=>{});
-  }
+  initFirebase().then(() => {
+    if (_fbReady && _db) _db.collection('site').doc('settings').set({ sidebarVisibleHome: visible }, { merge: true }).catch(e=>{});
+  });
 }
 
 function saveSidebarWidgets(widgets) {
   try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(widgets)); } catch(e) {}
   // Sync lên Firebase site/settings để đồng bộ đa thiết bị
-  if (_fbReady && _db) {
-    _db.collection('site').doc('settings').set({ sidebarWidgets: widgets }, { merge: true }).catch(e=>{});
-  }
+  initFirebase().then(() => {
+    if (_fbReady && _db) _db.collection('site').doc('settings').set({ sidebarWidgets: widgets }, { merge: true }).catch(e=>{});
+  });
 }
 
 function applyLayout(cfg) {
@@ -7264,9 +7273,9 @@ function cmsSaveTheme() {
   };
   localStorage.setItem(THEME_KEY, JSON.stringify(cfg));
   
-  if (_fbReady && _db) {
-    _db.collection('site').doc('theme').set(cfg).catch(e => console.error("Error saving theme to Firestore:", e));
-  }
+  initFirebase().then(() => {
+    if (_fbReady && _db) _db.collection('site').doc('theme').set(cfg).catch(e => console.error('Save theme error:', e));
+  });
   
   applyTheme(cfg);
   showToast('✅ Đã lưu Cấu hình Giao diện mới!');
@@ -8120,7 +8129,9 @@ function cmsSaveMobile() {
     cardStyle: activeCardOpt ? activeCardOpt.dataset.val : 'full',
   };
   localStorage.setItem(MOBILE_KEY, JSON.stringify(cfg));
-  if (_fbReady && _db) _db.collection('site').doc('mobile').set(cfg).catch(e=>{});
+  initFirebase().then(() => {
+    if (_fbReady && _db) _db.collection('site').doc('mobile').set(cfg).catch(e=>{});
+  });
   applyMobileCfg(cfg);
   // Update preview phone
   const bb = document.getElementById('mpv-bottombar');
