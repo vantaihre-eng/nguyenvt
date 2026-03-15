@@ -3654,12 +3654,18 @@ html, body {
             <div class="cms-section-title">Bảo mật</div>
             <div style="background:#f0f7ff;border:1.5px solid #bdd7f5;border-radius:8px;padding:14px 16px;margin-bottom:16px">
               <div style="font-size:11px;font-weight:700;color:#1a5276;letter-spacing:1px;margin-bottom:6px">🔑 ĐƯỜNG DẪN VÀO CMS (BÍ MẬT)</div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <code id="cms-secret-display" style="font-size:13px;background:#fff;padding:6px 10px;border-radius:5px;border:1px solid #ccc;flex:1;color:#1a305e;font-weight:700">loading...</code>
-                <button onclick="copyCmsSecret()" style="background:#1a305e;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700">Copy</button>
-                <button onclick="regenerateCmsSecret()" style="background:#fff;color:#c0392b;border:1.5px solid #c0392b;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700" title="Đổi secret path mới">↻ Đổi</button>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <code id="cms-secret-display" style="font-size:13px;background:#fff;padding:6px 10px;border-radius:5px;border:1px solid #ccc;flex:1;color:#1a305e;font-weight:700;word-break:break-all">loading...</code>
+                <button onclick="copyCmsSecret()" style="background:#1a305e;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;flex-shrink:0">Copy</button>
               </div>
-              <div style="font-size:11px;color:#555;margin-top:6px">Truy cập CMS tại: <code style="background:#fff;padding:2px 5px;border-radius:3px">tenmien.com/#[secret]</code> — Không chia sẻ link này.</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <input type="text" id="cms-secret-custom" placeholder="Nhập secret tùy ý (chỉ dùng a-z 0-9 -)"
+                  style="flex:1;padding:7px 10px;border:1.5px solid #d0d0d0;border-radius:6px;font-size:13px;font-family:monospace;outline:none"
+                  oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+                <button onclick="saveCustomSecret()" style="background:#2e86c1;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;flex-shrink:0">✓ Lưu</button>
+                <button onclick="regenerateCmsSecret()" style="background:#fff;color:#c0392b;border:1.5px solid #c0392b;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;flex-shrink:0" title="Tạo random mới">↻ Random</button>
+              </div>
+              <div style="font-size:11px;color:#555;margin-top:8px">Link CMS: <code style="background:#fff;padding:2px 5px;border-radius:3px">tenmien.com/#[secret]</code> — Chỉ dùng chữ thường, số và dấu <code>-</code></div>
             </div>
             <p style="font-size:12px;color:#888;margin-bottom:16px">Email dùng để đăng nhập Firebase (phải tạo sẵn trong Firebase Console → Authentication → Users).</p>
             <div class="cms-settings-grid">
@@ -5905,8 +5911,7 @@ function cmsLoadSettings() {
   const emailEl = document.getElementById('cms-set-admin-email');
   if (emailEl) emailEl.value = data.settings.adminEmail || '';
   // Hiển thị secret path
-  const secretEl = document.getElementById('cms-secret-display');
-  if (secretEl) secretEl.textContent = location.origin + '/#' + getCmsSecret();
+  _refreshSecretDisplay();
   const unEl = document.getElementById('cms-set-username');
   if (unEl) unEl.value = data.settings.adminUsername || 'admin';
   // Social
@@ -7074,12 +7079,27 @@ function copyCmsSecret() {
 }
 
 function regenerateCmsSecret() {
-  if (!confirm('Đổi secret path mới? Link CMS cũ sẽ KHÔNG còn hoạt động.')) return;
+  if (!confirm('Tạo secret path random mới? Link CMS cũ sẽ KHÔNG còn hoạt động.')) return;
   localStorage.removeItem(CMS_SECRET_KEY);
-  getCmsSecret(); // tạo mới
+  getCmsSecret();
+  _refreshSecretDisplay();
+  showToast('✅ Đã tạo secret path mới');
+}
+
+function saveCustomSecret() {
+  const val = (document.getElementById('cms-secret-custom')?.value || '').trim();
+  if (!val) { showToast('Nhập secret trước', true); return; }
+  if (val.length < 6) { showToast('Secret phải ít nhất 6 ký tự', true); return; }
+  if (!confirm('Đổi secret path thành "#' + val + '"? Link CMS cũ sẽ KHÔNG còn hoạt động.')) return;
+  localStorage.setItem(CMS_SECRET_KEY, val);
+  document.getElementById('cms-secret-custom').value = '';
+  _refreshSecretDisplay();
+  showToast('✅ Đã lưu secret path mới');
+}
+
+function _refreshSecretDisplay() {
   const el = document.getElementById('cms-secret-display');
   if (el) el.textContent = location.origin + '/#' + getCmsSecret();
-  showToast('✅ Đã đổi secret path mới');
 }
 
 function closeModal(id, e) {
