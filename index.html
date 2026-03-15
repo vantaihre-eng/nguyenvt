@@ -3926,7 +3926,7 @@ let data = {
     sidebarVisibleHome: false
   }
 };
-let landingPages = []; // stored separately for perf
+window.landingPages = []; // global để _openBySlug và các hàm khác đều truy cập được
 const LP_KEY = 'taitangau_landing_pages';
 
 let currentCategory = 'all';
@@ -4006,12 +4006,12 @@ function _loadLocal() {
     const lp = localStorage.getItem(LP_KEY); 
     if (lp) {
       const parsedLp = JSON.parse(lp);
-      landingPages = Array.isArray(parsedLp) ? parsedLp : [];
+      window.landingPages = Array.isArray(parsedLp) ? parsedLp : [];
     } else {
-      landingPages = [];
+      window.landingPages = [];
     }
   } catch(e) {
-    landingPages = [];
+    window.landingPages = [];
   }
 }
 
@@ -4054,7 +4054,7 @@ async function _pullFirebase() {
 
     // Apply landingPages
     if (!lps.empty) {
-      landingPages = lps.docs.map(d => {
+      window.landingPages = lps.docs.map(d => {
         const obj = {id: d.id, ...d.data()};
         if (!obj.slug) {
           obj.slug = obj.title
@@ -4067,7 +4067,7 @@ async function _pullFirebase() {
         return obj;
       });
     } else {
-      landingPages = [];
+      window.landingPages = [];
     }
 
     // Apply theme/layout/mobile
@@ -4082,18 +4082,18 @@ async function _pullFirebase() {
     renderNav(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
     if (document.getElementById('cmspage-layout')?.style.display !== 'none') cmsRenderSidebarOrder();
 
-    window._fbFullyLoaded = true;
-
     const _postOpen = document.getElementById('post-detail-page')?.style.display === 'block';
     const _lpOpen   = document.getElementById('lp-viewer-page')?.style.display === 'block';
 
     if (!_cmsOpen && !_postOpen && !_lpOpen) {
       if (_urlIsSlug) {
-        _openBySlug(_pendingPath);
+        _openBySlug(_pendingPath); // Gọi TRƯỚC khi set _fbFullyLoaded để retry logic còn hoạt động nếu cần
       } else {
         renderHero(); renderPosts();
       }
     }
+
+    window._fbFullyLoaded = true; // Set SAU khi đã xử lý routing
 
   } catch(e) { console.warn('Firebase pull error:', e); }
 }
@@ -4211,7 +4211,7 @@ async function saveLandingPages() {
 }
 
 async function deleteLandingPage(id) {
-  landingPages = landingPages.filter(p => p.id !== id);
+  window.landingPages = landingPages.filter(p => p.id !== id);
   try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
   if (_fbReady && _db) { try { await _db.collection('landingPages').doc(id).delete(); } catch(e) {} }
 }
@@ -5710,7 +5710,7 @@ function _waitForPost(slug) {
 }
 
 function _openBySlug(slug) {
-  console.log('[Router] _openBySlug:', slug, '| LPs:', (window.landingPages||[]).map(p=>p.slug+':'+p.status));
+  console.log('[Router] _openBySlug:', slug, '| LPs full:', JSON.stringify((window.landingPages||[]).map(p=>({id:p.id,slug:p.slug,status:p.status,title:p.title}))));
   if (!slug) { _showHome('all'); return; }
   // Tìm LP theo slug, nếu không có thì tìm theo id (fallback cho LP cũ dùng ID làm slug)
   const lp = (window.landingPages || []).find(p =>
@@ -6384,7 +6384,7 @@ function lpbRenderList() {
   if (!wrap) return;
   
   // Ensure landingPages is an array
-  if (!Array.isArray(landingPages)) landingPages = [];
+  if (!Array.isArray(landingPages)) window.landingPages = [];
   
   if (landingPages.length === 0) {
     wrap.innerHTML = `<div style="padding:48px;text-align:center;color:#bbb">
