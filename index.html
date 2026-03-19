@@ -5382,8 +5382,8 @@ async function rteHandleFileUpload(files) {
   const mb = (file.size / 1024 / 1024).toFixed(1);
 
   setStatus('⏳ Đang upload ảnh...');
-  let url = await uploadImageToStorage(file);
-  if (!url) url = await uploadToImgBB(file); // Fallback ImgBB nếu Storage fail
+  // Upload lên ImgBB trước (Firebase chỉ lưu text) -> fallback Base64
+  let url = await uploadToImgBB(file);
 
   if (!url) {
     // Fallback cuối: base64 nén trong browser
@@ -5494,8 +5494,7 @@ async function cmsHandleDirectUpload(files, inputId) {
   
   const setStatus = msg => { const el = document.getElementById('direct-upload-status-' + inputId); if(el) el.textContent = msg; };
   
-  let url = await uploadImageToStorage(file);
-  if (!url) url = await uploadToImgBB(file);
+  let url = await uploadToImgBB(file);
   if (!url) {
     url = await new Promise(res => {
       const reader = new FileReader();
@@ -5542,9 +5541,8 @@ async function cmsHandleFiles(files) {
     const mb = (file.size / 1024 / 1024).toFixed(1);
     status.textContent = 'Đang upload ' + (done+1) + '/' + arr.length + ': ' + imgName + '...';
 
-    // Upload: Firebase Storage trước → ImgBB fallback → base64 fallback
-    let finalUrl = await uploadImageToStorage(file);
-    if (!finalUrl) finalUrl = await uploadToImgBB(file);
+    // Upload: ImgBB trước → base64 fallback
+    let finalUrl = await uploadToImgBB(file);
 
     // Fallback: base64 nén trong browser
     if (!finalUrl) {
