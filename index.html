@@ -28,7 +28,6 @@
     var r = document.documentElement;
     if (t.colorAccent) {
       r.style.setProperty('--accent', t.colorAccent);
-      // Tính accent-dark inline (không gọi được JS function vì chưa load)
       try {
         var h = t.colorAccent.replace('#','');
         if (h.length===3) h = h.split('').map(function(x){return x+x}).join('');
@@ -2828,6 +2827,42 @@ html, body {
   <!-- Mobile nav drawer -->
   <div class="mobile-nav" id="mobile-nav"></div>
 </header>
+<script>
+// Anti-FOUC cho cấu hình Logo, Layout & Font (chống nháy)
+(function() {
+  var addStyle = function(css) { var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); };
+  try {
+    var s = localStorage.getItem('taitangau_storage');
+    if (s) {
+      var data = JSON.parse(s);
+      if (data.settings) {
+        var logo = data.settings.logo;
+        var name = data.settings.sitename || 'Tài Tàng Au';
+        var el = document.querySelector('header .logo');
+        if (el) {
+          if (logo) el.innerHTML = '<img src="' + logo + '" style="height:36px;width:auto;display:block" alt="' + name + '">';
+          else el.innerHTML = '<div class="logo-icon">' + name.charAt(0) + '</div><span class="logo-text">' + name + '</span>';
+        }
+      }
+    }
+  } catch(e) {}
+  try {
+    var l = localStorage.getItem('taitangau_layout');
+    if (l) {
+      var cfg = JSON.parse(l);
+      var css = '';
+      if (cfg.fontHeading) css += 'h1,h2,h3,h4,h5,h6,.logo-text,.post-title{font-family:"'+cfg.fontHeading+'",serif!important}';
+      if (cfg.fontBody) css += 'body,p,span,a,div,button,input,textarea{font-family:"'+cfg.fontBody+'",sans-serif!important}';
+      if (cfg.radius) css += ':root{--radius-md:'+cfg.radius+'px;--radius-sm:'+Math.max(2,cfg.radius-4)+'px;--radius-lg:'+Math.min(24,cfg.radius+8)+'px}';
+      if (cfg.filterbar === false) css += '.filter-bar{display:none!important}';
+      if (cfg.sidebar === false) css += '#sidebar{display:none!important}.main-wrap{grid-template-columns:1fr!important}';
+      if (cfg.cardImg === false) css += '.post-image-wrap{display:none!important}';
+      if (cfg.listLayout && cfg.listLayout !== 'list') css += '.posts-list{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))!important;gap:20px;display:grid!important}';
+      if (css) addStyle(css);
+    }
+  } catch(e) {}
+})();
+</script>
 
 <!-- MAIN CONTENT: BLOG LIST -->
 <div id="blog-home">
@@ -5007,6 +5042,7 @@ function initQuillEditors() {
   
   // Custom image handler
   const imageHandler = function() {
+    window._rteTarget = 'quill';
     imgPickerCallback = (url) => {
       const range = this.quill.getSelection(true);
       this.quill.insertEmbed(range.index, 'image', url);
