@@ -3009,9 +3009,11 @@ html, body {
                     <label>Ảnh bìa bài viết</label>
                     <div class="cms-img-row">
                       <input class="cms-field" type="text" id="cms-post-image" placeholder="https://... hoặc chọn từ thư viện —">
+                      <input type="file" id="cms-post-image-upload" accept="image/*" style="display:none" onchange="cmsHandleDirectUpload(this.files, 'cms-post-image')">
+                      <button class="cms-img-btn" onclick="document.getElementById('cms-post-image-upload').click()">Tải lên</button>
                       <button class="cms-img-btn" onclick="cmsOpenImgPicker()">Thư viện</button>
                     </div>
-                    <div class="cms-img-hint">Dán URL hoặc upload ảnh vào Thư viện rồi chọn từ đây</div>
+                    <div class="cms-img-hint">Tải lên từ máy, dán URL, hoặc chọn từ Thư viện</div>
                   </div>
                 </div>
               </div>
@@ -3195,10 +3197,18 @@ html, body {
 
       <!-- IMAGES PAGE -->
       <div id="cmspage-images" class="cms-page-content" style="display:none">
-        <div class="cms-topbar">
+        <div class="cms-topbar" style="flex-wrap:wrap; gap:10px;">
           <h1>Hình ảnh</h1>
-          <div class="cms-topbar-actions">
-            <button class="cms-new-btn" onclick="cmsShowAddImg()">+ Thêm hình ảnh</button>
+          <div class="cms-topbar-actions" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="text" id="cms-img-search-query" class="cms-field" placeholder="Tìm theo tên..." oninput="cmsRenderImages()" style="margin:0; width:150px; padding:6px 12px; height:36px;">
+            <input type="date" id="cms-img-search-date" class="cms-field" oninput="cmsRenderImages()" style="margin:0; width:130px; padding:6px 12px; height:36px;">
+            <select id="cms-img-search-size" class="cms-field" onchange="cmsRenderImages()" style="margin:0; width:140px; padding:6px 12px; height:36px;">
+              <option value="">Mọi dung lượng</option>
+              <option value="small">&lt; 1MB</option>
+              <option value="medium">1MB - 5MB</option>
+              <option value="large">&gt; 5MB</option>
+            </select>
+            <button class="cms-new-btn" onclick="cmsShowAddImg()" style="height:36px;">+ Thêm hình ảnh</button>
           </div>
         </div>
         <div class="cms-content">
@@ -3583,8 +3593,28 @@ html, body {
                 <input class="cms-field" type="text" id="cms-set-og-image" placeholder="https://... (tỷ lệ 1200×630px)">
               </div>
               <div class="cms-form-group" style="grid-column:1/-1">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Logo URL (Trang chủ)</label>
+                <input class="cms-field" type="text" id="cms-set-logo" placeholder="https://... (để trống nếu dùng chữ)">
+              </div>
+              <div class="cms-form-group" style="grid-column:1/-1">
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Favicon URL</label>
                 <input class="cms-field" type="text" id="cms-set-favicon" placeholder="Đường dẫn đến ảnh icon...">
+              </div>
+            </div>
+          </div>
+
+          <!-- CLOUDFLARE CACHE -->
+          <div class="cms-editor-card">
+            <div class="cms-section-title">☁️ Cloudflare Cache</div>
+            <p style="font-size:12px;color:#777;margin-bottom:16px">Tự động xóa cache Cloudflare khi lưu bài viết hoặc cài đặt. (Yêu cầu API Token có quyền Purge Cache)</p>
+            <div class="cms-settings-grid">
+              <div class="cms-form-group" style="grid-column:1/-1">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Zone ID</label>
+                <input class="cms-field" type="text" id="cms-set-cf-zone" placeholder="...">
+              </div>
+              <div class="cms-form-group" style="grid-column:1/-1">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">API Token</label>
+                <input class="cms-field" type="password" id="cms-set-cf-token" placeholder="...">
               </div>
             </div>
           </div>
@@ -4014,6 +4044,9 @@ function _loadLocal() {
   } catch(e) {
     window.landingPages = [];
   }
+  
+  // Custom logic
+  if (typeof applyLogo === 'function') setTimeout(applyLogo, 10);
 }
 
 async function _pullFirebase() {
@@ -4080,7 +4113,7 @@ async function _pullFirebase() {
     console.log('✅ Firebase synced:', data.posts.length, 'posts,', landingPages.length, 'LPs');
 
     // Render + route - tất cả data đã sẵn sàng
-    renderNav(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
+    renderNav(); applyFavicon(); if (typeof applyLogo === 'function') applyLogo(); renderFilterBar(); renderSidebar('sidebar'); renderFooter();
     if (document.getElementById('cmspage-layout')?.style.display !== 'none') cmsRenderSidebarOrder();
 
     const _postOpen = document.getElementById('post-detail-page')?.style.display === 'block';
@@ -4122,6 +4155,7 @@ async function saveData(d) {
       else { const r = await _db.collection('pages').add(pd); pg._id = r.id; }
     }
   } catch(e) { console.error('saveData Firebase:', e); }
+  if (typeof purgeCloudflareCache === 'function') purgeCloudflareCache();
 }
 
 async function savePost(post, existingId) {
@@ -4134,6 +4168,7 @@ async function savePost(post, existingId) {
     } catch(e) { console.error('savePost error:', e); }
   }
   _cacheLocal();
+  if (typeof purgeCloudflareCache === 'function') purgeCloudflareCache();
 }
 
 async function deletePost(fbId) {
@@ -4232,6 +4267,8 @@ async function saveLandingPages() {
       await _db.collection('landingPages').doc(id).set(d);
     }
   } catch(e) { console.error('saveLandingPages Firebase error:', e); }
+  
+  if (typeof purgeCloudflareCache === 'function') purgeCloudflareCache();
 }
 
 async function deleteLandingPage(id) {
@@ -5415,6 +5452,44 @@ function cmsHandleDrop(e) {
   if (files.length) cmsHandleFiles(files);
 }
 
+async function cmsHandleDirectUpload(files, inputId) {
+  const file = files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const statusEl = document.createElement('div');
+  statusEl.style.cssText = 'font-size:12px;color:#777;margin-top:6px';
+  statusEl.id = 'direct-upload-status-' + inputId;
+  statusEl.textContent = '⏳ Đang tải ảnh lên...';
+  
+  const targetInput = document.getElementById(inputId);
+  if(!document.getElementById(statusEl.id)) targetInput.parentNode.parentNode.appendChild(statusEl);
+  
+  const setStatus = msg => { const el = document.getElementById('direct-upload-status-' + inputId); if(el) el.textContent = msg; };
+  
+  let url = await uploadImageToStorage(file);
+  if (!url) url = await uploadToImgBB(file);
+  if (!url) {
+    url = await new Promise(res => {
+      const reader = new FileReader();
+      reader.onerror = () => res(null);
+      reader.onload = ev => compressImage(ev.target.result, file.name, res);
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  if (url) {
+    targetInput.value = url;
+    if (typeof updateImgPreview === 'function' && inputId === 'cms-post-image') updateImgPreview(url);
+    if (typeof updatePageImgPreview === 'function' && inputId === 'cms-page-image') updatePageImgPreview(url);
+    setStatus('✅ Upload thành công!');
+    setTimeout(() => { const el = document.getElementById('direct-upload-status-' + inputId); if(el) el.remove(); }, 3000);
+    if (!data.images) data.images = [];
+    data.images.push({ url, name: file.name.replace(/\.[^.]+$/, ''), createdAt: Date.now(), size: file.size });
+    saveImages();
+  } else {
+    setStatus('❌ Lỗi tải ảnh!');
+  }
+}
+
 async function cmsHandleFiles(files) {
   const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
   if (!arr.length) return showToast('Chỉ hỗ trợ file ảnh', true);
@@ -5551,6 +5626,30 @@ function cmsRenderImages() {
   const gallery = document.getElementById('cms-img-gallery-wrap');
   if (!gallery) return;
   
+  const sq = document.getElementById('cms-img-search-query')?.value.toLowerCase() || '';
+  const sd = document.getElementById('cms-img-search-date')?.value || '';
+  const ss = document.getElementById('cms-img-search-size')?.value || '';
+  
+  let filtered = (data.images || []).filter(img => {
+    if (sq && !img.name?.toLowerCase().includes(sq)) return false;
+    if (sd) {
+      if (!img.createdAt) return false;
+      const imgDate = new Date(img.createdAt);
+      // Ensure local time comparison
+      const dStr = imgDate.getFullYear() + '-' + String(imgDate.getMonth()+1).padStart(2,'0') + '-' + String(imgDate.getDate()).padStart(2,'0');
+      if (dStr !== sd) return false;
+    }
+    if (ss && img.size) {
+      if (ss === 'small' && img.size >= 1048576) return false;
+      if (ss === 'medium' && (img.size < 1048576 || img.size > 5242880)) return false;
+      if (ss === 'large' && img.size <= 5242880) return false;
+    } else if (ss && !img.size) {
+       // if searching by size but image has no size info, hide it
+       return false;
+    }
+    return true;
+  });
+
   if (!data.images || data.images.length === 0) {
     gallery.innerHTML = `
       <div style="padding:64px;text-align:center;color:#bbb">
@@ -5560,13 +5659,23 @@ function cmsRenderImages() {
     return;
   }
   
+  if (filtered.length === 0) {
+    gallery.innerHTML = `
+      <div style="padding:64px;text-align:center;color:#bbb">
+        <div style="font-size:48px;margin-bottom:12px">🔍</div>
+        <p>Không tìm thấy hình ảnh nào phù hợp.</p>
+      </div>`;
+    return;
+  }
+  
   gallery.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px">
-      ${data.images.map((img, i) => `
+      ${filtered.map((img) => `
         <div class="cms-editor-card" style="padding:0;overflow:hidden;transition:transform .2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
-          <div style="aspect-ratio:1.5;background:#f0ece5;display:flex;align-items:center;justify-content:center;overflow:hidden">
+          <div style="aspect-ratio:1.5;background:#f0ece5;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
             <img src="${img.url}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
             <div style="display:none;font-size:32px">🖼️</div>
+            ${img.size ? `<div style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;padding:2px 4px;border-radius:3px;">${(img.size/1024/1024).toFixed(1)}MB</div>` : ''}
           </div>
           <div style="padding:12px">
             <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px" title="${escHtml(img.name)}">
@@ -5574,7 +5683,7 @@ function cmsRenderImages() {
             </div>
             <div style="display:flex;gap:8px">
               <button class="t-btn" style="flex:1" onclick="cmsImgCopy('${escHtml(img.url)}', this)">Copy Link</button>
-              <button class="t-btn danger" onclick="cmsImgDelete(${i})">Xóa</button>
+              <button class="t-btn danger" onclick="cmsImgDelete(data.images.indexOf(data.images.find(x => x.url === '${img.url}')))">Xóa</button>
             </div>
           </div>
         </div>
@@ -6115,6 +6224,12 @@ function cmsLoadSettings() {
   const ogEl = document.getElementById('cms-set-og-image');
   if (ogEl) ogEl.value = s.ogImage || '';
   document.getElementById('cms-set-favicon').value = s.favicon || '';
+  const logoEl = document.getElementById('cms-set-logo');
+  if (logoEl) logoEl.value = s.logo || '';
+  const cfZone = document.getElementById('cms-set-cf-zone');
+  if (cfZone) cfZone.value = s.cfZone || '';
+  const cfToken = document.getElementById('cms-set-cf-token');
+  if (cfToken) cfToken.value = s.cfToken || '';
   document.getElementById('cms-set-pass').value = '';
   document.getElementById('cms-set-pass2').value = '';
   const emailEl = document.getElementById('cms-set-admin-email');
@@ -6218,6 +6333,12 @@ function cmsSaveSettings() {
   data.settings.author = document.getElementById('cms-set-author').value.trim();
   data.settings.bio = document.getElementById('cms-set-bio').value.trim();
   data.settings.avatar = document.getElementById('cms-set-avatar').value.trim();
+  const _logoEl = document.getElementById('cms-set-logo');
+  if (_logoEl) data.settings.logo = _logoEl.value.trim();
+  const cfZone = document.getElementById('cms-set-cf-zone');
+  if (cfZone) data.settings.cfZone = cfZone.value.trim();
+  const cfToken = document.getElementById('cms-set-cf-token');
+  if (cfToken) data.settings.cfToken = cfToken.value.trim();
   const _ogEl = document.getElementById('cms-set-og-image');
   if (_ogEl) data.settings.ogImage = _ogEl.value.trim();
   data.settings.favicon = document.getElementById('cms-set-favicon').value.trim();
@@ -6256,6 +6377,8 @@ function cmsSaveSettings() {
     initFirebase().then(() => saveData(data)); // lưu không đổi password
   }
   applyFavicon();
+  applyLogo();
+  purgeCloudflareCache();
   // Set OG image mặc định ngay khi load
   if (data.settings.ogImage) {
     const _m1 = document.getElementById('og-image');
@@ -6267,6 +6390,46 @@ function cmsSaveSettings() {
   renderFooter();
   renderNav();
   if (!p1) showToast('✅ Đã lưu cài đặt'); // nếu không đổi pass thì toast ngay
+}
+
+function applyLogo() {
+  const logoUrl = data.settings?.logo;
+  const headerLogos = document.querySelectorAll('header .logo');
+  headerLogos.forEach(logoEl => {
+    if (logoUrl) {
+      logoEl.innerHTML = `<img src="${escHtml(logoUrl)}" style="height:36px;width:auto;display:block" alt="${escHtml(data.settings.sitename || 'Logo')}">`;
+    } else {
+      logoEl.innerHTML = `
+        <div class="logo-icon">${escHtml((data.settings.sitename || 'T')[0])}</div>
+        <span class="logo-text">${escHtml(data.settings.sitename || 'Tài Tàng Au')}</span>
+      `;
+    }
+  });
+}
+
+async function purgeCloudflareCache() {
+  const zone = data.settings?.cfZone;
+  const token = data.settings?.cfToken;
+  if (!zone || !token) return;
+
+  try {
+    const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${zone}/purge_cache`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ purge_everything: true })
+    });
+    const result = await res.json();
+    if (result.success) {
+      console.log('☁️ Đã xóa cache Cloudflare');
+    } else {
+      console.error('☁️ Lỗi xóa cache Cloudflare:', result.errors);
+    }
+  } catch (e) {
+    console.error('☁️ Cloudflare API fetch error:', e);
+  }
 }
 
 /* ── URL Manager ── */
