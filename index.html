@@ -146,14 +146,14 @@ function initFirebase() {
     /* WIREFRAME DEFAULT: Chống nháy bằng giao diện xám trung tính */
     --cream: #ffffff;
     --bg-soft: #fcfcfc;
-    --dark: #bbbbbb;
-    --warm: #f0f0f0;
-    --accent: #eeeeee;
-    --accent-dark: #dddddd;
-    --muted: #cccccc;
-    --border: #f0f0f0;
+    --dark: #1a1a1a;
+    --warm: #eeeeee;
+    --accent: #102144;
+    --accent-dark: #0a152e;
+    --muted: #777777;
+    --border: #e8e8e8;
     --card-bg: #ffffff;
-    --tag-bg: #f9f9f9;
+    --tag-bg: #f5f5f5;
     --heading-font: sans-serif;
     --body-font: sans-serif;
     --radius-md: 8px;
@@ -2874,6 +2874,7 @@ html, body {
       if (cfg.fontHeading) css += 'h1,h2,h3,h4,h5,h6,.logo-text,.post-title{font-family:"'+cfg.fontHeading+'",serif!important}';
       if (cfg.fontBody) css += 'body,p,span,a,div,button,input,textarea{font-family:"'+cfg.fontBody+'",sans-serif!important}';
       if (cfg.radius) css += ':root{--radius-md:'+cfg.radius+'px;--radius-sm:'+Math.max(2,cfg.radius-4)+'px;--radius-lg:'+Math.min(24,cfg.radius+8)+'px}';
+      if (cfg.accent) css += ':root{--accent:'+cfg.accent+'!important;--accent-dark:'+cfg.accent+'!important}';
       if (cfg.filterbar === false) css += '.filter-bar{display:none!important}';
       if (cfg.sidebar === false) css += '#sidebar{display:none!important}.main-wrap{grid-template-columns:1fr!important}';
       if (cfg.cardImg === false) css += '.post-image-wrap{display:none!important}';
