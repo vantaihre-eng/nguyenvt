@@ -14,7 +14,7 @@
 <meta property="og:image:secure_url" id="og-image-secure" content="https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg">
 <meta property="og:image:width" id="og-width" content="1200">
 <meta property="og:image:height" id="og-height" content="630">
-<meta property="og:url" id="og-url" content="https://website-532.pages.dev/">
+<meta property="og:url" id="og-url" content="https://taipulme.pages.dev/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" id="tw-title" content="Tài Tàng Au">
 <meta name="twitter:description" id="tw-desc" content="Chuyện Nghề &amp; Chuyện Đời">
@@ -5315,11 +5315,12 @@ async function rteHandleFileUpload(files) {
   const setStatus = msg => { if (status) status.textContent = msg; };
   const mb = (file.size / 1024 / 1024).toFixed(1);
 
-  setStatus('⏳ Đang kết nối Firebase...');
+  setStatus('⏳ Đang upload ảnh...');
   let url = await uploadImageToStorage(file);
+  if (!url) url = await uploadToImgBB(file); // Fallback ImgBB nếu Storage fail
 
   if (!url) {
-    // Fallback: base64 nén trong browser
+    // Fallback cuối: base64 nén trong browser
     setStatus(file.size > 1000000 ? '⏳ Đang nén ảnh (' + mb + 'MB)...' : '⏳ Đang xử lý...');
     url = await new Promise(res => {
       const reader = new FileReader();
@@ -5437,8 +5438,9 @@ async function cmsHandleFiles(files) {
     const mb = (file.size / 1024 / 1024).toFixed(1);
     status.textContent = 'Đang upload ' + (done+1) + '/' + arr.length + ': ' + imgName + '...';
 
-    // Thử upload lên ImgBB
-    let finalUrl = await uploadToImgBB(file);
+    // Upload: Firebase Storage trước → ImgBB fallback → base64 fallback
+    let finalUrl = await uploadImageToStorage(file);
+    if (!finalUrl) finalUrl = await uploadToImgBB(file);
 
     // Fallback: base64 nén trong browser
     if (!finalUrl) {
