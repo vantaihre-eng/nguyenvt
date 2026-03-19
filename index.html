@@ -4807,83 +4807,34 @@ function _hideLoginModal() {
 }
 
 async function cmsLogin() {
-  const user = (document.getElementById('cms-user-input')?.value || '').trim();
+  const email = (document.getElementById('cms-email-input')?.value || '').trim();
   const pass = document.getElementById('cms-pass-input').value;
-  const storedUser = data.settings.adminUsername || 'admin';
-  const stored = data.settings.password || '';
+  const errEl = document.getElementById('cms-login-err');
 
-  // Check username
-  if (user !== storedUser) {
-    document.getElementById('cms-login-err').style.display = 'block';
-    document.getElementById('cms-pass-input').value = '';
-    if (document.getElementById('cms-user-input')) document.getElementById('cms-user-input').value = '';
+  if (!email || !pass) {
+    errEl.textContent = 'Vui lòng nhập Email và Mật khẩu.';
+    errEl.style.display = 'block';
     return;
   }
 
-  const isHash = /^[0-9a-f]{64}$/.test(stored);
-  let match = false;
-  if (isHash) {
-    match = (await _hashPass(pass)) === stored;
-    if (!match) {
-      // Migration: thử hash cũ (không pepper)
-      const _buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
-      const _oldHash = Array.from(new Uint8Array(_buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-      if (_oldHash === stored) {
-        match = true;
-        // Auto-migrate: lưu lại với pepper mới
-        _hashPass(pass).then(h => { data.settings.password = h; saveData(data); });
-      }
-    }
-  } else {
-    match = pass === stored;
-  }
-  // Brute-force protection
-  const BF_KEY = 'cms_login_attempts';
-  const BF_LOCK = 'cms_login_lock';
-  const lockUntil = parseInt(localStorage.getItem(BF_LOCK) || '0');
-  if (Date.now() < lockUntil) {
-    const mins = Math.ceil((lockUntil - Date.now()) / 60000);
-    document.getElementById('cms-login-err').textContent = 'Tài khoản bị khóa ' + mins + ' phút. Thử lại sau.';
-    document.getElementById('cms-login-err').style.display = 'block';
-    return;
-  }
+  errEl.style.display = 'none';
+  const btn = document.querySelector('#cms-login-modal button');
+  const oldText = btn.textContent;
+  btn.textContent = 'Đang kết nối...';
 
-  if (match) {
-    // Nếu pass còn plain text → tự động migrate sang hash
-    if (!isHash) {
-      data.settings.password = await _hashPass(pass);
-      saveData(data);
-    }
+  const success = await _fbSignIn(email, pass);
+  btn.textContent = oldText;
+
+  if (success) {
     cmsLoggedIn = true;
     localStorage.setItem(CMS_SESSION_KEY, String(Date.now()));
-    localStorage.removeItem(BF_KEY);
-    localStorage.removeItem(BF_LOCK);
-    document.getElementById('cms-login-err').style.display = 'none';
     document.getElementById('cms-pass-input').value = '';
     _hideLoginModal();
     window._cmsOpened = true;
-    // Đăng nhập Firebase Auth (nếu có email admin)
-    loadFirebase();
-    if (data.settings.adminEmail) {
-      _fbSignIn(data.settings.adminEmail, pass).then(ok => {
-        if (!ok) console.warn('Firebase Auth failed — writes may be blocked by Rules');
-      });
-    }
-    document.getElementById('cms-page').classList.add('active');
-    showCmsApp();
+    cmsRenderDashboard();
   } else {
-    const attempts = parseInt(localStorage.getItem(BF_KEY) || '0') + 1;
-    localStorage.setItem(BF_KEY, String(attempts));
-    if (attempts >= 5) {
-      localStorage.setItem(BF_LOCK, String(Date.now() + 15 * 60 * 1000));
-      localStorage.removeItem(BF_KEY);
-      document.getElementById('cms-login-err').textContent = 'Sai quá 5 lần. Tài khoản khóa 15 phút.';
-    } else {
-      document.getElementById('cms-login-err').textContent = 'Sai thông tin đăng nhập (' + attempts + '/5)';
-    }
-    document.getElementById('cms-login-err').style.display = 'block';
-    document.getElementById('cms-pass-input').value = '';
-    document.getElementById('cms-pass-input').focus();
+    errEl.textContent = 'Sai Email hoặc Mật khẩu Firebase! Thử lại.';
+    errEl.style.display = 'block';
   }
 }
 
