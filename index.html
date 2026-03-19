@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="opt3JjATqvSkM54sx0KYiVcVlrX8h5GKLznKmYMYZSg" />
 
 <meta name="description" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
 <!-- Open Graph / Social sharing -->
@@ -3999,22 +4000,50 @@ async function _syncFirebaseBackground() {
   } catch(e) { console.warn('Background sync error:', e); }
 }
 
-// Upload file ảnh lên Firebase Storage, trả về download URL
+// Upload file ảnh lên Firebase Storage với timeout chống kẹt (CORS issue)
 async function uploadImageToStorage(file) {
-  // Đảm bảo Firebase đã init trước khi upload (load async)
   await initFirebase();
   if (!_fbReady || !window._storage) return null;
-  try {
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
-    const ref = window._storage.ref(path);
-    await ref.put(file);
-    const url = await ref.getDownloadURL();
-    return url;
-  } catch(e) {
-    console.error('Storage upload error:', e.code, e.message);
-    return null;
-  }
+  return new Promise((resolve) => {
+    let handled = false;
+    let task = null;
+    let fallbackTimer = setTimeout(() => {
+      if (!handled) {
+        handled = true;
+        console.warn('Firebase upload timeout (CORS/Network), fallback to ImgBB...');
+        if (task) task.cancel(); // limit retries
+        resolve(null);
+      }
+    }, 5000); // 5s wait for first byte
+
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
+      const ref = window._storage.ref(path);
+      task = ref.put(file);
+      
+      task.on('state_changed', 
+        (snapshot) => {
+          if (snapshot.bytesTransferred > 0 && fallbackTimer) {
+            clearTimeout(fallbackTimer);
+            fallbackTimer = null; // đang upload thật, đợi không giới hạn
+          }
+        },
+        (error) => {
+          if (!handled) { handled = true; clearTimeout(fallbackTimer); console.error('Storage error:', error); resolve(null); }
+        },
+        async () => {
+          if (!handled) {
+            handled = true;
+            clearTimeout(fallbackTimer);
+            try { const url = await task.snapshot.ref.getDownloadURL(); resolve(url); } catch(e) { resolve(null); }
+          }
+        }
+      );
+    } catch(e) {
+      if (!handled) { handled = true; clearTimeout(fallbackTimer); resolve(null); }
+    }
+  });
 }
 
 function _loadLocal() {
