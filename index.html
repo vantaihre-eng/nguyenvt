@@ -3753,24 +3753,9 @@ html, body {
               </div>
               <div style="font-size:11px;color:#555;margin-top:8px">Link CMS: <code style="background:#fff;padding:2px 5px;border-radius:3px">tenmien.com/#[secret]</code> — Chỉ dùng chữ thường, số và dấu <code>-</code></div>
             </div>
-            <p style="font-size:12px;color:#888;margin-bottom:16px">Email dùng để đăng nhập Firebase (phải tạo sẵn trong Firebase Console → Authentication → Users).</p>
-            <div class="cms-settings-grid">
-              <div class="cms-form-group" style="grid-column:1/-1">
-                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Tên đăng nhập CMS</label>
-                <input class="cms-field" type="text" id="cms-set-username" placeholder="admin">
-              </div>
-              <div class="cms-form-group" style="grid-column:1/-1">
-                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Email Firebase Admin</label>
-                <input class="cms-field" type="email" id="cms-set-admin-email" placeholder="admin@example.com">
-              </div>
-              <div class="cms-form-group">
-                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Mật khẩu CMS mới</label>
-                <input class="cms-field" type="password" id="cms-set-pass" placeholder="Để trống nếu không đổi">
-              </div>
-              <div class="cms-form-group">
-                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Xác nhận mật khẩu</label>
-                <input class="cms-field" type="password" id="cms-set-pass2">
-              </div>
+            <div style="background:#eafaf1;border:1.5px solid #a9dfbf;border-radius:8px;padding:14px 16px;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:#196f3d;letter-spacing:1px;margin-bottom:6px">🛡️ BẢO MẬT FIREBASE AUTHENTICATION</div>
+              <p style="font-size:12px;color:#239b56;line-height:1.5;margin:0">Tài khoản và mật khẩu đăng nhập CMS hiện được quản lý tập trung tại <b>Firebase Console &rarr; Authentication</b>. Website không còn lưu trữ mật khẩu tĩnh giảm thiểu rủi ro bảo mật.</p>
             </div>
           </div>
           <button class="cms-save-btn" onclick="cmsSaveSettings()">💾 Lưu cài đặt</button>
@@ -4797,18 +4782,8 @@ let cmsCurrentEditIdx = null;
 
 function openCMS() {
   window._cmsOpened = true; // flag để init() không gọi routerApplyState
-  // Giữ lại secret hash để F5 không bị mất trang CMS
-  // try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
-  const _hasPassword = !!(data.settings.password);
-  const _firstTime = !_hasPassword;
 
-  if (cmsLoggedIn || _firstTime) {
-    if (_firstTime) {
-      // Lần đầu chưa có mật khẩu → vào thẳng, set session
-      cmsLoggedIn = true;
-      localStorage.setItem(CMS_SESSION_KEY, String(Date.now()));
-      showToast('👋 Chào mừng! Hãy vào Cài đặt → Bảo mật để đặt mật khẩu.');
-    }
+  if (cmsLoggedIn) {
     loadFirebase();
     initFirebase().then(() => {});
     document.getElementById('cms-page').classList.add('active');
@@ -6293,14 +6268,8 @@ function cmsLoadSettings() {
   if (cfZone) cfZone.value = s.cfZone || '';
   const cfToken = document.getElementById('cms-set-cf-token');
   if (cfToken) cfToken.value = s.cfToken || '';
-  document.getElementById('cms-set-pass').value = '';
-  document.getElementById('cms-set-pass2').value = '';
-  const emailEl = document.getElementById('cms-set-admin-email');
-  if (emailEl) emailEl.value = data.settings.adminEmail || '';
   // Hiển thị secret path
   _refreshSecretDisplay();
-  const unEl = document.getElementById('cms-set-username');
-  if (unEl) unEl.value = data.settings.adminUsername || 'admin';
   // Social
   const soc = s.social || {};
   ['facebook','instagram','youtube','tiktok','linkedin','twitter'].forEach(k => {
@@ -6387,58 +6356,7 @@ function cmsRemoveFooterLink(i) {
 }
 
 function cmsSaveSettings() {
-  const p1 = document.getElementById('cms-set-pass').value;
-  const p2 = document.getElementById('cms-set-pass2').value;
-  if (p1 && p1 !== p2) return showToast('Mật khẩu không khớp', true);
-  data.settings.sitename = document.getElementById('cms-set-sitename').value.trim();
-  data.settings.tagline = document.getElementById('cms-set-tagline').value.trim();
-  data.settings.domain = document.getElementById('cms-set-domain').value.trim();
-  data.settings.author = document.getElementById('cms-set-author').value.trim();
-  data.settings.bio = document.getElementById('cms-set-bio').value.trim();
-  data.settings.avatar = document.getElementById('cms-set-avatar').value.trim();
-  const _logoEl = document.getElementById('cms-set-logo');
-  if (_logoEl) data.settings.logo = _logoEl.value.trim();
-  const cfZone = document.getElementById('cms-set-cf-zone');
-  if (cfZone) data.settings.cfZone = cfZone.value.trim();
-  const cfToken = document.getElementById('cms-set-cf-token');
-  if (cfToken) data.settings.cfToken = cfToken.value.trim();
-  const _ogEl = document.getElementById('cms-set-og-image');
-  if (_ogEl) data.settings.ogImage = _ogEl.value.trim();
-  data.settings.favicon = document.getElementById('cms-set-favicon').value.trim();
-  // Lưu admin username + email
-  const unEl = document.getElementById('cms-set-username');
-  if (unEl && unEl.value.trim()) data.settings.adminUsername = unEl.value.trim();
-  const emailEl = document.getElementById('cms-set-admin-email');
-  if (emailEl && emailEl.value.trim()) data.settings.adminEmail = emailEl.value.trim();
-  // Social (trước khi save)
-  if (!data.settings.social) data.settings.social = {};
-  ['facebook','instagram','youtube','tiktok','linkedin','twitter'].forEach(k => {
-    const el = document.getElementById('cms-social-' + k);
-    if (el) data.settings.social[k] = el.value.trim();
-  });
-  // headerLinks & footerLinks already mutated in-place via oninput
-  // filter out empties
-  data.settings.headerLinks = (data.settings.headerLinks || []).filter(lk => lk.label || lk.url);
-  data.settings.footerLinks = (data.settings.footerLinks || []).filter(lk => lk.label || lk.url);
-
-  // Priority Posts
-  data.settings.priorityPostIds = [
-    document.getElementById('cms-priority-1').value,
-    document.getElementById('cms-priority-2').value,
-    document.getElementById('cms-priority-3').value
-  ].filter(id => id);
-
-  if (p1) {
-    // Hash password rồi mới save - tránh race condition
-    _hashPass(p1).then(async h => {
-      data.settings.password = h;
-      await initFirebase();
-      await saveData(data);
-      showToast('✅ Đã lưu cài đặt (kể cả mật khẩu mới)');
-    });
-  } else {
-    initFirebase().then(() => saveData(data)); // lưu không đổi password
-  }
+  initFirebase().then(() => saveData(data));
   applyFavicon();
   applyLogo();
   purgeCloudflareCache();
@@ -8605,8 +8523,8 @@ init();
   <div style="background:#2a2a2a;border:1px solid #3a2e1c;border-radius:10px;padding:48px 40px;width:360px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.5)">
     <div style="font-family:var(--heading-font);font-size:22px;font-weight:900;color:#fff;text-align:center;margin-bottom:6px">Tài Tàng <span style="color:var(--accent)">Au</span></div>
     <div style="font-size:11px;letter-spacing:2px;color:#888;text-align:center;margin-bottom:32px">CMS DASHBOARD</div>
-    <label style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;display:block;margin-bottom:8px">TÊN ĐĂNG NHẬP</label>
-    <input type="text" id="cms-user-input" placeholder="Username..."
+    <label style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;display:block;margin-bottom:8px">TÀI KHOẢN EMAIL</label>
+    <input type="email" id="cms-email-input" placeholder="Email Firebase Admin..."
            onkeydown="if(event.key==='Enter')document.getElementById('cms-pass-input').focus()"
            autocomplete="off"
            style="width:100%;padding:12px 14px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:6px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:12px">
