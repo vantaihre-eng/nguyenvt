@@ -143,18 +143,33 @@ function initFirebase() {
      Clean white editorial, red accent, Merriweather
   ═══════════════════════════════════════════ */
   :root {
+    /* WIREFRAME DEFAULT: Chống nháy bằng giao diện xám trung tính */
     --cream: #ffffff;
-    --bg-soft: #ffffff;
-    --dark: #1a1a1a;
-    --warm: #102144;
-    --accent: #1a305e;
-    --accent-dark: #102144;
-    --muted: #777777;
-    --border: #e8e8e8;
+    --bg-soft: #fcfcfc;
+    --dark: #bbbbbb;
+    --warm: #f0f0f0;
+    --accent: #eeeeee;
+    --accent-dark: #dddddd;
+    --muted: #cccccc;
+    --border: #f0f0f0;
     --card-bg: #ffffff;
-    --tag-bg: #f5f5f5;
-    --heading-font: 'Merriweather', Georgia, serif;
-    --body-font: 'Nunito Sans', -apple-system, sans-serif;
+    --tag-bg: #f9f9f9;
+    --heading-font: sans-serif;
+    --body-font: sans-serif;
+    --radius-md: 8px;
+    --radius-sm: 4px;
+    --radius-lg: 16px;
+  }
+  @keyframes skeleton-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    color: transparent !important;
+    border-color: transparent !important;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -2808,8 +2823,8 @@ html, body {
 <header>
   <div class="header-inner">
     <a href="#" class="logo" onclick="goHome(event)">
-      <div class="logo-icon">T</div>
-      <span class="logo-text">Tài Tàng <span>Au</span></span>
+      <div class="logo-icon skeleton" style="border-radius:10px">?</div>
+      <span class="logo-text skeleton" style="border-radius:4px;min-width:120px">Loading...</span>
     </a>
     <nav id="main-nav">
       <a class="active" onclick="filterCat('all', this, event)">Trang chủ</a>
@@ -2840,8 +2855,13 @@ html, body {
         var name = data.settings.sitename || 'Tài Tàng Au';
         var el = document.querySelector('header .logo');
         if (el) {
-          if (logo) el.innerHTML = '<img src="' + logo + '" style="height:36px;width:auto;display:block" alt="' + name + '">';
-          else el.innerHTML = '<div class="logo-icon">' + name.charAt(0) + '</div><span class="logo-text">' + name + '</span>';
+          if (logo) {
+            el.innerHTML = '<img src="' + logo + '" style="height:36px;width:auto;display:block" alt="' + name + '">';
+            el.classList.remove('skeleton');
+          } else {
+            el.innerHTML = '<div class="logo-icon">' + name.charAt(0) + '</div><span class="logo-text">' + name + '</span>';
+            el.querySelectorAll('.skeleton').forEach(function(x){ x.classList.remove('skeleton'); });
+          }
         }
       }
     }
@@ -2858,6 +2878,7 @@ html, body {
       if (cfg.sidebar === false) css += '#sidebar{display:none!important}.main-wrap{grid-template-columns:1fr!important}';
       if (cfg.cardImg === false) css += '.post-image-wrap{display:none!important}';
       if (cfg.listLayout && cfg.listLayout !== 'list') css += '.posts-list{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))!important;gap:20px;display:grid!important}';
+      css += '.skeleton{animation:none!important;background:none!important;color:inherit!important}';
       if (css) addStyle(css);
     }
   } catch(e) {}
@@ -2867,7 +2888,16 @@ html, body {
 <!-- MAIN CONTENT: BLOG LIST -->
 <div id="blog-home">
   <!-- Hero Section (dynamic) -->
-  <section id="hero-section"></section>
+  <section id="hero-section">
+    <div class="hero-inner">
+      <div class="hero-text-col">
+        <div class="skeleton" style="height:12px;width:80px;margin-bottom:20px"></div>
+        <div class="skeleton" style="height:48px;width:100%;margin-bottom:20px"></div>
+        <div class="skeleton" style="height:20px;width:60%;margin-bottom:20px"></div>
+      </div>
+      <div class="hero-img-col skeleton"></div>
+    </div>
+  </section>
 
   <!-- Main Layout -->
   <div class="main-wrap">
@@ -2877,8 +2907,27 @@ html, body {
         <button class="filter-btn" onclick="filterCat('Chuyện Nghề', this, event)">💼 Chuyện Nghề</button>
         <button class="filter-btn" onclick="filterCat('Chuyện Đời', this, event)">🌿 Chuyện Đời</button>
         <button class="filter-btn" onclick="filterCat('Nhật Ký Sự Kiện', this, event)">📅 Sự Kiện</button>
+        <button class="filter-btn" onclick="filterCat('Về tôi', this, event)">👤 Về tôi</button>
       </div>
-      <div id="posts-list" class="posts-list"></div>
+      <div id="posts-list" class="posts-list">
+        <!-- Skeletons cho bài viết -->
+        <div class="post-card" style="border:none">
+          <div class="post-image-wrap skeleton" style="aspect-ratio:16/9;border-radius:12px"></div>
+          <div class="post-content">
+            <div class="skeleton" style="height:10px;width:60px;margin-top:15px"></div>
+            <div class="skeleton" style="height:24px;width:100%;margin-top:10px"></div>
+            <div class="skeleton" style="height:14px;width:80%;margin-top:10px"></div>
+          </div>
+        </div>
+        <div class="post-card" style="border:none">
+          <div class="post-image-wrap skeleton" style="aspect-ratio:16/9;border-radius:12px"></div>
+          <div class="post-content">
+            <div class="skeleton" style="height:10px;width:60px;margin-top:15px"></div>
+            <div class="skeleton" style="height:24px;width:100%;margin-top:10px"></div>
+            <div class="skeleton" style="height:14px;width:80%;margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
     </main>
     <aside id="sidebar" class="sidebar"></aside>
   </div>
