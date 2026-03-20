@@ -5619,8 +5619,12 @@ function cmsImgCopy(url, btn) {
   }
 }
 
-function cmsImgDelete(i) {
+async function cmsImgDelete(i) {
   if (!confirm('Xóa hình ảnh này?')) return;
+  const img = data.images[i];
+  if (img && img._id && window._fbReady && window._db) {
+    try { await window._db.collection('images').doc(img._id).delete(); } catch(e) { console.error('Deletion error:', e); }
+  }
   data.images.splice(i, 1);
   saveImages();
   cmsRenderImages();
