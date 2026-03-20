@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="opt3JjATqvSkM54sx0KYiVcVlrX8h5GKLznKmYMYZSg" />
 
-<meta name="description" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
+<meta name="description" content="Taipulme – Chuyện Nghề &amp; Chuyện Đời">
 <!-- Open Graph / Social sharing -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Tài Tàng Au">
-<meta property="og:title" id="og-title" content="Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời">
+<meta property="og:site_name" content="Taipulme">
+<meta property="og:title" id="og-title" content="Taipulme – Chuyện Nghề &amp; Chuyện Đời">
 <meta property="og:description" id="og-desc" content="Chuyện Nghề &amp; Chuyện Đời">
 <meta property="og:image" id="og-image" content="https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg">
 <meta property="og:image:secure_url" id="og-image-secure" content="https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg">
@@ -17,7 +17,7 @@
 <meta property="og:image:height" id="og-height" content="630">
 <meta property="og:url" id="og-url" content="https://taipulme.pages.dev/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" id="tw-title" content="Tài Tàng Au">
+<meta name="twitter:title" id="tw-title" content="Taipulme">
 <meta name="twitter:description" id="tw-desc" content="Chuyện Nghề &amp; Chuyện Đời">
 <meta name="twitter:image" id="tw-image" content="https://i.ibb.co/6cG4Q8qt/cover-branding-2.jpg">
 <script>
@@ -44,7 +44,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <link rel="canonical" id="canonical-url" href="">
 <script id="json-ld-schema" type="application/ld+json">{}</script>
-<title>Tài Tàng Au – Chuyện Nghề &amp; Chuyện Đời</title>
+<title>Taipulme – Chuyện Nghề &amp; Chuyện Đời</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -139,7 +139,7 @@ function initFirebase() {
 </script>
 <style>
   /* ═══════════════════════════════════════════
-     TÀI TÀNG AU — Design inspired by phungthaihoc.com
+     Taipulme — Taipulme
      Clean white editorial, red accent, Merriweather
   ═══════════════════════════════════════════ */
   :root {
@@ -2747,7 +2747,7 @@ html, body {
 
     <!-- Text -->
     <div style="text-align:center">
-      <div style="font-family:'Merriweather',Georgia,serif;font-size:18px;font-weight:700;color:#1a1a1a;letter-spacing:-.3px">Tài Tàng Au</div>
+      <div style="font-family:'Merriweather',Georgia,serif;font-size:18px;font-weight:700;color:#1a1a1a;letter-spacing:-.3px">Taipulme</div>
       <div id="loading-dots" style="font-size:13px;color:#888;margin-top:6px;letter-spacing:2px">đang tải<span id="ldot">.</span></div>
     </div>
 
@@ -2852,7 +2852,7 @@ html, body {
       var data = JSON.parse(s);
       if (data.settings) {
         var logo = data.settings.logo;
-        var name = data.settings.sitename || 'Tài Tàng Au';
+        var name = data.settings.sitename || 'Taipulme';
         var el = document.querySelector('header .logo');
         if (el) {
           if (logo) {
@@ -4010,10 +4010,10 @@ let data = {
     { name: 'Nhật Ký Sự Kiện', emoji: '📅', short: 'Sự Kiện', slug: 'su-kien' }
   ],
   settings: {
-    sitename: 'Tài Tàng Au',
+    sitename: 'Taipulme',
     tagline: 'Chuyện Nghề & Chuyện Đời',
     domain: '',
-    author: 'Tài Tàng Au',
+    author: 'Taipulme',
     bio: 'Người viết lách và chia sẻ',
     avatar: '',
     password: '',
@@ -4442,7 +4442,7 @@ function renderPosts() {
               ? `<img src="${data.settings.avatar}" class="post-author-avatar" alt="" loading="lazy" onerror="this.style.display='none'">`
               : `<div class="post-author-avatar-placeholder">${(data.settings.sitename||'T').charAt(0)}</div>`
             }
-            <span class="post-author-name">${escHtml(data.settings.sitename || data.settings.author || 'Tài Tàng Au')}</span>
+            <span class="post-author-name">${escHtml(data.settings.sitename || data.settings.author || 'Taipulme')}</span>
             <div class="dot"></div>
             <span>${formatDate(post.date)}</span>
             ${rt > 0 ? `<div class="dot"></div><span>${rt} phút đọc</span>` : ''}
@@ -4643,7 +4643,7 @@ function renderFooter() {
 
 function updateMetaTags({ title, desc, image, url, type, author, date, modified }) {
   const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.setAttribute('content', val); };
-  const sitename = data.settings.sitename || 'Tài Tàng Au';
+  const sitename = data.settings.sitename || 'Taipulme';
   const domain = (data.settings.domain || window.location.origin).replace(/\/$/, '');
   const fullTitle = title ? title + ' – ' + sitename : sitename + ' – ' + (data.settings.tagline || '');
   
@@ -6420,7 +6420,7 @@ function applyLogo() {
     } else {
       logoEl.innerHTML = `
         <div class="logo-icon">${escHtml((data.settings.sitename || 'T')[0])}</div>
-        <span class="logo-text">${escHtml(data.settings.sitename || 'Tài Tàng Au')}</span>
+        <span class="logo-text">${escHtml(data.settings.sitename || 'Taipulme')}</span>
       `;
     }
   });
@@ -7945,7 +7945,7 @@ function _showHome(cat) {
   if (_ch) _ch.setAttribute('href', window.location.origin + '/');
   const schemaEl = document.getElementById('json-ld-schema');
   if (schemaEl && data.settings) {
-    const sitename = data.settings.sitename || 'Tài Tàng Au';
+    const sitename = data.settings.sitename || 'Taipulme';
     schemaEl.textContent = JSON.stringify({ '@context':'https://schema.org','@type':'WebSite','name':sitename,'url':data.settings.domain||window.location.origin });
   }
   cat = cat || 'all';
