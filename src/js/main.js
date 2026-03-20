@@ -2,7 +2,7 @@
 // Anti-FOUC: Apply saved theme colors NGAY TRONG <head> trước khi render
 (function() {
   try {
-    var t = JSON.parse(localStorage.getItem('taitangau_theme') || '{}');
+    var t = JSON.parse(localStorage.getItem('taipulme_theme') || '{}');
     var r = document.documentElement;
     if (t.colorAccent) {
       r.style.setProperty('--accent', t.colorAccent);
@@ -26,9 +26,9 @@
 // Project Settings → Your apps → Firebase SDK snippet → Config
 window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyDaCVGTacHKbgY-c-AZOEmx5VrwPy1RrG8",
-  authDomain: "taitangau-7c2bb.firebaseapp.com",
-  projectId: "taitangau-7c2bb",
-  storageBucket: "taitangau-7c2bb.firebasestorage.app",
+  authDomain: "taipulme-7c2bb.firebaseapp.com",
+  projectId: "taipulme-7c2bb",
+  storageBucket: "taipulme-7c2bb.firebasestorage.app",
   messagingSenderId: "211203067163",
   appId: "1:211203067163:web:049caa517ca10ca0da57be"
 };
@@ -103,12 +103,12 @@ window.data = data;
 /* ══════════════════════════════════════════════
    DATA & STORAGE
 ══════════════════════════════════════════════ */
-const STORAGE_KEY = 'taitangau_data';
-const PAGE_LAYOUT_KEY = 'taitangau_page_layout';
-const IMAGES_KEY = 'taitangau_images'; // separate from posts for performance
-const THEME_KEY = 'taitangau_theme';
-const LAYOUT_KEY = 'taitangau_layout';
-const SIDEBAR_KEY = 'taitangau_sidebar';
+const STORAGE_KEY = 'taipulme_data';
+const PAGE_LAYOUT_KEY = 'taipulme_page_layout';
+const IMAGES_KEY = 'taipulme_images'; // separate from posts for performance
+const THEME_KEY = 'taipulme_theme';
+const LAYOUT_KEY = 'taipulme_layout';
+const SIDEBAR_KEY = 'taipulme_sidebar';
 
 let data = {
   posts: [],
@@ -120,10 +120,10 @@ let data = {
     { name: 'Nhật Ký Sự Kiện', emoji: '📅', short: 'Sự Kiện', slug: 'su-kien' }
   ],
   settings: {
-    sitename: 'Tài Tàng Au',
+    sitename: 'Taipulme',
     tagline: 'Chuyện Nghề & Chuyện Đời',
     domain: '',
-    author: 'Tài Tàng Au',
+    author: 'Taipulme',
     bio: 'Người viết lách và chia sẻ',
     avatar: '',
     password: 'taitai123',
@@ -143,7 +143,7 @@ let data = {
   }
 };
 let landingPages = []; // stored separately for perf
-const LP_KEY = 'taitangau_landing_pages';
+const LP_KEY = 'taipulme_landing_pages';
 
 let currentCategory = 'all';
 
@@ -153,18 +153,37 @@ async function loadData() {
   if (ok) await _pullFirebase();
 }
 
-// Upload file ảnh lên Firebase Storage, trả về download URL
+// Upload file ảnh lên ImgBB
 async function uploadImageToStorage(file) {
-  if (!_fbReady || !window._storage) return null;
+  const url = await uploadToImgBB(file);
+  if (!url) {
+    if (typeof showToast !== 'undefined') showToast('Lỗi tải ảnh: Kiểm tra ImgBB API Key trong Cài đặt', true);
+  }
+  return url;
+}
+
+async function uploadToImgBB(file) {
+  const imgKey = data.settings?.imgbbKey || 'b6b0bf9b6cac7fe4b10562aa747ed984';
+  if (!imgKey) {
+    console.error('Thiếu ImgBB API Key trong cài đặt');
+    return null;
+  }
   try {
-    const ext = file.name.split('.').pop() || 'jpg';
-    const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
-    const ref = window._storage.ref(path);
-    await ref.put(file);
-    const url = await ref.getDownloadURL();
-    return url;
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgKey}`, {
+      method: 'POST',
+      body: formData
+    });
+    const res = await response.json();
+    if (res && res.success) {
+      return res.data.url;
+    } else {
+      console.error('ImgBB upload error:', res.error ? res.error.message : 'Unknown error');
+      return null;
+    }
   } catch(e) {
-    console.error('Storage upload error:', e);
+    console.error('ImgBB fetch error:', e);
     return null;
   }
 }
@@ -240,8 +259,8 @@ async function _pullFirebase() {
         try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(fbSettings.sidebarWidgets)); } catch(e) {}
       }
       // Lưu sidebarVisibleHome từ Firebase vào localStorage nếu có (và localStorage chưa set)
-      if (fbSettings.sidebarVisibleHome !== undefined && localStorage.getItem('taitangau_sidebar_home') === null) {
-        try { localStorage.setItem('taitangau_sidebar_home', fbSettings.sidebarVisibleHome ? '1' : '0'); } catch(e) {}
+      if (fbSettings.sidebarVisibleHome !== undefined && localStorage.getItem('taipulme_sidebar_home') === null) {
+        try { localStorage.setItem('taipulme_sidebar_home', fbSettings.sidebarVisibleHome ? '1' : '0'); } catch(e) {}
       }
       data.settings = Object.assign({}, data.settings, fbSettings);
       data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, fbSettings?.social||{});
@@ -389,7 +408,7 @@ function renderPosts() {
               ? `<img src="${data.settings.avatar}" class="post-author-avatar" alt="" loading="lazy" onerror="this.style.display='none'">`
               : `<div class="post-author-avatar-placeholder">${(data.settings.sitename||'T').charAt(0)}</div>`
             }
-            <span class="post-author-name">${escHtml(data.settings.sitename || data.settings.author || 'Tài Tàng Au')}</span>
+            <span class="post-author-name">${escHtml(data.settings.sitename || data.settings.author || 'Taipulme')}</span>
             <div class="dot"></div>
             <span>${formatDate(post.date)}</span>
             ${rt > 0 ? `<div class="dot"></div><span>${rt} phút đọc</span>` : ''}
@@ -590,7 +609,7 @@ function renderFooter() {
 
 function updateMetaTags({ title, desc, image, url }) {
   const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.setAttribute('content', val); };
-  const sitename = data.settings.sitename || 'Tài Tàng Au';
+  const sitename = data.settings.sitename || 'Taipulme';
   const fullTitle = title ? title + ' – ' + sitename : sitename + ' – ' + (data.settings.tagline || '');
   document.title = fullTitle;
   set('og-title', fullTitle); set('tw-title', fullTitle);
@@ -694,7 +713,7 @@ function goHome(e) {
 /* ══════════════════════════════════════════════
    CMS FULL-PAGE ADMIN
 ══════════════════════════════════════════════ */
-const CMS_SESSION_KEY = 'taitangau_cms_session';
+const CMS_SESSION_KEY = 'taipulme_cms_session';
 let cmsLoggedIn = localStorage.getItem(CMS_SESSION_KEY) === '1';
 let cmsCurrentEditIdx = null;
 
@@ -3199,14 +3218,14 @@ function getSidebarWidgets() {
 
 function getSidebarVisibleHome() {
   try {
-    const val = localStorage.getItem('taitangau_sidebar_home');
+    const val = localStorage.getItem('taipulme_sidebar_home');
     if (val !== null) return val === '1';
   } catch(e) {}
   return false; // mặc định ẩn
 }
 
 function setSidebarVisibleHome(visible) {
-  try { localStorage.setItem('taitangau_sidebar_home', visible ? '1' : '0'); } catch(e) {}
+  try { localStorage.setItem('taipulme_sidebar_home', visible ? '1' : '0'); } catch(e) {}
   data.settings.sidebarVisibleHome = visible;
   if (_fbReady && _db) {
     _db.collection('site').doc('settings').set({ sidebarVisibleHome: visible }, { merge: true }).catch(e=>{});
@@ -3446,8 +3465,8 @@ function searchTag(tag, e) {
 /* ══════════════════════════════════════════════
    POST DETAIL PAGE
 ══════════════════════════════════════════════ */
-const VIEWS_KEY = 'taitangau_views';
-const REACT_KEY = 'taitangau_reactions';
+const VIEWS_KEY = 'taipulme_views';
+const REACT_KEY = 'taipulme_reactions';
 
 function getViews() { try { return JSON.parse(localStorage.getItem(VIEWS_KEY) || '{}'); } catch(e) { return {}; } }
 function saveViews(v) { localStorage.setItem(VIEWS_KEY, JSON.stringify(v)); }
@@ -3799,7 +3818,7 @@ async function init() {
   if (data.posts.length === 0) {
     data.posts = [
       {
-        title: 'Chào mừng đến với Tài Tàng Au',
+        title: 'Chào mừng đến với Taipulme',
         category: 'Chuyện Nghề',
         excerpt: 'Đây là bài viết mẫu đầu tiên của bạn. Hãy vào Quản trị để tạo nội dung mới!',
         content: '<p>Đây là bài viết mẫu đầu tiên của bạn.</p><p>Hãy vào <strong>Quản trị</strong> để tạo nội dung mới!</p>',
@@ -3968,7 +3987,7 @@ function routerApplyState(state) {
 /* ══════════════════════════════════════════════
    MOBILE LAYOUT SETTINGS
 ══════════════════════════════════════════════ */
-const MOBILE_KEY = 'taitangau_mobile';
+const MOBILE_KEY = 'taipulme_mobile';
 
 function getMobileCfg() {
   try { return JSON.parse(localStorage.getItem(MOBILE_KEY)) || {}; } catch(e) { return {}; }

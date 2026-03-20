@@ -24,7 +24,7 @@
 // Anti-FOUC: Apply saved theme colors NGAY TRONG <head> trước khi render
 (function() {
   try {
-    var t = JSON.parse(localStorage.getItem('taitangau_theme') || '{}');
+    var t = JSON.parse(localStorage.getItem('taipulme_theme') || '{}');
     var r = document.documentElement;
     if (t.colorAccent) {
       r.style.setProperty('--accent', t.colorAccent);
@@ -59,9 +59,9 @@
 // Project Settings → Your apps → Firebase SDK snippet → Config
 window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyDaCVGTacHKbgY-c-AZOEmx5VrwPy1RrG8",
-  authDomain: "taitangau-7c2bb.firebaseapp.com",
-  projectId: "taitangau-7c2bb",
-  storageBucket: "taitangau-7c2bb.firebasestorage.app",
+  authDomain: "taipulme-7c2bb.firebaseapp.com",
+  projectId: "taipulme-7c2bb",
+  storageBucket: "taipulme-7c2bb.firebasestorage.app",
   messagingSenderId: "211203067163",
   appId: "1:211203067163:web:049caa517ca10ca0da57be"
 };
@@ -139,7 +139,7 @@ function initFirebase() {
 </script>
 <style>
   /* ═══════════════════════════════════════════
-     Taipulme — Taipulme
+     TAIPULME — Design inspired by phungthaihoc.com
      Clean white editorial, red accent, Merriweather
   ═══════════════════════════════════════════ */
   :root {
@@ -2777,7 +2777,7 @@ html, body {
 <script>
   // Chỉ hiện loading khi KHÔNG có cache localStorage
   (function(){
-    const STORAGE_KEY = 'taitangau_data';
+    const STORAGE_KEY = 'taipulme_data';
     const hasCache = !!localStorage.getItem(STORAGE_KEY);
     const el = document.getElementById('app-loading');
     if (hasCache) {
@@ -2847,7 +2847,7 @@ html, body {
 (function() {
   var addStyle = function(css) { var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); };
   try {
-    var s = localStorage.getItem('taitangau_storage');
+    var s = localStorage.getItem('taipulme_storage');
     if (s) {
       var data = JSON.parse(s);
       if (data.settings) {
@@ -2867,7 +2867,7 @@ html, body {
     }
   } catch(e) {}
   try {
-    var l = localStorage.getItem('taitangau_layout');
+    var l = localStorage.getItem('taipulme_layout');
     if (l) {
       var cfg = JSON.parse(l);
       var css = '';
@@ -2980,7 +2980,7 @@ html, body {
     <!-- SIDEBAR -->
     <aside class="cms-sidebar">
       <div class="cms-sidebar-brand">
-        <div class="brand-logo">Tài Tàng <span>Au</span></div>
+        <div class="brand-logo">Taipul<span>me</span></div>
         <div class="brand-sub">CMS Dashboard</div>
       </div>
 
@@ -3993,12 +3993,12 @@ html, body {
 /* ══════════════════════════════════════════════
    DATA & STORAGE
 ══════════════════════════════════════════════ */
-const STORAGE_KEY = 'taitangau_data';
-const PAGE_LAYOUT_KEY = 'taitangau_page_layout';
-const IMAGES_KEY = 'taitangau_images'; // separate from posts for performance
-const THEME_KEY = 'taitangau_theme';
-const LAYOUT_KEY = 'taitangau_layout';
-const SIDEBAR_KEY = 'taitangau_sidebar';
+const STORAGE_KEY = 'taipulme_data';
+const PAGE_LAYOUT_KEY = 'taipulme_page_layout';
+const IMAGES_KEY = 'taipulme_images'; // separate from posts for performance
+const THEME_KEY = 'taipulme_theme';
+const LAYOUT_KEY = 'taipulme_layout';
+const SIDEBAR_KEY = 'taipulme_sidebar';
 
 let data = {
   posts: [],
@@ -4033,7 +4033,7 @@ let data = {
   }
 };
 window.landingPages = []; // global để _openBySlug và các hàm khác đều truy cập được
-const LP_KEY = 'taitangau_landing_pages';
+const LP_KEY = 'taipulme_landing_pages';
 
 let currentCategory = 'all';
 
@@ -4060,8 +4060,8 @@ async function _syncFirebaseBackground() {
     // Nếu trang chủ → dùng cache nếu còn tươi (< 5 phút)
     if (!_isSlugUrl) {
       const CACHE_TTL = 5 * 60 * 1000;
-      const lastSync = parseInt(localStorage.getItem('taitangau_last_sync') || '0');
-      if ((Date.now() - lastSync) < CACHE_TTL && !!localStorage.getItem('taitangau_data')) {
+      const lastSync = parseInt(localStorage.getItem('taipulme_last_sync') || '0');
+      if ((Date.now() - lastSync) < CACHE_TTL && !!localStorage.getItem('taipulme_data')) {
         console.log('⚡ Home cache hit, skip Firebase');
         window._fbFullyLoaded = true;
         return;
@@ -4070,54 +4070,17 @@ async function _syncFirebaseBackground() {
 
     const ok = await initFirebase();
     if (ok) await _pullFirebase();
-    try { localStorage.setItem('taitangau_last_sync', String(Date.now())); } catch(e) {}
+    try { localStorage.setItem('taipulme_last_sync', String(Date.now())); } catch(e) {}
   } catch(e) { console.warn('Background sync error:', e); }
 }
 
-// Upload file ảnh lên Firebase Storage với timeout chống kẹt (CORS issue)
+// Upload file ảnh lên ImgBB mặc định
 async function uploadImageToStorage(file) {
-  await initFirebase();
-  if (!_fbReady || !window._storage) return null;
-  return new Promise((resolve) => {
-    let handled = false;
-    let task = null;
-    let fallbackTimer = setTimeout(() => {
-      if (!handled) {
-        handled = true;
-        console.warn('Firebase upload timeout (CORS/Network), fallback to ImgBB...');
-        if (task) task.cancel(); // limit retries
-        resolve(null);
-      }
-    }, 5000); // 5s wait for first byte
-
-    try {
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-      const path = 'images/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
-      const ref = window._storage.ref(path);
-      task = ref.put(file);
-      
-      task.on('state_changed', 
-        (snapshot) => {
-          if (snapshot.bytesTransferred > 0 && fallbackTimer) {
-            clearTimeout(fallbackTimer);
-            fallbackTimer = null; // đang upload thật, đợi không giới hạn
-          }
-        },
-        (error) => {
-          if (!handled) { handled = true; clearTimeout(fallbackTimer); console.error('Storage error:', error); resolve(null); }
-        },
-        async () => {
-          if (!handled) {
-            handled = true;
-            clearTimeout(fallbackTimer);
-            try { const url = await task.snapshot.ref.getDownloadURL(); resolve(url); } catch(e) { resolve(null); }
-          }
-        }
-      );
-    } catch(e) {
-      if (!handled) { handled = true; clearTimeout(fallbackTimer); resolve(null); }
-    }
-  });
+  const url = await uploadToImgBB(file);
+  if (!url && typeof showToast !== 'undefined') {
+    showToast('Lỗi tải ảnh: Vui lòng kiểm tra API Key ImgBB trong Cài đặt', true);
+  }
+  return url;
 }
 
 function _loadLocal() {
@@ -4239,12 +4202,12 @@ function _cacheLocal() {
   try { const o = Object.assign({}, data); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
   try { localStorage.setItem(IMAGES_KEY, JSON.stringify(data.images)); } catch(e) {}
   try { localStorage.setItem(LP_KEY, JSON.stringify(landingPages)); } catch(e) {}
-  try { localStorage.setItem('taitangau_last_sync', String(Date.now())); } catch(e) {}
+  try { localStorage.setItem('taipulme_last_sync', String(Date.now())); } catch(e) {}
 }
 
 async function saveData(d) {
   try { const o = Object.assign({}, d); delete o.images; localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); } catch(e) {}
-  try { localStorage.removeItem('taitangau_last_sync'); } catch(e) {}
+  try { localStorage.removeItem('taipulme_last_sync'); } catch(e) {}
   await initFirebase();
   if (!_fbReady || !_db) return;
   try {
@@ -4281,7 +4244,7 @@ async function deletePost(fbId) {
 }
 
 async function uploadToImgBB(file) {
-  const imgKey = data.settings?.imgbbKey;
+  const imgKey = data.settings?.imgbbKey || 'b6b0bf9b6cac7fe4b10562aa747ed984';
   if (!imgKey) return null;
   try {
     const formData = new FormData();
@@ -4810,8 +4773,8 @@ function goHome(e) {
 /* ══════════════════════════════════════════════
    CMS FULL-PAGE ADMIN
 ══════════════════════════════════════════════ */
-const CMS_SESSION_KEY = 'taitangau_cms_session';
-const CMS_SECRET_KEY  = 'taitangau_cms_secret';
+const CMS_SESSION_KEY = 'taipulme_cms_session';
+const CMS_SECRET_KEY  = 'taipulme_cms_secret';
 
 // Entry point: dùng #admin (đơn giản, bảo mật bằng username+password)
 function getCmsSecret() { return 'admin'; }
@@ -4827,7 +4790,7 @@ let cmsLoggedIn = _cmsSessionValid();
 // Hash mật khẩu bằng SHA-256 (Web Crypto API)
 async function _hashPass(str) {
   // Pepper chống rainbow table dù hash bị lộ từ Firebase
-  const _pepper = 'taitangau-7c2bb:cms:v2';
+  const _pepper = 'taipulme-7c2bb:cms:v2';
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + _pepper));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
@@ -5201,7 +5164,45 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcut removed for security
 });
 
-function cmsSavePost() {
+async function processBase64Images(htmlObj, onProgress) {
+  if (!htmlObj.html.includes('data:image/')) return;
+  if (onProgress) onProgress();
+  
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlObj.html, 'text/html');
+  const imgs = doc.querySelectorAll('img[src^="data:image/"]');
+  
+  if (imgs.length === 0) return;
+  
+  for (let i = 0; i < imgs.length; i++) {
+    const imgEl = imgs[i];
+    const src = imgEl.getAttribute('src');
+    try {
+      const [meta, b64data] = src.split(',');
+      const mime = meta.match(/:(.*?);/)?.[1] || 'image/jpeg';
+      const ext = mime.split('/')[1] || 'jpg';
+      const bytes = atob(b64data);
+      const arr = new Uint8Array(bytes.length);
+      for (let j = 0; j < bytes.length; j++) arr[j] = bytes.charCodeAt(j);
+      
+      const file = new File([arr], 'pasted_' + Date.now() + '_' + i + '.' + ext, {type: mime});
+      let url = await uploadImageToStorage(file);
+      if (!url) url = await uploadToImgBB(file);
+      
+      if (url) {
+        imgEl.setAttribute('src', url);
+        if (!data.images) data.images = [];
+        data.images.push({ url, name: file.name, createdAt: Date.now() });
+      }
+    } catch(e) {
+      console.error('Error processing base64 image:', e);
+    }
+  }
+  
+  htmlObj.html = doc.body.innerHTML;
+}
+
+async function cmsSavePost() {
   const title = document.getElementById('cms-post-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
 
@@ -5218,7 +5219,11 @@ function cmsSavePost() {
     slug = slug + '-' + Date.now().toString().slice(-4);
   }
 
-  const contentHtml = postQuill.root.innerHTML;
+  let htmlObj = { html: postQuill.root.innerHTML };
+  await processBase64Images(htmlObj, () => showToast('Đang xử lý ảnh base64, vui lòng đợi...', false));
+  postQuill.root.innerHTML = htmlObj.html;
+  
+  const contentHtml = htmlObj.html;
   const content = contentHtml.trim() === '<p><br></p>' ? '' : contentHtml.trim();
 
   const dateVal = document.getElementById('cms-post-date').value;
@@ -5910,7 +5915,7 @@ function rtePageOpenImgPicker() {
   rteRenderPickerGallery();
 }
 
-function cmsSavePage() {
+async function cmsSavePage() {
   const title = document.getElementById('cms-page-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
   let slug = document.getElementById('cms-page-slug').value.trim();
@@ -5921,11 +5926,16 @@ function cmsSavePage() {
   const existing = (data.pages || []).findIndex(p => p.slug === slug);
   if (existing !== -1 && existing !== cmsCurrentEditPageIdx) return showToast('Slug đã được dùng', true);
 
+  let htmlObj = { html: document.getElementById('cms-page-content').innerHTML || (typeof pageQuill !== 'undefined' && pageQuill ? pageQuill.root.innerHTML : '') };
+  await processBase64Images(htmlObj, () => showToast('Đang xử lý ảnh base64, vui lòng đợi...', false));
+  if (typeof pageQuill !== 'undefined' && pageQuill) pageQuill.root.innerHTML = htmlObj.html;
+  document.getElementById('cms-page-content').innerHTML = htmlObj.html;
+
   if (!data.pages) data.pages = [];
   const pg = {
     title,
     slug,
-    content: document.getElementById('cms-page-content').innerHTML,
+    content: htmlObj.html,
     image: document.getElementById('cms-page-image').value.trim(),
     showNav: document.getElementById('cms-page-show-nav').checked,
     seo: document.getElementById('cms-page-seo').value.trim(),
@@ -7520,14 +7530,14 @@ function getSidebarWidgets() {
 
 function getSidebarVisibleHome() {
   try {
-    const val = localStorage.getItem('taitangau_sidebar_home');
+    const val = localStorage.getItem('taipulme_sidebar_home');
     if (val !== null) return val === '1';
   } catch(e) {}
   return false; // mặc định ẩn
 }
 
 async function setSidebarVisibleHome(visible) {
-  try { localStorage.setItem('taitangau_sidebar_home', visible ? '1' : '0'); } catch(e) {}
+  try { localStorage.setItem('taipulme_sidebar_home', visible ? '1' : '0'); } catch(e) {}
   data.settings.sidebarVisibleHome = visible;
   await initFirebase();
   if (_fbReady && _db) {
@@ -7767,8 +7777,8 @@ function searchTag(tag, e) {
 /* ══════════════════════════════════════════════
    POST DETAIL PAGE
 ══════════════════════════════════════════════ */
-const VIEWS_KEY = 'taitangau_views';
-const REACT_KEY = 'taitangau_reactions';
+const VIEWS_KEY = 'taipulme_views';
+const REACT_KEY = 'taipulme_reactions';
 
 function getViews() { try { return JSON.parse(localStorage.getItem(VIEWS_KEY) || '{}'); } catch(e) { return {}; } }
 function saveViews(v) { localStorage.setItem(VIEWS_KEY, JSON.stringify(v)); }
@@ -8350,7 +8360,7 @@ function routerApplyState(state) {
 /* ══════════════════════════════════════════════
    MOBILE LAYOUT SETTINGS
 ══════════════════════════════════════════════ */
-const MOBILE_KEY = 'taitangau_mobile';
+const MOBILE_KEY = 'taipulme_mobile';
 
 function getMobileCfg() {
   try { return JSON.parse(localStorage.getItem(MOBILE_KEY)) || {}; } catch(e) { return {}; }
@@ -8559,7 +8569,7 @@ init();
 
 <div id="cms-login-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center">
   <div style="background:#2a2a2a;border:1px solid #3a2e1c;border-radius:10px;padding:48px 40px;width:360px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.5)">
-    <div style="font-family:var(--heading-font);font-size:22px;font-weight:900;color:#fff;text-align:center;margin-bottom:6px">Tài Tàng <span style="color:var(--accent)">Au</span></div>
+    <div style="font-family:var(--heading-font);font-size:22px;font-weight:900;color:#fff;text-align:center;margin-bottom:6px">Taipul<span style="color:var(--accent)">me</span></div>
     <div style="font-size:11px;letter-spacing:2px;color:#888;text-align:center;margin-bottom:32px">CMS DASHBOARD</div>
     <label style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;display:block;margin-bottom:8px">TÀI KHOẢN EMAIL</label>
     <input type="email" id="cms-email-input" placeholder="Email Firebase Admin..."
