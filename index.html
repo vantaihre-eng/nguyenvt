@@ -4093,7 +4093,16 @@ async function _syncFirebaseBackground() {
 
 // Upload file ảnh lên Firebase Storage với timeout chống kẹt (CORS issue)
 async function uploadImageToStorage(file) {
-  const url = await uploadToImgBB(file);
+  // Proactive compression for Quill uploads
+  const compressedBlob = await new Promise(res => {
+    const reader = new FileReader();
+    reader.onerror = () => res(null);
+    reader.onload = ev => compressImage(ev.target.result, file.name || 'pasted-image', res, true);
+    reader.readAsDataURL(file);
+  });
+
+  const uploadFile = compressedBlob || file;
+  const url = await uploadToImgBB(uploadFile, file.name || 'image');
   if (!url) {
     if (typeof showToast !== 'undefined') showToast('Lỗi tải ảnh: Kiểm tra ImgBB API Key trong Cài đặt', true);
   }
@@ -4260,12 +4269,14 @@ async function deletePost(fbId) {
   }
 }
 
-async function uploadToImgBB(file) {
+async function uploadToImgBB(file, customFilename) {
   const imgKey = data.settings?.imgbbKey || 'b6b0bf9b6cac7fe4b10562aa747ed984';
   if (!imgKey) return null;
   try {
     const formData = new FormData();
-    formData.append('image', file);
+    // Nếu là Blob từ nén, cần gán filename để ImgBB nhận diện đúng
+    if (customFilename) formData.append('image', file, customFilename);
+    else formData.append('image', file);
     
     const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgKey}`, {
       method: 'POST',
@@ -4283,6 +4294,13 @@ async function uploadToImgBB(file) {
     console.error('ImgBB fetch error:', e);
     return null;
   }
+}
+
+function dataURLToBlob(dataurl) {
+  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+  while(n--) u8arr[n] = bstr.charCodeAt(n);
+  return new Blob([u8arr], {type:mime});
 }
 
 async function saveImages() {
@@ -5158,13 +5176,15 @@ document.addEventListener('DOMContentLoaded', () => {
           e.preventDefault();
           const file = item.getAsFile();
           (async () => {
+            // Sử dụng helper uploadImageToStorage đã có nén chủ động
             let url = await uploadImageToStorage(file);
             if (!url) {
-              url = await new Promise(res => {
-                const reader = new FileReader();
-                reader.onload = ev => compressImage(ev.target.result, 'pasted-image', res);
-                reader.readAsDataURL(file);
-              });
+                // Fallback nén base64 nếu upload lỗi
+                url = await new Promise(res => {
+                    const reader = new FileReader();
+                    reader.onload = ev => compressImage(ev.target.result, 'pasted-image', res);
+                    reader.readAsDataURL(file);
+                });
             }
             document.execCommand('insertHTML', false, `<img src="${url}" style="max-width:100%;border-radius:6px;margin:8px 0">`);
             if (!data.images) data.images = [];
@@ -5374,38 +5394,49 @@ async function rteHandleFileUpload(files) {
 
   const status = document.getElementById('rte-upload-status');
   const setStatus = msg => { if (status) status.textContent = msg; };
-  const mb = (file.size / 1024 / 1024).toFixed(1);
+  
+  setStatus('⏳ Đang nén ảnh...');
+  const compressedBlob = await new Promise(res => {
+    const reader = new FileReader();
+    reader.onerror = () => res(null);
+    reader.onload = ev => compressImage(ev.target.result, file.name, res, true);
+    reader.readAsDataURL(file);
+  });
+  
+  if (!compressedBlob) return setStatus('❌ Lỗi xử lý ảnh!');
 
-  setStatus('⏳ Đang upload ảnh...');
-  // Upload lên ImgBB trước (Firebase chỉ lưu text) -> fallback Base64
-  let url = await uploadToImgBB(file);
+  setStatus('⏳ Đang upload lên ImgBB...');
+  let url = await uploadToImgBB(compressedBlob, file.name);
 
   if (!url) {
-    // Fallback cuối: base64 nén trong browser
-    setStatus(file.size > 1000000 ? '⏳ Đang nén ảnh (' + mb + 'MB)...' : '⏳ Đang xử lý...');
+    // Fallback: lưu base64 bản nén
+    setStatus('⚠️ ImgBB lỗi, lưu tạm nén local...');
     url = await new Promise(res => {
       const reader = new FileReader();
-      reader.onerror = () => res(null);
-      reader.onload = ev => compressImage(ev.target.result, file.name, res);
-      reader.readAsDataURL(file);
+      reader.onload = ev => res(ev.target.result);
+      reader.readAsDataURL(compressedBlob);
     });
   }
 
-  if (!url) { setStatus('❌ Upload thất bại. Hãy thử lại.'); return; }
+  if (url) {
+    setStatus('✅ Xong!');
+    
+    // Thêm vào data.images để hiển thị trong thư viện
+    const name = file.name.replace(/\.[^.]+$/, '');
+    if (!data.images) data.images = [];
+    data.images.push({ url, name, createdAt: Date.now(), size: compressedBlob.size });
+    saveImages();
 
-  const name = file.name.replace(/\.[^.]+$/, '');
-  if (!data.images) data.images = [];
-  data.images.push({ url, name, createdAt: Date.now() });
-  saveImages();
-  setStatus('✅ Xong!');
+    // Reset file input
+    const fi = document.getElementById('rte-file-input');
+    if (fi) fi.value = '';
 
-  // Reset file input
-  const fi = document.getElementById('rte-file-input');
-  if (fi) fi.value = '';
-
-  // Đóng modal trước, insert sau (tránh focus conflict)
-  closeModal('rte-img-picker');
-  setTimeout(() => _rteDoInsert(url, name), 80);
+    // Đóng modal trước, insert sau
+    closeModal('rte-img-picker');
+    setTimeout(() => _rteDoInsert(url, name), 80);
+  } else {
+    setStatus('❌ Lỗi tải ảnh!');
+  }
 }
 
 function rteInsertImgFromUrl() {
@@ -5482,22 +5513,25 @@ async function cmsHandleDirectUpload(files, inputId) {
   const statusEl = document.createElement('div');
   statusEl.style.cssText = 'font-size:12px;color:#777;margin-top:6px';
   statusEl.id = 'direct-upload-status-' + inputId;
-  statusEl.textContent = '⏳ Đang tải ảnh lên...';
+  statusEl.textContent = '⏳ Đang nén ảnh...';
   
   const targetInput = document.getElementById(inputId);
   if(!document.getElementById(statusEl.id)) targetInput.parentNode.parentNode.appendChild(statusEl);
   
   const setStatus = msg => { const el = document.getElementById('direct-upload-status-' + inputId); if(el) el.textContent = msg; };
   
-  let url = await uploadToImgBB(file);
-  if (!url) {
-    url = await new Promise(res => {
-      const reader = new FileReader();
-      reader.onerror = () => res(null);
-      reader.onload = ev => compressImage(ev.target.result, file.name, res);
-      reader.readAsDataURL(file);
-    });
-  }
+  // 1. Nén ảnh trước khi upload
+  const compressedBlob = await new Promise(res => {
+    const reader = new FileReader();
+    reader.onerror = () => res(null);
+    reader.onload = ev => compressImage(ev.target.result, file.name, res, true);
+    reader.readAsDataURL(file);
+  });
+  
+  if (!compressedBlob) return setStatus('❌ Lỗi xử lý ảnh!');
+  
+  setStatus('⏳ Đang tải lên ImgBB...');
+  const url = await uploadToImgBB(compressedBlob, file.name);
   
   if (url) {
     targetInput.value = url;
@@ -5506,10 +5540,10 @@ async function cmsHandleDirectUpload(files, inputId) {
     setStatus('✅ Upload thành công!');
     setTimeout(() => { const el = document.getElementById('direct-upload-status-' + inputId); if(el) el.remove(); }, 3000);
     if (!data.images) data.images = [];
-    data.images.push({ url, name: file.name.replace(/\.[^.]+$/, ''), createdAt: Date.now(), size: file.size });
+    data.images.push({ url, name: file.name.replace(/\.[^.]+$/, ''), createdAt: Date.now(), size: compressedBlob.size });
     saveImages();
   } else {
-    setStatus('❌ Lỗi tải ảnh!');
+    setStatus('❌ Lỗi tải ảnh lên ImgBB!');
   }
 }
 
@@ -5533,20 +5567,32 @@ async function cmsHandleFiles(files) {
   let done = 0;
   for (const file of arr) {
     const imgName = file.name.replace(/\.[^.]+$/, '');
-    const mb = (file.size / 1024 / 1024).toFixed(1);
-    status.textContent = 'Đang upload ' + (done+1) + '/' + arr.length + ': ' + imgName + '...';
+    status.textContent = '⏳ Đang nén ' + (done+1) + '/' + arr.length + ': ' + imgName + '...';
 
-    // Upload: ImgBB trước → base64 fallback
-    let finalUrl = await uploadToImgBB(file);
+    // 1. Nén ảnh local trước
+    const compressedBlob = await new Promise(res => {
+      const reader = new FileReader();
+      reader.onerror = () => res(null);
+      reader.onload = ev => compressImage(ev.target.result, file.name, res, true);
+      reader.readAsDataURL(file);
+    });
 
-    // Fallback: base64 nén trong browser
+    if (!compressedBlob) {
+      status.textContent = '❌ Lỗi nén: ' + imgName;
+      done++; continue;
+    }
+
+    // 2. Upload blob đã nén lên ImgBB
+    status.textContent = '⏳ Đang upload ' + (done+1) + '/' + arr.length + ': ' + imgName + '...';
+    let finalUrl = await uploadToImgBB(compressedBlob, file.name);
+
+    // Fallback: Nếu ImgBB tèo, lưu tạm base64 đã nén (ít tốn chỗ hơn bản gốc)
     if (!finalUrl) {
-      status.textContent = (file.size > 1000000 ? 'Đang nén (' + mb + 'MB) ' : 'Đang xử lý ') + imgName + '...';
+      status.textContent = '⚠️ ImgBB lỗi, lưu tạm bản nén local...';
       finalUrl = await new Promise(res => {
         const reader = new FileReader();
-        reader.onerror = () => res(null);
-        reader.onload = ev => compressImage(ev.target.result, file.name, res);
-        reader.readAsDataURL(file);
+        reader.onload = ev => res(ev.target.result);
+        reader.readAsDataURL(compressedBlob);
       });
     }
 
@@ -5606,21 +5652,37 @@ function cmsAddImageUrl() {
   showToast('✅ Đã thêm ảnh từ URL');
 }
 
-function compressImage(dataUrl, filename, callback) {
-  // Ảnh nhỏ < 1MB — không cần nén, trả về ngay
-  if (dataUrl.length < 1300000) { callback(dataUrl, filename); return; }
+function compressImage(dataUrl, filename, callback, asBlob) {
+  // Hạ ngưỡng nén xuống 300KB để đảm bảo bài blog nhẹ và load nhanh
+  if (dataUrl.length < 400000) { 
+    if (asBlob) callback(dataURLToBlob(dataUrl), filename);
+    else callback(dataUrl, filename); 
+    return; 
+  }
   const img = new Image();
-  img.onerror = () => callback(dataUrl, filename); // decode lỗi → dùng gốc
+  img.onerror = () => {
+    if (asBlob) callback(dataURLToBlob(dataUrl), filename);
+    else callback(dataUrl, filename);
+  };
   img.onload = function() {
     try {
+      // Resize về tối đa 1200px (đủ nét cho màn hình 2K retina)
       const MAX = 1200;
       let w = img.width, h = img.height;
-      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      if (w > MAX || h > MAX) {
+         if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+         else { w = Math.round(w * MAX / h); h = MAX; }
+      }
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      callback(canvas.toDataURL('image/jpeg', 0.82), filename);
-    } catch(e) { callback(dataUrl, filename); }
+      const compressed = canvas.toDataURL('image/jpeg', 0.82);
+      if (asBlob) callback(dataURLToBlob(compressed), filename);
+      else callback(compressed, filename);
+    } catch(e) { 
+      if (asBlob) callback(dataURLToBlob(dataUrl), filename);
+      else callback(dataUrl, filename); 
+    }
   };
   img.src = dataUrl;
 }
