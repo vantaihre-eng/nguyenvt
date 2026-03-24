@@ -2893,7 +2893,7 @@ html, body {
       if (cfg.radius) css += ':root{--radius-md:'+cfg.radius+'px;--radius-sm:'+Math.max(2,cfg.radius-4)+'px;--radius-lg:'+Math.min(24,cfg.radius+8)+'px}';
       if (cfg.accent) css += ':root{--accent:'+cfg.accent+'!important;--accent-dark:'+cfg.accent+'!important}';
       if (cfg.filterbar === false) css += '.filter-bar{display:none!important}';
-      if (cfg.sidebar === false) css += '#sidebar{display:none!important}.main-wrap{grid-template-columns:1fr!important}';
+      if (cfg.sidebar === false) css += '#sidebar{display:none!important}.main-wrap{grid-template-columns:1fr!important}.main-wrap #main-content{max-width:850px;margin:0 auto;width:100%}';
       if (cfg.cardImg === false) css += '.post-image-wrap{display:none!important}';
       if (cfg.listLayout && cfg.listLayout !== 'list') css += '.posts-list{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))!important;gap:20px;display:grid!important}';
       css += '.skeleton{animation:none!important;background:none!important;color:inherit!important}';
@@ -7754,7 +7754,7 @@ function applyTheme(cfg) {
     /* Visibility Overrides */
     ${cfg.showProgress === false ? '#reading-progress { display:none!important; }' : ''}
     ${cfg.showShare === false ? '.post-share { display:none!important; }' : ''}
-    ${cfg.showSidebar === false ? '#post-detail-sidebar { display:none!important; }' : ''}
+    ${cfg.showSidebar === false ? '#post-detail-sidebar { display:none!important; } .post-detail-wrap { grid-template-columns: 1fr!important; gap: 0!important; } #post-detail-content { max-width: 850px; margin: 0 auto; width: 100%; }' : ''}
     ${cfg.showRelated === false ? '.related-posts { display:none!important; }' : ''}
     ${cfg.showCover === false ? '.post-cover-img { display:none!important; }' : ''}
   `;
