@@ -490,6 +490,39 @@ function initFirebase() {
     .hero h1 { font-size: 26px; }
   }
 
+  /* ── CATEGORY HEADER ── */
+  #category-header {
+    display: none;
+    max-width: 1160px;
+    margin: 40px auto 10px;
+    padding: 0 24px;
+    animation: fadeSlideIn 0.4s ease;
+  }
+  #category-header h1 {
+    font-family: var(--heading-font);
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--dark);
+    line-height: 1.2;
+    position: relative;
+    padding-bottom: 20px;
+  }
+  #category-header h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  #category-header p {
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 12px;
+  }
+
   /* ── MAIN LAYOUT ── */
   .main-wrap {
     max-width: 1160px;
@@ -3071,6 +3104,12 @@ html, body {
     </div>
   </section>
 
+  <!-- Category Header (shown on category pages) -->
+  <div id="category-header">
+    <h1 id="category-title">Chuyên mục</h1>
+    <p id="category-desc">Những bài viết trong chuyên mục này.</p>
+  </div>
+
   <!-- Main Layout -->
   <div class="main-wrap reveal-section stagger-3">
     <main>
@@ -4567,6 +4606,23 @@ function renderPosts() {
   const container = document.getElementById('posts-list');
   if (!container) return;
 
+  // Category Header Logic
+  const catHeader = document.getElementById('category-header');
+  const catTitle = document.getElementById('category-title');
+  const catDesc = document.getElementById('category-desc');
+  if (catHeader) {
+    if (currentCategory === 'all') {
+      catHeader.style.display = 'none';
+    } else {
+      catHeader.style.display = 'block';
+      if (catTitle) catTitle.textContent = currentCategory;
+      if (catDesc) {
+        const catObj = (data.categories || []).find(c => c.name === currentCategory);
+        catDesc.textContent = (catObj && catObj.description) ? catObj.description : `Những bài viết mới nhất trong chuyên mục ${currentCategory}.`;
+      }
+    }
+  }
+
   const priorityIds = data.settings.priorityPostIds || [];
   let posts = currentCategory === 'all' 
     ? data.posts 
@@ -4666,7 +4722,13 @@ function renderHero() {
   const hero = document.getElementById('hero-section');
   if (!hero) return;
   
-  if (heroSlideInterval) { clearInterval(heroSlideInterval); heroSlideInterval = null; }
+  // Only show hero on the main "all" view
+  if (currentCategory !== 'all') {
+    hero.style.display = 'none';
+    if (heroSlideInterval) { clearInterval(heroSlideInterval); heroSlideInterval = null; }
+    return;
+  }
+  hero.style.display = 'block';
 
   let heroPosts = [];
   if (data.settings.sliderPostIds && data.settings.sliderPostIds.length > 0) {
@@ -4767,7 +4829,7 @@ function renderHero() {
   }
 }
 
-function renderSidebar(containerId, currentIdx) {
+function renderSidebar(containerId, currentIdx, isStaticPage) {
   containerId = containerId || 'sidebar';
   const sidebar = document.getElementById(containerId);
   if (!sidebar) return;
@@ -4777,13 +4839,13 @@ function renderSidebar(containerId, currentIdx) {
     const mw = document.querySelector('.main-wrap');
     // 1. Layout tổng tắt sidebar
     const layoutCfg = getLayout();
-    if (layoutCfg.sidebar === false) {
+    if (layoutCfg.sidebar === false && !isStaticPage) {
       sidebar.style.display = 'none';
       if (mw) mw.classList.add('sidebar-hidden');
       return;
     }
     // 2. Trang chủ: ẩn sidebar nếu sidebarVisibleHome === false
-    if (currentCategory === 'all' && !getSidebarVisibleHome()) {
+    if (currentCategory === 'all' && !getSidebarVisibleHome() && !isStaticPage) {
       sidebar.style.display = 'none';
       if (mw) mw.classList.add('sidebar-hidden');
       return;
@@ -4791,10 +4853,18 @@ function renderSidebar(containerId, currentIdx) {
     // 3. Hiện sidebar
     sidebar.style.display = '';
     if (mw) mw.classList.remove('sidebar-hidden');
+  } else if (containerId === 'post-detail-sidebar') {
+    // Luôn hiện sidebar ở trang chi tiết/trang tĩnh
+    sidebar.style.display = 'block';
   }
 
-  // Đọc widgets từ localStorage (đáng tin cậy hơn data.settings)
-  const widgets = getSidebarWidgets().filter(w => w.visible !== false).map(w => w.key);
+  // Đọc widgets. Nếu là trang tĩnh, ép buộc thêm 'about', 'categories', 'recent'
+  let widgets = getSidebarWidgets().filter(w => w.visible !== false).map(w => w.key);
+  if (isStaticPage) {
+    if (!widgets.includes('about')) widgets.unshift('about');
+    if (!widgets.includes('categories')) widgets.push('categories');
+    if (!widgets.includes('recent')) widgets.push('recent');
+  }
   let html = '';
 
   widgets.forEach(section => {
@@ -5031,7 +5101,10 @@ function filterCat(cat, elem, e) {
   // Update active state
   document.querySelectorAll('nav a, .filter-btn').forEach(a => a.classList.remove('active'));
   if (elem) elem.classList.add('active');
+  renderHero();
   renderPosts();
+  // Ensure sections are revealed
+  document.querySelectorAll('.reveal-section').forEach(sec => sec.classList.add('revealed'));
   // Push history
   if (!window._routerRestoring) {
     let url = '/';
@@ -6442,7 +6515,7 @@ function openPage(slug) {
     <h1 class="post-detail-title" style="margin-top:${pg.image?'24px':'8px'}">${escHtml(pg.title)}</h1>
     <div class="post-detail-body" style="margin-top:24px">${pg.content || ''}</div>
   `;
-  renderSidebar('post-detail-sidebar');
+  renderSidebar('post-detail-sidebar', -1, true);
   document.getElementById('blog-home').style.display = 'none';
   document.getElementById('post-detail-page').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
