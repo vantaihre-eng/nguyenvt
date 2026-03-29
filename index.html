@@ -2152,6 +2152,23 @@ function initFirebase() {
     font-size: 11px; font-weight: 700; letter-spacing: 1px;
     text-transform: uppercase; margin-bottom: 16px;
   }
+  /* Elephant Animations */
+  @keyframes e-jump  { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-14px)} 60%{transform:translateY(-8px)} }
+  @keyframes e-trunk { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(-20deg)} 60%{transform:rotate(15deg)} 80%{transform:rotate(-10deg)} }
+  @keyframes e-tail  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(25deg)} }
+  @keyframes e-blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.1)} }
+
+  #global-loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(255,255,255,0.95);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); transition: opacity .3s;
+  }
+  #global-loader .e-body  { animation: e-jump 0.6s ease-in-out infinite; transform-origin: 74px 60px; }
+  #global-loader .e-trunk { animation: e-trunk 0.5s ease-in-out infinite; transform-origin: 126px 64px; }
+  #global-loader .e-tail  { animation: e-tail 0.7s ease-in-out infinite; transform-origin: 38px 62px; }
+  #global-loader .e-eye   { animation: e-blink 2.5s ease-in-out infinite; transform-origin: 118px 43px; }
+
   .post-detail-title {
     font-family: var(--heading-font);
     font-size: clamp(24px, 5vw, 42px);
@@ -4670,6 +4687,22 @@ async function deleteLandingPage(id) {
   if (_fbReady && _db) { try { await _db.collection('landingPages').doc(id).delete(); } catch(e) {} }
 }
 
+/* ── Global Loader Functions ── */
+function showLoader() {
+  const el = document.getElementById('global-loader');
+  if (el) {
+    el.style.display = 'flex';
+    setTimeout(() => { el.style.opacity = '1'; }, 10);
+  }
+}
+function hideLoader() {
+  const el = document.getElementById('global-loader');
+  if (el) {
+    el.style.opacity = '0';
+    setTimeout(() => { if (el.style.opacity === '0') el.style.display = 'none'; }, 300);
+  }
+}
+
 /* ══════════════════════════════════════════════
    RENDERING
 ══════════════════════════════════════════════ */
@@ -6514,22 +6547,17 @@ function _waitForPost(slug) {
 }
 
 function _openBySlug(slug) {
-  console.log('[Router] _openBySlug:', slug, '| LPs full:', JSON.stringify((window.landingPages||[]).map(p=>({id:p.id,slug:p.slug,status:p.status,title:p.title}))));
+  console.log('[Router] _openBySlug:', slug);
   if (!slug) { _showHome('all'); return; }
-  // Tìm LP theo slug, nếu không có thì tìm theo id (fallback cho LP cũ dùng ID làm slug)
-  const lp = (window.landingPages || []).find(p =>
-    (p.slug === slug || p.id === slug) && p.status === 'published'
-  );
+  
+  const lp = (window.landingPages || []).find(p => (p.slug === slug || p.id === slug) && p.status === 'published');
   if (lp) { openLandingPage(lp.slug || lp.id); return; }
+  
   const pg = (data.pages || []).find(p => p.slug === slug);
   if (pg) { openPage(slug); return; }
 
-  // Nếu Firebase đã load xong → 404 ngay
-  if (window._fbFullyLoaded) {
-    show404(slug);
-    return;
-  }
-  // Firebase chưa xong → đợi (tối đa 5 giây)
+  // Not found in cache, show loader and wait for Firebase
+  showLoader();
   let waited = 0;
   const iv = setInterval(() => {
     waited += 200;
@@ -6539,6 +6567,7 @@ function _openBySlug(slug) {
     if (pg2) { clearInterval(iv); openPage(slug); return; }
     if (window._fbFullyLoaded || waited >= 5000) {
       clearInterval(iv);
+      hideLoader();
       show404(slug);
     }
   }, 200);
@@ -6628,11 +6657,17 @@ function show404Close() {
 }
 
 function openPage(slug, fromCms) {
-  // Nếu gọi từ CMS (preview), không đụng vào lịch sử trình duyệt
-  if (fromCms) {
-    const pg = (data.pages || []).find(p => p.slug === slug);
-    if (!pg) return showToast('Không tìm thấy trang', true);
-    const content = document.getElementById('post-detail-content');
+  const pg = (data.pages || []).find(p => p.slug === slug);
+  if (!pg) {
+    hideLoader();
+    return showToast('Không tìm thấy trang', true);
+  }
+
+  const content = document.getElementById('post-detail-content');
+  content.innerHTML = ''; // Clear old content immediately
+  
+  // Re-use post detail page as page viewer
+  setTimeout(() => {
     content.innerHTML = `
       ${pg.image ? `<img class="post-detail-img" src="${pg.image}" alt="${escHtml(pg.title)}" loading="lazy">` : ''}
       <h1 class="post-detail-title">${escHtml(pg.title)}</h1>
@@ -6642,32 +6677,16 @@ function openPage(slug, fromCms) {
     renderSidebar('post-detail-sidebar', -1, true);
     document.getElementById('blog-home').style.display = 'none';
     document.getElementById('post-detail-page').style.display = 'block';
-    document.getElementById('cms-page').classList.remove('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    return;
-  }
-
-  const pg = (data.pages || []).find(p => p.slug === slug);
-  if (!pg) return showToast('Không tìm thấy trang', true);
-
-  // Re-use post detail page as page viewer
-  const content = document.getElementById('post-detail-content');
-  content.innerHTML = `
-    ${pg.image ? `<img class="post-detail-img" src="${pg.image}" alt="${escHtml(pg.title)}" loading="lazy">` : ''}
-    <h1 class="post-detail-title">${escHtml(pg.title)}</h1>
-    <div class="post-detail-body">${pg.content || ''}</div>
-  `;
-  document.body.classList.add('page-view');
-  renderSidebar('post-detail-sidebar', -1, true);
-  document.getElementById('blog-home').style.display = 'none';
-  document.getElementById('post-detail-page').style.display = 'block';
-  document.getElementById('lp-viewer-page').style.display = 'none';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  document.title = pg.title + ' – ' + data.settings.sitename;
-  // URL: /ten-page (không có /page/ prefix)
-  if (!window._routerRestoring) {
-    try { history.pushState({ view: 'page', slug: slug }, '', '/' + slug); } catch(e) {}
-  }
+    document.getElementById('lp-viewer-page').style.display = 'none';
+    if (fromCms) document.getElementById('cms-page').classList.remove('active');
+    
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    document.title = pg.title + ' – ' + data.settings.sitename;
+    if (!window._routerRestoring && !fromCms) {
+      try { history.pushState({ view: 'page', slug: slug }, '', '/' + slug); } catch(e) {}
+    }
+    hideLoader();
+  }, 50);
 }
 
 /* ── Layout ── */
@@ -7975,32 +7994,41 @@ ${bodyHTML}
 
 // ── Frontend viewer ──
 function openLandingPage(slug) {
-  console.log('[LP] openLandingPage:', slug, '| LPs:', (window.landingPages||[]).map(p=>p.slug+':'+p.status+':id='+p.id));
   // Tìm LP: published cho visitor, cả draft nếu đang trong CMS
   const isInCms = document.getElementById('cms-page')?.classList.contains('active');
-  const lp = landingPages.find(p => (p.slug === slug || p.id === slug) && (p.status === 'published' || isInCms));
+  const lp = (window.landingPages || []).find(p => (p.slug === slug || p.id === slug) && (p.status === 'published' || isInCms));
+  
   if (!lp) {
+    hideLoader();
     if (window._fbFullyLoaded) {
-      show404(slug); // Firebase đã load, LP thực sự không tồn tại
+      show404(slug);
     } else {
-      // Firebase chưa load xong, có thể LP chưa có trong bộ nhớ
-      _openBySlug(slug); // delegate về _openBySlug để retry
+      _openBySlug(slug);
     }
     return;
   }
-  document.getElementById('blog-home').style.display = 'none';
-  document.getElementById('post-detail-page').style.display = 'none';
-  document.getElementById('lp-viewer-page').style.display = 'block';
-  document.getElementById('footer').style.display = '';
-  document.getElementById('lp-viewer-content').innerHTML = (lp.blocks || []).map(b => lpbBlockHTML(b)).join('');
-  // Fix inline padding for mobile
-  if (typeof fixLpMobilePadding === 'function') setTimeout(fixLpMobilePadding, 20);
-  window.scrollTo(0, 0);
-  document.title = lp.title + ' – ' + (data.settings.sitename || '');
-  document.getElementById('main-nav').querySelectorAll('a').forEach(a => a.classList.remove('active'));
-  if (!window._routerRestoring) {
-    try { history.pushState({ view: 'lp', slug: slug }, '', '/' + slug); } catch(e) {}
-  }
+
+  const pgViewer = document.getElementById('lp-viewer-page');
+  const pgContent = document.getElementById('lp-viewer-content');
+  if (pgContent) pgContent.innerHTML = '';
+
+  setTimeout(() => {
+    document.getElementById('blog-home').style.display = 'none';
+    document.getElementById('post-detail-page').style.display = 'none';
+    pgViewer.style.display = 'block';
+    document.getElementById('footer').style.display = '';
+    if (pgContent) pgContent.innerHTML = (lp.blocks || []).map(b => lpbBlockHTML(b)).join('');
+    
+    if (typeof fixLpMobilePadding === 'function') setTimeout(fixLpMobilePadding, 20);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    document.title = lp.title + ' – ' + (data.settings.sitename || '');
+    document.getElementById('main-nav')?.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+    
+    if (!window._routerRestoring) {
+      try { history.pushState({ view: 'lp', slug: slug }, '', '/' + slug); } catch(e) {}
+    }
+    hideLoader();
+  }, 100);
 }
 
 // ── Hook into cmsNav — extend for landing pages ──
@@ -8364,96 +8392,82 @@ function readTime(text) {
 
 function openPost(idx) {
   const post = data.posts[idx];
-  if (!post) return;
-
-  // Track view
-  trackView(idx);
-  const views = getViews();
-  const vc = views[String(idx)] || 1;
-
-  // Reactions
-  const allReact = getReactions();
-  const react = allReact[idx] || { helpful: 0, voted: false };
-
-  const s = data.settings;
-  const rt = readTime(post.content || post.excerpt || '');
-  const pageUrl = encodeURIComponent(window.location.href);
-  const pageTitle = encodeURIComponent(post.title);
-
-  // Related posts (same category, exclude current)
-  const related = data.posts
-    .map(function(p, i) { return Object.assign({}, p, { _idx: i }); })
-    .filter(p => p._idx !== idx && p.category === post.category)
-    .slice(0, 4);
-
-  const content = document.getElementById('post-detail-content');
-  content.innerHTML = `
-    ${post.image
-      ? `<img class="post-detail-img" src="${escHtml(post.image)}" alt="${escHtml(post.title)}">`
-      : `<div class="post-detail-img-ph">${getCatEmoji(post.category)}</div>`
-    }
-
-    <h1 class="post-detail-title">${escHtml(post.title)}</h1>
-    <div class="post-detail-meta">
-      <span style="font-weight:700; color:var(--accent); text-transform:uppercase;">${escHtml(post.category)}</span>
-      <span class="dot"></span>
-      <span>${formatDate(post.date)}</span>
-      <span class="dot"></span>
-      <span class="read-time-badge">${rt} phút đọc</span>
-      <span class="dot"></span>
-      <span>${fmtViews(vc)} lượt đọc</span>
-    </div>
-
-    <div class="post-detail-body">${post.content || '<p>' + escHtml(post.excerpt || '') + '</p>'}</div>
-
-    <!-- Reaction bar -->
-    <div class="reaction-bar" id="reaction-bar-${idx}">
-      <span class="reaction-label">Bài viết này có hữu ích không?</span>
-      <button class="reaction-btn ${react.voted ? 'reacted' : ''}"
-        onclick="voteHelpful(${idx})" ${react.voted ? 'disabled' : ''}>
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;margin-top:-2px"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg> Hữu ích${react.helpful > 0 ? ' (' + react.helpful + ')' : ''}
-      </button>
-      ${react.voted ? '<span style="font-size:12px;color:var(--muted)">Cảm ơn bạn!</span>' : ''}
-    </div>
-
-    <!-- Share bar -->
-    <div class="share-bar">
-      <span class="share-label">Chia sẻ:</span>
-      <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=${pageUrl}" target="_blank">
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;margin-top:-2px"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg> Facebook
-      </a>
-      <button class="share-btn" onclick="copyLink(this)"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;margin-top:-2px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Copy link</button>
-    </div>
-
-    ${related.length ? `
-    <div class="related-posts">
-      <h3>Bài viết liên quan</h3>
-      <div class="related-grid">
-        ${related.map(p => `
-          <div class="related-card" onclick="openPost(${p._idx})">
-            <div class="related-cat">${escHtml(p.category)}</div>
-            <div class="related-title">${escHtml(p.title)}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>` : ''}
-  `;
-
-  // Render sidebar for post detail
-  document.body.classList.add('page-view');
-  renderSidebar('post-detail-sidebar', idx);
-
-  // Show post detail page
-  document.getElementById('blog-home').style.display = 'none';
-  document.getElementById('post-detail-page').style.display = 'block';
-  const _rp = document.getElementById('reading-progress'); if(_rp) _rp.style.width = '0%';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  const postUrl = window.location.origin + '/bai-viet/' + (post.slug || String(idx));
-  updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: postUrl, type: 'article', author: data.settings.author, date: post.date, modified: post.updatedAt || post.date });
-  if (!window._routerRestoring) {
-    const slug = post.slug || String(idx);
-    try { history.pushState({ view: 'post', idx: idx, slug: slug }, '', '/bai-viet/' + slug); } catch(e) {}
+  if (!post) {
+    hideLoader();
+    return;
   }
+  
+  const content = document.getElementById('post-detail-content');
+  if (content) content.innerHTML = ''; // Xoá trắng ngay để tránh giật
+
+  setTimeout(() => {
+    trackView(idx);
+    const views = getViews();
+    const vc = views[String(idx)] || 1;
+    const allReact = getReactions();
+    const react = allReact[idx] || { helpful: 0, voted: false };
+    const s = data.settings;
+    const rt = readTime(post.content || post.excerpt || '');
+    const pageUrl = encodeURIComponent(window.location.href);
+
+    const related = data.posts
+      .map(function(p, i) { return Object.assign({}, p, { _idx: i }); })
+      .filter(p => p._idx !== idx && p.category === post.category)
+      .slice(0, 4);
+
+    content.innerHTML = `
+      ${post.image ? `<img class="post-detail-img" src="${escHtml(post.image)}" alt="${escHtml(post.title)}">` : `<div class="post-detail-img-ph">${getCatEmoji(post.category)}</div>`}
+      <h1 class="post-detail-title">${escHtml(post.title)}</h1>
+      <div class="post-detail-meta">
+        <span style="font-weight:700; color:var(--accent); text-transform:uppercase;">${escHtml(post.category)}</span>
+        <span class="dot"></span>
+        <span>${formatDate(post.date)}</span>
+        <span class="dot"></span>
+        <span class="read-time-badge">${rt} phút đọc</span>
+        <span class="dot"></span>
+        <span>${fmtViews(vc)} lượt đọc</span>
+      </div>
+      <div class="post-detail-body">${post.content || '<p>' + escHtml(post.excerpt || '') + '</p>'}</div>
+      <div class="reaction-bar" id="reaction-bar-${idx}">
+        <span class="reaction-label">Bài viết này có hữu ích không?</span>
+        <button class="reaction-btn ${react.voted ? 'reacted' : ''}" onclick="voteHelpful(${idx})" ${react.voted ? 'disabled' : ''}>
+          Hữu ích${react.helpful > 0 ? ' (' + react.helpful + ')' : ''}
+        </button>
+      </div>
+      <div class="share-bar">
+        <span class="share-label">Chia sẻ:</span>
+        <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=${pageUrl}" target="_blank">Facebook</a>
+        <button class="share-btn" onclick="copyLink(this)">Copy link</button>
+      </div>
+      ${related.length ? `
+      <div class="related-posts">
+        <h3>Bài viết liên quan</h3>
+        <div class="related-grid">
+          ${related.map(p => `
+            <div class="related-card" onclick="openPost(${p._idx})">
+              <div class="related-cat">${escHtml(p.category)}</div>
+              <div class="related-title">${escHtml(p.title)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+    `;
+
+    document.body.classList.add('page-view');
+    renderSidebar('post-detail-sidebar', idx);
+    document.getElementById('blog-home').style.display = 'none';
+    document.getElementById('post-detail-page').style.display = 'block';
+    const _rp = document.getElementById('reading-progress'); if(_rp) _rp.style.width = '0%';
+    
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    document.title = post.title + ' – ' + data.settings.sitename;
+    if (!window._routerRestoring) {
+      const slug = post.slug || String(idx);
+      try { history.pushState({ view: 'post', idx: idx, slug: slug }, '', '/bai-viet/' + slug); } catch(e) {}
+    }
+    updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: window.location.origin + '/bai-viet/' + (post.slug || idx), type: 'article', author: data.settings.author, date: post.date });
+    hideLoader();
+  }, 100);
 }
 
 function voteHelpful(idx) {
@@ -9160,6 +9174,31 @@ init();
     <button onclick="cmsLogin()" style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer">Đăng nhập →</button>
     <div id="cms-login-err" style="display:none;color:#f87171;font-size:13px;text-align:center;margin-top:12px">Mật khẩu không đúng</div>
     <button onclick="_hideLoginModal()" style="display:block;margin:16px auto 0;background:none;border:none;color:#666;font-size:12px;cursor:pointer">Huỷ</button>
+  </div>
+</div>
+<!-- Global Elephant Loader -->
+<div id="global-loader">
+  <div style="text-align:center">
+    <svg viewBox="0 0 170 140" xmlns="http://www.w3.org/2000/svg" style="width:160px;height:140px;overflow:visible">
+      <g class="e-tail"><path d="M38 62 Q26 50 28 38 Q29 30 24 26" stroke="#7a6fa8" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="24" cy="25" r="4" fill="#9b8ec4"/></g>
+      <g class="e-body">
+        <path d="M38 56 Q35 44 46 38 Q61 30 80 32 Q98 34 106 44 Q114 54 110 66 Q106 78 91 82 Q70 86 52 82 Q37 78 38 68 Z" fill="#7a6fa8"/>
+        <ellipse cx="73" cy="68" rx="24" ry="11" fill="#a89fd4" opacity="0.5"/>
+        <ellipse cx="108" cy="50" rx="22" ry="20" fill="#7a6fa8"/>
+        <path d="M120 34 Q140 24 144 38 Q148 52 140 60 Q132 66 122 60 Q116 54 118 44 Z" fill="#9b8ec4"/>
+        <path d="M122 38 Q136 30 138 40 Q140 50 134 56 Q128 60 122 54 Q120 48 121 42 Z" fill="#e8c5d0"/>
+        <g class="e-eye"><circle cx="118" cy="43" r="7" fill="#fff" stroke="#2a1a5e" stroke-width="1.5"/><circle cx="119" cy="44" r="4" fill="#2a1a5e"/><circle cx="120.5" cy="42.5" r="1.5" fill="#fff"/></g>
+        <path d="M112 35 Q117 30 123 32" stroke="#2a1a5e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M111 58 Q118 65 125 61" stroke="#2a1a5e" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="118" cy="62" rx="5" ry="3.5" fill="#e8a0a0" opacity="0.8"/>
+        <rect x="44" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect x="63" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect x="82" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect x="98" y="78" width="16" height="26" rx="7" fill="#6b5e96"/>
+      </g>
+      <g class="e-trunk"><path d="M126 64 Q136 60 138 50 Q140 42 134 40" stroke="#7a6fa8" stroke-width="11" fill="none" stroke-linecap="round"/><path d="M126 64 Q136 60 138 50 Q140 42 134 40" stroke="#a89fd4" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+    </svg>
+    <div style="margin-top:20px;font-size:13px;font-weight:700;color:#7a6fa8;letter-spacing:1px;text-transform:uppercase">Đang tải...</div>
   </div>
 </div>
 </body>
