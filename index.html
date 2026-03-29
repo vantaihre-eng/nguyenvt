@@ -818,6 +818,8 @@ function initFirebase() {
     max-width: 900px;
     margin: 40px auto 48px;
     padding: 0 24px;
+    position: relative;
+    z-index: 2;
   }
   .post-detail-cat {
     display: inline-block;
@@ -825,7 +827,7 @@ function initFirebase() {
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     margin-bottom: 16px;
   }
   .post-detail-title {
@@ -1018,13 +1020,18 @@ function initFirebase() {
     .sidebar { display: none; }
 
     /* Post detail — phungthaihoc.com reading view */
-    /* post-detail: single 16px side padding on wrap, nothing else adds horizontal padding */
     .post-detail-wrap { padding: 0 16px 56px; gap: 0; }
-    .post-detail-content { padding: 0; }
+    .post-detail-content { padding: 0; position: relative; }
     .post-detail-back { display: none; }
-    .post-detail-cat { padding: 16px 0 0; }
-    .post-detail-title { font-size: 22px; line-height: 1.32; padding: 8px 0 0; }
-    .post-detail-meta { font-size: 11px; gap: 6px; margin: 12px 0 0; padding-bottom: 16px; }
+    .post-detail-header {
+      text-align: left;
+      padding: 24px 0;
+      margin: 0;
+      max-width: none;
+    }
+    .post-detail-cat { padding: 0; margin-bottom: 8px; }
+    .post-detail-title { font-size: 22px; line-height: 1.32; padding: 0; margin-bottom: 12px; text-align: left; }
+    .post-detail-meta { font-size: 11px; gap: 6px; margin: 0; padding: 0; justify-content: flex-start; }
     .post-detail-meta .dot { display: block; }
     /* Full-bleed: break out of the 16px wrap padding */
     .post-detail-img {
@@ -9035,10 +9042,7 @@ function applyMobileCfg(cfg) {
     });
   }
 
-  // ── Hero on mobile ──
-  if (cfg.heroMobile === false) {
-    css += '@media(max-width:640px){#hero-section{display:none!important}}';
-  }
+  // ── Hero on mobile ── (Shown by default as requested)
 
   // ── Sticky header ──
   if (cfg.stickyHeader === false) {

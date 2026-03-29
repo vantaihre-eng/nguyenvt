@@ -1791,10 +1791,16 @@ function cmsRenderPagesList() {
   </table>`;
 }
 
-function cmsDeletePage(idx) {
+async function cmsDeletePage(idx) {
   if (!confirm('Xóa trang này?')) return;
+  const pg = data.pages[idx];
+  // Xóa khỏi Firebase trước
+  if (pg && pg._id && _fbReady && _db) {
+    try { await _db.collection('pages').doc(pg._id).delete(); } catch(e) { console.error('Delete page Firebase error:', e); }
+  }
   data.pages.splice(idx, 1);
-  saveData(data);
+  // Cập nhật localStorage
+  try { const o = Object.assign({}, data); delete o.images; localStorage.setItem('taipulme_data', JSON.stringify(o)); } catch(e) {}
   renderNav();
   cmsRenderPagesList();
   showToast('Đã xóa trang');
@@ -3498,13 +3504,21 @@ function searchTag(tag, e) {
 const VIEWS_KEY = 'taipulme_views';
 const REACT_KEY = 'taipulme_reactions';
 
-function getViews() { try { return JSON.parse(localStorage.getItem(VIEWS_KEY) || '{}'); } catch(e) { return {}; } }
-function saveViews(v) { localStorage.setItem(VIEWS_KEY, JSON.stringify(v)); }
+function getViews() { return {}; }
+function saveViews(v) { }
 function trackView(idx) {
-  const id = String(idx);
-  const v = getViews(); v[id] = (v[id] || 0) + 1; saveViews(v);
+  const post = data.posts[idx];
+  if (!post || !post._id) return;
+  if (_db && _fbReady) {
+    _db.collection('posts').doc(post._id).update({
+      views: firebase.firestore.FieldValue.increment(1)
+    }).catch(e => console.warn('Track view error:', e));
+  }
 }
-function fmtViews(n) { return n >= 1000 ? (n/1000).toFixed(1).replace('.0','') + 'k' : String(n); }
+function fmtViews(n) { 
+  if (!n) return '0';
+  return n >= 1000 ? (n/1000).toFixed(1).replace('.0','') + 'k' : String(n); 
+}
 function getReactions() { try { return JSON.parse(localStorage.getItem(REACT_KEY) || '{}'); } catch(e) { return {}; } }
 function saveReactions(v) { localStorage.setItem(REACT_KEY, JSON.stringify(v)); }
 
@@ -3519,13 +3533,11 @@ function openPost(idx) {
 
   // Track view
   trackView(idx);
-  const views = getViews();
-  const vc = views[String(idx)] || 1;
+  const vc = (post.views || 0) + 1; // +1 to show current session view immediately
 
-  // Reactions
+  // Reactions & detail info
   const allReact = getReactions();
   const react = allReact[idx] || { helpful: 0, voted: false };
-
   const s = data.settings;
   const rt = readTime(post.content || post.excerpt || '');
   const pageUrl = encodeURIComponent(window.location.href);
@@ -3542,25 +3554,28 @@ function openPost(idx) {
     <button class="post-detail-back" onclick="goBack()">
       ← Quay lại
     </button>
-    <div class="post-detail-cat">${escHtml(post.category)}</div>
-    <h1 class="post-detail-title">${escHtml(post.title)}</h1>
-    <div class="post-detail-meta">
-      <strong>${escHtml(s.author)}</strong>
-      <span class="dot"></span>
-      <span>${formatDate(post.date)}</span>
-      <span class="dot"></span>
-      <span class="read-time-badge"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;margin-top:-2px"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${rt} phút đọc</span>
-      <span class="dot"></span>
-      <span class="view-count-badge">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        ${fmtViews(vc)} lượt đọc
-      </span>
-    </div>
-
+    
     ${post.image
       ? `<img class="post-detail-img" src="${escHtml(post.image)}" alt="${escHtml(post.title)}">`
       : `<div class="post-detail-img-ph">${getCatEmoji(post.category)}</div>`
     }
+
+    <div class="post-detail-header">
+      <div class="post-detail-cat">${escHtml(post.category)}</div>
+      <h1 class="post-detail-title">${escHtml(post.title)}</h1>
+      <div class="post-detail-meta">
+        <strong>${escHtml(s.author)}</strong>
+        <span class="dot"></span>
+        <span>${formatDate(post.date)}</span>
+        <span class="dot"></span>
+        <span class="read-time-badge"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;margin-top:-2px"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${rt} phút đọc</span>
+        <span class="dot"></span>
+        <span class="view-count-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          ${fmtViews(vc)} lượt đọc
+        </span>
+      </div>
+    </div>
 
     <div class="post-detail-body">${post.content || '<p>' + escHtml(post.excerpt || '') + '</p>'}</div>
 
@@ -4042,10 +4057,7 @@ function applyMobileCfg(cfg) {
     });
   }
 
-  // ── Hero on mobile ──
-  if (cfg.heroMobile === false) {
-    css += '@media(max-width:640px){#hero-section{display:none!important}}';
-  }
+  // ── Hero on mobile ── (Shown by default as requested)
 
   // ── Sticky header ──
   if (cfg.stickyHeader === false) {
