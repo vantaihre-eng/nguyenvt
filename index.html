@@ -2109,8 +2109,13 @@ function initFirebase() {
   .stagger-4 { transition-delay: 0.55s; }
   .post-detail-wrap {
     max-width: 1160px; margin: 0 auto;
-    padding: 40px 24px 80px;
+    padding: 20px 24px 80px;
     display: grid; grid-template-columns: 1fr 300px; gap: 48px;
+    align-items: start;
+  }
+  /* Sidebar starts level with content top */
+  #post-detail-sidebar {
+    position: sticky; top: 80px;
   }
   /* Trang tĩnh (Ve toi, Giới thiệu...): sidebar luôn hiện, bất kể cài blog đặt tắt */
   body.page-view #post-detail-sidebar {
@@ -2127,34 +2132,54 @@ function initFirebase() {
   .post-detail-back {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 13px; font-weight: 600; color: var(--muted);
-    cursor: pointer; margin-bottom: 24px;
+    cursor: pointer; margin-bottom: 20px;
     background: none; border: none; font-family: var(--body-font);
     transition: color .15s; padding: 0;
   }
   .post-detail-back:hover { color: var(--accent); }
+  
+  /* Hero image and title order */
+  .post-detail-img {
+    width: 100%; max-height: 520px; object-fit: cover;
+    border-radius: 12px; margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  }
   .post-detail-cat {
-    font-size: 10px; font-weight: 700; letter-spacing: 1.8px;
-    text-transform: uppercase; color: var(--accent); margin-bottom: 14px;
+    display: inline-block;
+    background: var(--accent); color: #fff;
+    padding: 4px 12px; border-radius: 4px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 16px;
   }
   .post-detail-title {
     font-family: var(--heading-font);
-    font-size: clamp(22px, 4vw, 36px);
-    font-weight: 900; line-height: 1.28;
-    margin-bottom: 20px; color: var(--dark);
+    font-size: clamp(24px, 5vw, 42px);
+    font-weight: 900; line-height: 1.2;
+    margin-bottom: 16px; color: var(--dark);
     word-break: break-word; overflow-wrap: break-word;
   }
   .post-detail-meta {
     display: flex; align-items: center; gap: 12px;
-    font-size: 13px; color: var(--muted);
-    margin-bottom: 32px; flex-wrap: wrap;
-    padding-bottom: 20px; border-bottom: 1px solid var(--border);
+    font-size: 13.5px; color: var(--muted);
+    margin-bottom: 40px; flex-wrap: wrap;
+    padding-bottom: 0; border-bottom: none;
   }
-  .post-detail-meta strong { color: var(--dark); }
-  .post-detail-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #ddd; }
-  .post-detail-img {
-    width: 100%; max-height: 460px; object-fit: cover;
-    border-radius: 8px; margin-bottom: 36px;
-    box-shadow: 0 4px 20px rgba(0,0,0,.1);
+  .post-detail-meta strong { color: var(--dark); font-weight: 700; }
+  
+  /* Sidebar design: White widgets */
+  .sidebar-section {
+    background: #fff !important;
+    border: 1px solid #eee !important;
+    border-radius: 12px !important;
+    padding: 24px !important;
+    margin-bottom: 24px !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03) !important;
+  }
+  .sidebar-section h3 {
+    font-size: 16px; font-weight: 800; color: var(--dark);
+    margin-bottom: 20px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
   }
   .post-detail-img-ph {
     width: 100%; height: 280px; border-radius: 8px;
@@ -4882,11 +4907,14 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     sidebar.style.display = 'block';
   }
 
-  // Đọc widgets. Nếu là trang tĩnh, ép buộc thêm 'about', 'featured', 'categories', 'recent'
-  let widgets = getSidebarWidgets().filter(w => w.visible !== false).map(w => w.key);
+  // Đọc widgets. Nếu là trang tĩnh, ép buộc thứ tự/danh sách cố định: about, featured, categories, recent, facebook
+  let widgets;
   if (isStaticPage) {
-    // Đặt lại thứ tự cố định cho trang tĩnh
-    widgets = ['about', 'featured', 'categories', 'recent'];
+    widgets = ['about', 'featured', 'categories', 'recent', 'facebook'];
+  } else {
+    widgets = getSidebarWidgets().filter(w => w.visible !== false).map(w => w.key);
+    // Đảm bảo bài viết cũng có link facebook nếu ko được cài đặt
+    if (!widgets.includes('facebook')) widgets.push('facebook');
   }
   let html = '';
 
@@ -4951,6 +4979,17 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
                 </div>
               </div>
             `).join('')}
+          </div>`;
+      }
+    } else if (section === 'facebook') {
+      if (s.social && s.social.facebook) {
+        html += `
+          <div class="sidebar-section">
+            <h3>Kết nối</h3>
+            <div class="fb-widget" style="background:#f0f2f5;border-radius:8px;padding:12px;text-align:center">
+              <div style="font-weight:700;margin-bottom:8px;font-size:14px">Facebook Page</div>
+              <a href="${s.social.facebook}" target="_blank" class="t-btn" style="width:100%;display:block;background:#1877f2;text-decoration:none;color:#fff;text-align:center">Theo dõi trang</a>
+            </div>
           </div>`;
       }
     } else if (section === 'tags') {
@@ -6583,9 +6622,10 @@ function openPage(slug, fromCms) {
     content.innerHTML = `
       <button class="post-detail-back" onclick="cmsNav('pages',document.querySelector('.cms-nav-item[data-page=\'pages\']'))">← Quay lại CMS</button>
       ${pg.image ? `<img class="post-detail-img" src="${pg.image}" alt="${escHtml(pg.title)}" loading="lazy">` : ''}
-      <h1 class="post-detail-title" style="margin-top:${pg.image?'24px':'8px'}">${escHtml(pg.title)}</h1>
-      <div class="post-detail-body" style="margin-top:24px">${pg.content || ''}</div>
+      <h1 class="post-detail-title">${escHtml(pg.title)}</h1>
+      <div class="post-detail-body">${pg.content || ''}</div>
     `;
+    document.body.classList.add('page-view');
     renderSidebar('post-detail-sidebar', -1, true);
     document.getElementById('blog-home').style.display = 'none';
     document.getElementById('post-detail-page').style.display = 'block';
@@ -6602,9 +6642,10 @@ function openPage(slug, fromCms) {
   content.innerHTML = `
     <button class="post-detail-back" onclick="goBack()">← Quay lại</button>
     ${pg.image ? `<img class="post-detail-img" src="${pg.image}" alt="${escHtml(pg.title)}" loading="lazy">` : ''}
-    <h1 class="post-detail-title" style="margin-top:${pg.image?'24px':'8px'}">${escHtml(pg.title)}</h1>
-    <div class="post-detail-body" style="margin-top:24px">${pg.content || ''}</div>
+    <h1 class="post-detail-title">${escHtml(pg.title)}</h1>
+    <div class="post-detail-body">${pg.content || ''}</div>
   `;
+  document.body.classList.add('page-view');
   renderSidebar('post-detail-sidebar', -1, true);
   document.getElementById('blog-home').style.display = 'none';
   document.getElementById('post-detail-page').style.display = 'block';
@@ -8014,10 +8055,10 @@ function getLayout() {
 }
 
 function getSidebarWidgets() {
-  const ALL = ['about','categories','recent','tags'];
+  const ALL = ['about', 'featured', 'categories', 'recent', 'facebook', 'tags'];
   try {
     const saved = JSON.parse(localStorage.getItem(SIDEBAR_KEY));
-    if (Array.isArray(saved) && saved.length === 4 && saved.every(w => ALL.includes(w.key))) {
+    if (Array.isArray(saved) && saved.length === ALL.length && saved.every(w => ALL.includes(w.key))) {
       return saved;
     }
   } catch(e) {}
@@ -8320,25 +8361,23 @@ function openPost(idx) {
     <button class="post-detail-back" onclick="goBack()">
       ← Quay lại
     </button>
-    <div class="post-detail-cat">${escHtml(post.category)}</div>
+    
+    ${post.image
+      ? `<img class="post-detail-img" src="${escHtml(post.image)}" alt="${escHtml(post.title)}">`
+      : `<div class="post-detail-img-ph">${getCatEmoji(post.category)}</div>`
+    }
+
     <h1 class="post-detail-title">${escHtml(post.title)}</h1>
+    <div class="post-detail-cat">${escHtml(post.category)}</div>
     <div class="post-detail-meta">
       <strong>${escHtml(s.author)}</strong>
       <span class="dot"></span>
       <span>${formatDate(post.date)}</span>
       <span class="dot"></span>
-      <span class="read-time-badge"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;margin-top:-2px"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${rt} phút đọc</span>
+      <span class="read-time-badge">${rt} phút đọc</span>
       <span class="dot"></span>
-      <span class="view-count-badge">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        ${fmtViews(vc)} lượt đọc
-      </span>
+      <span>${fmtViews(vc)} lượt đọc</span>
     </div>
-
-    ${post.image
-      ? `<img class="post-detail-img" src="${escHtml(post.image)}" alt="${escHtml(post.title)}">`
-      : `<div class="post-detail-img-ph">${getCatEmoji(post.category)}</div>`
-    }
 
     <div class="post-detail-body">${post.content || '<p>' + escHtml(post.excerpt || '') + '</p>'}</div>
 
@@ -8379,6 +8418,7 @@ function openPost(idx) {
   `;
 
   // Render sidebar for post detail
+  document.body.classList.add('page-view');
   renderSidebar('post-detail-sidebar', idx);
 
   // Show post detail page
@@ -8446,6 +8486,7 @@ function goBack() {
   _showHome('all');
 }
 function _showHome(cat) {
+  document.body.classList.remove('page-view');
   // Reset canonical về trang chủ
   const _ch = document.getElementById('canonical-url');
   if (_ch) _ch.setAttribute('href', window.location.origin + '/');
