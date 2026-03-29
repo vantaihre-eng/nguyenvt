@@ -1655,6 +1655,9 @@ function cmsOpenPageEditor(idx) {
   document.querySelectorAll('.cms-page-content').forEach(p => p.style.display = 'none');
   document.getElementById('cmspage-page-editor').style.display = '';
   document.getElementById('cms-main').scrollTop = 0;
+  // Đảm bảo CMS vẫn active khi đang chỉnh sửa trang
+  document.getElementById('cms-page').classList.add('active');
+  document.getElementById('cms-app').classList.add('active');
 }
 
 // Auto-slug from title
@@ -1749,6 +1752,9 @@ function cmsSavePage() {
   };
 
   if (cmsCurrentEditPageIdx !== null) {
+    if (data.pages[cmsCurrentEditPageIdx]._id) {
+      pg._id = data.pages[cmsCurrentEditPageIdx]._id; // Preserve Firebase ID
+    }
     data.pages[cmsCurrentEditPageIdx] = pg;
     showToast('✅ Đã cập nhật trang');
   } else {
@@ -1777,7 +1783,7 @@ function cmsRenderPagesList() {
           <td style="color:#777777;font-size:12px;white-space:nowrap">${pg.updatedAt ? formatDate(pg.updatedAt) : '—'}</td>
           <td><div class="t-actions">
             <button class="t-btn" onclick="cmsOpenPageEditor(${i})">Sửa</button>
-            <button class="t-btn" onclick="openPage('${escHtml(pg.slug)}')" style="color:var(--accent)">Xem</button>
+            <button class="t-btn" onclick="openPage('${escHtml(pg.slug)}', true)" style="color:var(--accent)">Xem</button>
             <button class="t-btn danger" onclick="cmsDeletePage(${i})">Xóa</button>
           </div></td>
         </tr>`).join('')}
@@ -1795,7 +1801,26 @@ function cmsDeletePage(idx) {
 }
 
 /* ── Page Viewer (frontend) ── */
-function openPage(slug) {
+function openPage(slug, fromCms) {
+  // Nếu gọi từ CMS (preview), không đụng vào lịch sử trình duyệt
+  if (fromCms) {
+    const pg = (data.pages || []).find(p => p.slug === slug);
+    if (!pg) return showToast('Không tìm thấy trang', true);
+    const content = document.getElementById('post-detail-content');
+    content.innerHTML = `
+      <button class="post-detail-back" onclick="cmsNav('pages',document.querySelector('.cms-nav-item[data-page=\'pages\']'))">← Quay lại CMS</button>
+      ${pg.image ? `<img class="post-detail-img" src="${pg.image}" alt="${escHtml(pg.title)}" loading="lazy">` : ''}
+      <h1 class="post-detail-title" style="margin-top:${pg.image?'24px':'8px'}">${escHtml(pg.title)}</h1>
+      <div class="post-detail-body" style="margin-top:24px">${pg.content || ''}</div>
+    `;
+    renderSidebar('post-detail-sidebar');
+    document.getElementById('blog-home').style.display = 'none';
+    document.getElementById('post-detail-page').style.display = 'block';
+    document.getElementById('cms-page').classList.remove('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
   const pg = (data.pages || []).find(p => p.slug === slug);
   if (!pg) return showToast('Không tìm thấy trang', true);
 
@@ -1810,8 +1835,13 @@ function openPage(slug) {
   renderSidebar('post-detail-sidebar');
   document.getElementById('blog-home').style.display = 'none';
   document.getElementById('post-detail-page').style.display = 'block';
+  document.getElementById('lp-viewer-page').style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.title = pg.title + ' – ' + data.settings.sitename;
+  // Push history state so goBack() works
+  if (!window._routerRestoring) {
+    try { history.pushState({ view: 'page', slug: slug }, '', '/page/' + slug); } catch(e) {}
+  }
 }
 
 /* ── Layout ── */

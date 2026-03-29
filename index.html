@@ -2073,6 +2073,13 @@ function initFirebase() {
   }
 
   /* ── VIEW COMPONENT STATES ── */
+  /* Container giữ footer lúcôn ở phíd dưới — flex:1 ước dùng ở đây thay vì từng trang */
+  #page-slot {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
   #blog-home, #post-detail-page, #lp-viewer-page {
     display: none;
     animation: fadeSlideIn .25s ease;
@@ -3091,6 +3098,7 @@ html, body {
 </script>
 
 <!-- MAIN CONTENT: BLOG LIST -->
+<div id="page-slot">
 <div id="blog-home">
   <!-- Hero Section (dynamic) -->
   <section id="hero-section" class="reveal-section stagger-2">
@@ -3156,6 +3164,7 @@ html, body {
 <div id="lp-viewer-page">
   <div class="lp-viewer-content reveal-section stagger-2" id="lp-viewer-content"></div>
 </div>
+</div><!-- /#page-slot -->
 
 <!-- FOOTER -->
 <footer id="footer"></footer>
@@ -4459,15 +4468,18 @@ async function saveData(d) {
   await initFirebase();
   if (!_fbReady || !_db) return;
   try {
-    // Lưu password hash lên Firebase - an toàn vì đã hash + pepper
     const settingsToSave = Object.assign({}, d.settings);
     await _db.collection('site').doc('settings').set(settingsToSave, {merge:true});
     await _db.collection('site').doc('categories').set({list: d.categories}, {merge:true});
-    for (const pg of (d.pages||[])) {
+    
+    // Parallelize page saves
+    const pagePromises = (d.pages || []).map(async (pg) => {
       const {_id, ...pd} = pg;
       if (_id) await _db.collection('pages').doc(_id).set(pd);
       else { const r = await _db.collection('pages').add(pd); pg._id = r.id; }
-    }
+    });
+    await Promise.all(pagePromises);
+    console.log('✅ Firebase: Data synced');
   } catch(e) { console.error('saveData Firebase:', e); }
   if (typeof purgeCloudflareCache === 'function') purgeCloudflareCache();
 }
@@ -5550,7 +5562,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcut removed for security
 });
 
-function cmsSavePost() {
+async function cmsSavePost() {
   const title = document.getElementById('cms-post-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
 
@@ -5603,13 +5615,18 @@ function cmsSavePost() {
     cmsCurrentEditIdx = 0;
   }
 
-  savePost(post, existingId).then(() => {
-    showToast('✅ Đã lưu bài viết');
+  showToast('⏳ Đang lưu bài viết...');
+  try {
+    await savePost(post, existingId);
+    showToast('✅ Đã lưu bài viết thành công');
     renderHero();
     renderPosts();
     renderSidebar('sidebar');
     cmsNav('posts', document.querySelector('.cms-nav-item[data-page="posts"]'));
-  });
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Lỗi: ' + err.message, true);
+  }
 }
 
 /* ── Rich Text Editor ── */
@@ -6241,6 +6258,9 @@ function cmsOpenPageEditor(idx) {
   document.querySelectorAll('.cms-page-content').forEach(p => p.style.display = 'none');
   document.getElementById('cmspage-page-editor').style.display = '';
   document.getElementById('cms-main').scrollTop = 0;
+  // Đảm bảo CMS vẫn active khi đang chỉnh sửa trang
+  document.getElementById('cms-page').classList.add('active');
+  document.getElementById('cms-app').classList.add('active');
 }
 
 // Auto-slug from title
@@ -6311,7 +6331,7 @@ function rtePageOpenImgPicker() {
   rteRenderPickerGallery();
 }
 
-function cmsSavePage() {
+async function cmsSavePage() {
   const title = document.getElementById('cms-page-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
   let slug = document.getElementById('cms-page-slug').value.trim();
@@ -6334,14 +6354,15 @@ function cmsSavePage() {
     updatedAt: Date.now()
   };
 
+  showToast('⏳ Đang lưu trang...');
   if (cmsCurrentEditPageIdx !== null) {
     data.pages[cmsCurrentEditPageIdx] = pg;
-    showToast('✅ Đã cập nhật trang');
   } else {
     data.pages.push(pg);
-    showToast('✅ Đã tạo trang mới');
   }
-  saveData(data);
+  
+  await saveData(data);
+  showToast('✅ Đã lưu trang thành công');
   renderNav();
   cmsNav('pages', document.querySelector('.cms-nav-item[data-page="pages"]'));
 }
@@ -6363,7 +6384,7 @@ function cmsRenderPagesList() {
           <td style="color:#777777;font-size:12px;white-space:nowrap">${pg.updatedAt ? formatDate(pg.updatedAt) : '—'}</td>
           <td><div class="t-actions">
             <button class="t-btn" onclick="cmsOpenPageEditor(${i})">Sửa</button>
-            <button class="t-btn" onclick="openPage('${escHtml(pg.slug)}')" style="color:var(--accent)">Xem</button>
+            <button class="t-btn" onclick="openPage('${escHtml(pg.slug)}', true)" style="color:var(--accent)">Xem</button>
             <button class="t-btn danger" onclick="cmsDeletePage(${i})">Xóa</button>
           </div></td>
         </tr>`).join('')}
@@ -6509,7 +6530,26 @@ function show404Close() {
   _showHome('all');
 }
 
-function openPage(slug) {
+function openPage(slug, fromCms) {
+  // Nếu gọi từ CMS (preview), không đụng vào lịch sử trình duyệt
+  if (fromCms) {
+    const pg = (data.pages || []).find(p => p.slug === slug);
+    if (!pg) return showToast('Không tìm thấy trang', true);
+    const content = document.getElementById('post-detail-content');
+    content.innerHTML = `
+      <button class="post-detail-back" onclick="cmsNav('pages',document.querySelector('.cms-nav-item[data-page=\'pages\']'))">← Quay lại CMS</button>
+      ${pg.image ? `<img class="post-detail-img" src="${pg.image}" alt="${escHtml(pg.title)}" loading="lazy">` : ''}
+      <h1 class="post-detail-title" style="margin-top:${pg.image?'24px':'8px'}">${escHtml(pg.title)}</h1>
+      <div class="post-detail-body" style="margin-top:24px">${pg.content || ''}</div>
+    `;
+    renderSidebar('post-detail-sidebar', -1, true);
+    document.getElementById('blog-home').style.display = 'none';
+    document.getElementById('post-detail-page').style.display = 'block';
+    document.getElementById('cms-page').classList.remove('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
   const pg = (data.pages || []).find(p => p.slug === slug);
   if (!pg) return showToast('Không tìm thấy trang', true);
 
@@ -6524,6 +6564,7 @@ function openPage(slug) {
   renderSidebar('post-detail-sidebar', -1, true);
   document.getElementById('blog-home').style.display = 'none';
   document.getElementById('post-detail-page').style.display = 'block';
+  document.getElementById('lp-viewer-page').style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.title = pg.title + ' – ' + data.settings.sitename;
   // URL: /ten-page (không có /page/ prefix)
@@ -6772,7 +6813,7 @@ function cmsRemoveFooterLink(i) {
   cmsRenderFooterLinks();
 }
 
-function cmsSaveSettings() {
+async function cmsSaveSettings() {
   data.settings.sitename = document.getElementById('cms-set-sitename').value.trim();
   data.settings.tagline = document.getElementById('cms-set-tagline').value.trim();
   data.settings.domain = document.getElementById('cms-set-domain').value.trim();
@@ -6813,7 +6854,10 @@ function cmsSaveSettings() {
     document.getElementById('cms-slider-5').value
   ].filter(id => id);
 
-  initFirebase().then(() => saveData(data));
+  showToast('⏳ Đang lưu cài đặt...');
+  await initFirebase();
+  await saveData(data);
+  showToast('✅ Đã lưu cài đặt thành công');
   applyFavicon();
   applyLogo();
   purgeCloudflareCache();
@@ -6827,7 +6871,6 @@ function cmsSaveSettings() {
   renderSidebar('sidebar');
   renderFooter();
   renderNav();
-  showToast('✅ Đã lưu cài đặt');
 }
 
 function applyLogo() {
