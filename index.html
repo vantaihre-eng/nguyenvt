@@ -641,12 +641,12 @@ function initFirebase() {
   .post-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #ddd; flex-shrink:0; }
   /* Author avatar in card */
   .post-author-avatar {
-    width: 22px; height: 22px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 6px;
     object-fit: cover; flex-shrink: 0;
     border: 1.5px solid var(--border);
   }
   .post-author-avatar-placeholder {
-    width: 22px; height: 22px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 6px;
     background: var(--accent); color: #fff;
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 800; flex-shrink: 0;
@@ -686,9 +686,10 @@ function initFirebase() {
   }
   .about-card { text-align: center; }
   .about-card img {
-    width: 90px; height: 90px; border-radius: 50%;
+    width: 140px; height: 140px; border-radius: 12px;
     margin-bottom: 14px; object-fit: cover;
-    border: 3px solid var(--border);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
   .about-card h4 {
     font-family: var(--heading-font);
@@ -2039,14 +2040,15 @@ function initFirebase() {
 
   /* Layout / Giao dien */
   .cms-layout-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-  .cms-layout-opt {
+  .cms-layout-opt, .cms-cat-layout-opt {
     border: 2px solid #e0d8cc; border-radius: 8px; padding: 16px 12px;
     text-align: center; cursor: pointer; transition: all .2s; background: #faf7f2;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  .cms-layout-opt:hover { border-color: var(--accent); }
-  .cms-layout-opt.active { border-color: var(--accent); background: #fef5ec; }
-  .cms-layout-opt .icon { font-size: 28px; margin-bottom: 8px; }
-  .cms-layout-opt .name { font-size: 11px; font-weight: 700; }
+  .cms-layout-opt:hover, .cms-cat-layout-opt:hover { border-color: var(--accent); }
+  .cms-layout-opt.active, .cms-cat-layout-opt.active { border-color: var(--accent); background: #fef5ec; }
+  .cms-layout-opt .icon, .cms-cat-layout-opt .icon { font-size: 28px; margin-bottom: 8px; }
+  .cms-layout-opt .name, .cms-cat-layout-opt .name { font-size: 11px; font-weight: 700; }
 
   /* Settings */
   .cms-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -3447,6 +3449,10 @@ html, body {
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Biểu tượng (emoji)</label>
                 <input class="cms-field" type="text" id="cms-cat-emoji" placeholder="📚" maxlength="4" style="font-size:20px;width:80px">
               </div>
+              <div class="cms-form-group" style="flex: 1 1 100%;">
+                <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Mô tả chuyên mục</label>
+                <textarea class="cms-field" id="cms-cat-desc" placeholder="Những bài viết mới nhất trong chuyên mục..."></textarea>
+              </div>
               <div class="cms-form-group">
                 <label style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:6px;display:block">Tên ngắn (nav)</label>
                 <input class="cms-field" type="text" id="cms-cat-short" placeholder="Đọc Sách">
@@ -3623,13 +3629,28 @@ html, body {
             <div class="cms-editor-card">
               <div class="cms-section-title">Bố cục Trang chủ (Lưới bài viết)</div>
               <div class="cms-layout-options" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-                <div class="cms-layout-opt" data-layout="list" onclick="cmsSelectLayout('list',this)">
+                <div class="cms-layout-opt" data-type="home" data-layout="list" onclick="cmsSelectLayout('list',this)">
                   <div class="icon" style="font-size:24px;color:currentColor">☰</div><div class="name">Classic List</div>
                 </div>
-                <div class="cms-layout-opt" data-layout="grid" onclick="cmsSelectLayout('grid',this)">
+                <div class="cms-layout-opt" data-type="home" data-layout="grid" onclick="cmsSelectLayout('grid',this)">
                   <div class="icon" style="font-size:24px;color:currentColor">⊞</div><div class="name">Grid View</div>
                 </div>
-                <div class="cms-layout-opt" data-layout="masonry" onclick="cmsSelectLayout('masonry',this)">
+                <div class="cms-layout-opt" data-type="home" data-layout="masonry" onclick="cmsSelectLayout('masonry',this)">
+                  <div class="icon" style="font-size:24px;color:currentColor">▦</div><div class="name">Modern Masonry</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cms-editor-card">
+              <div class="cms-section-title">Bố cục Trang Chuyên Mục</div>
+              <div class="cms-layout-options" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                <div class="cms-cat-layout-opt" data-type="cat" data-layout="list" onclick="cmsSelectLayout('list',this)">
+                  <div class="icon" style="font-size:24px;color:currentColor">☰</div><div class="name">Classic List</div>
+                </div>
+                <div class="cms-cat-layout-opt" data-type="cat" data-layout="grid" onclick="cmsSelectLayout('grid',this)">
+                  <div class="icon" style="font-size:24px;color:currentColor">⊞</div><div class="name">Grid View</div>
+                </div>
+                <div class="cms-cat-layout-opt" data-type="cat" data-layout="masonry" onclick="cmsSelectLayout('masonry',this)">
                   <div class="icon" style="font-size:24px;color:currentColor">▦</div><div class="name">Modern Masonry</div>
                 </div>
               </div>
@@ -4657,6 +4678,14 @@ function renderPosts() {
   const container = document.getElementById('posts-list');
   if (!container) return;
 
+  const cfg = getLayout();
+  const currentLayout = currentCategory === 'all' ? (cfg.listLayout || 'grid') : (cfg.categoryLayout || 'grid');
+  container.className = 'posts-list layout-' + currentLayout;
+
+  // Filter bar logic: hide on category pages
+  const fb = document.querySelector('.filter-bar');
+  if (fb) fb.style.display = currentCategory === 'all' ? 'flex' : 'none';
+
   // Category Header Logic
   const catHeader = document.getElementById('category-header');
   const catTitle = document.getElementById('category-title');
@@ -4918,7 +4947,7 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
       if (s.avatar) {
         html += `
           <div class="sidebar-section about-card" style="display:flex; justify-content:center; align-items:center;">
-            <img src="${escHtml(s.avatar)}" alt="${escHtml(s.author)}" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin:0;">
+            <img src="${escHtml(s.avatar)}" alt="${escHtml(s.author)}" style="width:180px; height:180px; border-radius:12px; object-fit:cover; margin:0; border:1px solid #eee;">
           </div>`;
       }
     } else if (section === 'categories') {
@@ -6207,6 +6236,7 @@ function cmsShowAddCat() {
   f.style.display = f.style.display === 'none' ? 'block' : 'none';
   if (f.style.display === 'block') {
     document.getElementById('cms-cat-name').value = '';
+    document.getElementById('cms-cat-desc').value = '';
     document.getElementById('cms-cat-emoji').value = '';
     document.getElementById('cms-cat-short').value = '';
     document.getElementById('cms-cat-name').focus();
@@ -6217,9 +6247,10 @@ function cmsAddCategory() {
   const name = document.getElementById('cms-cat-name').value.trim();
   if (!name) return showToast('Vui lòng nhập tên danh mục', true);
   if ((data.categories || []).find(c => c.name === name)) return showToast('Danh mục đã tồn tại', true);
+  const desc = document.getElementById('cms-cat-desc').value.trim();
   const emoji = document.getElementById('cms-cat-emoji').value.trim() || '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
   const short = document.getElementById('cms-cat-short').value.trim() || name;
-  data.categories.push({ name, emoji, short });
+  data.categories.push({ name, emoji, short, description: desc });
   saveData(data);
   // Update post editor category select
   refreshCategorySelects();
@@ -6251,13 +6282,13 @@ function cmsRenderCategories() {
   document.getElementById('cms-categories-content').innerHTML = cats.length === 0
     ? '<p style="color:#777777;text-align:center;padding:48px">Chưa có danh mục. Nhấn "+ Thêm danh mục" để bắt đầu.</p>'
     : `<table class="cms-table">
-        <thead><tr><th>Emoji</th><th>Tên danh mục</th><th>Tên ngắn (nav)</th><th>Số bài</th><th></th></tr></thead>
+        <thead><tr><th>Emoji</th><th>Tên danh mục</th><th>Mô tả</th><th>Số bài</th><th></th></tr></thead>
         <tbody>
           ${cats.map((c, i) => `
             <tr>
               <td style="font-size:22px;text-align:center">${c.emoji}</td>
               <td style="font-weight:600">${escHtml(c.name)}</td>
-              <td style="color:#777777">${escHtml(c.short||c.name)}</td>
+              <td style="color:#777777;font-size:12px">${escHtml(c.description || '')}</td>
               <td>${catCounts[c.name] || 0} bài</td>
               <td><div class="t-actions">
                 <button class="t-btn danger" onclick="cmsDeleteCategory(${i})">Xóa</button>
@@ -6644,7 +6675,11 @@ function openPage(slug, fromCms) {
 function cmsLoadLayout() {
   const cfg = getLayout();
   document.querySelectorAll('.cms-layout-opt').forEach(el => {
-    el.classList.toggle('active', el.dataset.layout === (cfg.listLayout || 'list'));
+    el.classList.toggle('active', el.dataset.layout === (cfg.listLayout || 'grid'));
+  });
+  // New section for Category Layout
+  document.querySelectorAll('.cms-cat-layout-opt').forEach(el => {
+    el.classList.toggle('active', el.dataset.layout === (cfg.categoryLayout || 'grid'));
   });
   document.getElementById('cms-toggle-hero').checked = cfg.hero !== false;
   document.getElementById('cms-toggle-filterbar').checked = cfg.filterbar !== false;
@@ -8033,7 +8068,15 @@ function closeModal(id, e) {
 // THEME_KEY is defined globally at the top of the script
 
 function getLayout() {
-  try { return JSON.parse(localStorage.getItem(LAYOUT_KEY)) || {}; } catch(e) { return {}; }
+  const t = (data.settings && data.settings.theme) || {};
+  return {
+    listLayout: t.listLayout || 'grid',
+    categoryLayout: t.categoryLayout || 'grid',
+    sidebar: t.sidebar !== false,
+    hero: t.hero !== false,
+    filterbar: t.filterbar !== false,
+    cardImg: t.cardImg !== false
+  };
 }
 
 function getSidebarWidgets() {
@@ -8101,20 +8144,26 @@ function getTheme() {
 }
 
 function cmsSelectLayout(layoutType, el) {
-  document.querySelectorAll('.cms-layout-opt').forEach(opt => opt.classList.remove('active'));
+  const isCat = el.classList.contains('cms-cat-layout-opt');
+  const selector = isCat ? '.cms-cat-layout-opt' : '.cms-layout-opt';
+  document.querySelectorAll(selector).forEach(opt => opt.classList.remove('active'));
   el.classList.add('active');
 }
 
 function cmsSaveTheme() {
   const activeLayout = document.querySelector('.cms-layout-opt.active');
+  const activeCatLayout = document.querySelector('.cms-cat-layout-opt.active');
   const cfg = {
     // Layout
-    listLayout:   activeLayout ? activeLayout.dataset.layout : 'list',
+    listLayout:      activeLayout ? activeLayout.dataset.layout : 'grid',
+    categoryLayout:  activeCatLayout ? activeCatLayout.dataset.layout : 'grid',
     showCover:    document.getElementById('cms-blog-show-cover')?.checked ?? true,
     showSidebar:  document.getElementById('cms-blog-show-sidebar')?.checked ?? true,
     showRelated:  document.getElementById('cms-blog-show-related')?.checked ?? true,
     showProgress: document.getElementById('cms-blog-show-progress')?.checked ?? true,
     showShare:    document.getElementById('cms-blog-show-share')?.checked ?? true,
+    filterbar:    true,
+    cardImg:      true,
     // Typography
     fontBody:     document.getElementById('cms-font-body')?.value || "'Nunito Sans', sans-serif",
     fontHeading:  document.getElementById('cms-font-heading')?.value || "'Merriweather', serif",
