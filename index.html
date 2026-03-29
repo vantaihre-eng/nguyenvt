@@ -200,6 +200,9 @@ function initFirebase() {
     line-height: 1.75;
     overflow-x: hidden;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
 
   /* ── HEADER ── */
@@ -2036,11 +2039,14 @@ function initFirebase() {
     pointer-events: none;
   }
 
-  /* ── POST DETAIL PAGE ── */
-  #post-detail-page {
+  /* ── VIEW COMPONENT STATES ── */
+  #blog-home, #post-detail-page, #lp-viewer-page {
     display: none;
     animation: fadeSlideIn .25s ease;
-    background: var(--bg-soft);
+    flex: 1;
+  }
+  #blog-home {
+    background: #ffffff;
   }
   @keyframes fadeSlideIn {
     from { opacity: 0; transform: translateY(12px); }
@@ -4991,13 +4997,13 @@ function filterCat(cat, elem, e) {
   // If on post detail, go back to list first
   if (document.getElementById('post-detail-page').style.display !== 'none') {
     document.getElementById('post-detail-page').style.display = 'none';
-    document.getElementById('blog-home').style.display = '';
+    document.getElementById('blog-home').style.display = 'block';
     const _rp = document.getElementById('reading-progress'); if(_rp) _rp.style.width = '0%';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   if (document.getElementById('lp-viewer-page').style.display === 'block') {
     document.getElementById('lp-viewer-page').style.display = 'none';
-    document.getElementById('blog-home').style.display = '';
+    document.getElementById('blog-home').style.display = 'block';
   }
   // Update active state
   document.querySelectorAll('nav a, .filter-btn').forEach(a => a.classList.remove('active'));
@@ -8263,7 +8269,7 @@ function _showHome(cat) {
   currentCategory = cat;
   document.getElementById('post-detail-page').style.display = 'none';
   document.getElementById('lp-viewer-page').style.display = 'none';
-  document.getElementById('blog-home').style.display = '';
+  document.getElementById('blog-home').style.display = 'block';
   const p404 = document.getElementById('page-404');
   if (p404) p404.style.display = 'none';
   const _rp = document.getElementById('reading-progress'); if(_rp) _rp.style.width = '0%';
@@ -8486,6 +8492,7 @@ async function init() {
     && !_initPath.startsWith('page/')
     && !_initPath.startsWith('lp/');
   if (!_initIsSlug) {
+    document.getElementById('blog-home').style.display = 'block';
     renderHero();
     renderPosts();
   }
