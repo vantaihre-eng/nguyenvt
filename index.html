@@ -635,7 +635,7 @@ function initFirebase() {
   .post-meta {
     display: flex; align-items: center; gap: 8px;
     font-size: 12px; color: #999;
-    padding-top: 12px; border-top: 1px solid var(--border);
+    padding-top: 12px;
     margin-top: auto;
   }
   .post-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #ddd; flex-shrink:0; }
@@ -811,6 +811,65 @@ function initFirebase() {
     background: #fff; color: var(--dark); transition: border-color .15s;
   }
   .form-group input:focus, .form-group textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; border-color: transparent; }
+
+  /* Post Detail Header Styling */
+  .post-detail-header {
+    text-align: center;
+    max-width: 900px;
+    margin: 40px auto 48px;
+    padding: 0 24px;
+  }
+  .post-detail-cat {
+    display: inline-block;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+  .post-detail-title {
+    font-family: var(--heading-font);
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.2;
+    margin-bottom: 24px;
+    color: var(--dark);
+    font-weight: 900;
+    letter-spacing: -0.5px;
+  }
+  .post-detail-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .post-detail-meta .dot {
+    width: 3px;
+    height: 3px;
+    background: #ccc;
+    border-radius: 50%;
+  }
+  .post-detail-img {
+    width: 100%;
+    max-height: 600px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 40px;
+  }
+  .post-detail-img-ph {
+    width: 100%;
+    height: 300px;
+    background: var(--tag-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    border-radius: 12px;
+    margin-bottom: 40px;
+  }
 
   /* ══════════════════════════════════════════
      RESPONSIVE — Mobile First
