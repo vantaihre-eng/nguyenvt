@@ -2112,6 +2112,18 @@ function initFirebase() {
     padding: 40px 24px 80px;
     display: grid; grid-template-columns: 1fr 300px; gap: 48px;
   }
+  /* Trang tĩnh (Ve toi, Giới thiệu...): sidebar luôn hiện, bất kể cài blog đặt tắt */
+  body.page-view #post-detail-sidebar {
+    display: block !important;
+  }
+  body.page-view .post-detail-wrap {
+    grid-template-columns: 1fr 300px !important;
+    gap: 48px !important;
+  }
+  body.page-view #post-detail-content {
+    max-width: unset !important;
+    margin: 0 !important;
+  }
   .post-detail-back {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 13px; font-weight: 600; color: var(--muted);
@@ -4870,12 +4882,11 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     sidebar.style.display = 'block';
   }
 
-  // Đọc widgets. Nếu là trang tĩnh, ép buộc thêm 'about', 'categories', 'recent'
+  // Đọc widgets. Nếu là trang tĩnh, ép buộc thêm 'about', 'featured', 'categories', 'recent'
   let widgets = getSidebarWidgets().filter(w => w.visible !== false).map(w => w.key);
   if (isStaticPage) {
-    if (!widgets.includes('about')) widgets.unshift('about');
-    if (!widgets.includes('categories')) widgets.push('categories');
-    if (!widgets.includes('recent')) widgets.push('recent');
+    // Đặt lại thứ tự cố định cho trang tĩnh
+    widgets = ['about', 'featured', 'categories', 'recent'];
   }
   let html = '';
 
@@ -4920,6 +4931,28 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
             </div>
           `).join('')}
         </div>`;
+    } else if (section === 'featured') {
+      const featuredPosts = data.posts
+        .map((p, i) => Object.assign({}, p, { _idx: i }))
+        .filter(p => p.featured || p._idx === 0)
+        .slice(0, 3);
+      if (featuredPosts.length > 0) {
+        html += `
+          <div class="sidebar-section">
+            <h3>Bài viết nổi bật</h3>
+            ${featuredPosts.map(p => `
+              <div class="sidebar-post-item" onclick="openPost(${p._idx})">
+                <div class="sidebar-post-thumb">
+                  ${p.image ? `<img src="${p.image}" alt="${escHtml(p.title)}" loading="lazy">` : '<span style="color:#ccc;font-size:20px">◆</span>'}
+                </div>
+                <div class="sidebar-post-info">
+                  <div class="sidebar-post-cat">${escHtml(p.category)}</div>
+                  <div class="sidebar-post-title">${escHtml(p.title)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>`;
+      }
     } else if (section === 'tags') {
       html += `
         <div class="sidebar-section">
@@ -6356,6 +6389,10 @@ async function cmsSavePage() {
 
   showToast('⏳ Đang lưu trang...');
   if (cmsCurrentEditPageIdx !== null) {
+    // GIỮ LẠI _id Để CẬP NHẬT ĐÚNG DOCUMENT firebase
+    if (data.pages[cmsCurrentEditPageIdx]._id) {
+      pg._id = data.pages[cmsCurrentEditPageIdx]._id;
+    }
     data.pages[cmsCurrentEditPageIdx] = pg;
   } else {
     data.pages.push(pg);
@@ -6374,7 +6411,7 @@ function cmsRenderPagesList() {
     return;
   }
   wrap.innerHTML = `<table class="cms-table">
-    <thead><tr><th>Tiêu đề</th><th>Slug</th><th>Nav</th><th>Cập nhật</th><th></th></tr></thead>
+    <thead><tr><th>Tiêu đề</th><th>Slug</th><th>Nav</th><th>Cập nhật</th><th>Firebase ID</th><th></th></tr></thead>
     <tbody>
       ${data.pages.map((pg, i) => `
         <tr>
@@ -6382,6 +6419,7 @@ function cmsRenderPagesList() {
           <td style="color:#777777;font-size:12px">/${escHtml(pg.slug)}</td>
           <td style="text-align:center">${pg.showNav ? '✅' : '—'}</td>
           <td style="color:#777777;font-size:12px;white-space:nowrap">${pg.updatedAt ? formatDate(pg.updatedAt) : '—'}</td>
+          <td style="color:#aaa;font-size:10px;font-family:monospace">${pg._id || '<span style="color:#f87171">⚠️ Chưa có ID</span>'}</td>
           <td><div class="t-actions">
             <button class="t-btn" onclick="cmsOpenPageEditor(${i})">Sửa</button>
             <button class="t-btn" onclick="openPage('${escHtml(pg.slug)}', true)" style="color:var(--accent)">Xem</button>
@@ -6392,10 +6430,16 @@ function cmsRenderPagesList() {
   </table>`;
 }
 
-function cmsDeletePage(idx) {
+async function cmsDeletePage(idx) {
   if (!confirm('Xóa trang này?')) return;
+  const pg = data.pages[idx];
+  // Xóa khỏi Firebase trước
+  if (pg && pg._id && _fbReady && _db) {
+    try { await _db.collection('pages').doc(pg._id).delete(); } catch(e) { console.error('Delete page Firebase error:', e); }
+  }
   data.pages.splice(idx, 1);
-  saveData(data);
+  // Cập nhật localStorage
+  try { const o = Object.assign({}, data); delete o.images; localStorage.setItem('taipulme_data', JSON.stringify(o)); } catch(e) {}
   renderNav();
   cmsRenderPagesList();
   showToast('Đã xóa trang');
