@@ -1024,23 +1024,23 @@ function initFirebase() {
     .post-detail-content { padding: 0; position: relative; }
     .post-detail-back { display: none; }
     .post-detail-header {
-      text-align: left;
-      padding: 24px 0;
-      margin: 0;
+      text-align: left !important;
+      padding: 16px 0 8px !important;
+      margin: 0 !important;
       max-width: none;
     }
-    .post-detail-cat { padding: 0; margin-bottom: 8px; }
-    .post-detail-title { font-size: 22px; line-height: 1.32; padding: 0; margin-bottom: 12px; text-align: left; }
-    .post-detail-meta { font-size: 11px; gap: 6px; margin: 0; padding: 0; justify-content: flex-start; }
+    .post-detail-cat { padding: 0; margin-bottom: 4px; text-align: left !important; letter-spacing: 0.5px; }
+    .post-detail-title { font-size: 22px; line-height: 1.32; padding: 0; margin-bottom: 12px; text-align: left !important; }
+    .post-detail-meta { font-size: 11px; gap: 6px; margin: 0; padding: 0; justify-content: flex-start !important; text-align: left !important; }
     .post-detail-meta .dot { display: block; }
     /* Full-bleed: break out of the 16px wrap padding */
     .post-detail-img {
       border-radius: 0; width: calc(100% + 32px);
-      margin: 0 -16px; display: block;
+      margin: 0 -16px 16px !important; display: block;
     }
     .post-detail-img-ph {
       height: 220px; width: calc(100% + 32px);
-      margin: 0 -16px; border-radius: 0;
+      margin: 0 -16px 16px !important; border-radius: 0;
     }
     .post-detail-body {
       font-size: 16px; line-height: 1.9;
@@ -2442,16 +2442,14 @@ function initFirebase() {
   #post-detail-page .post-detail-img {
     border-radius: 0;
     width: calc(100% + 32px) !important;
-    margin: 0 -16px !important;
-    display: block;
-    margin-bottom: 0 !important;
+    margin: 0 -16px 16px !important;
+    display: block !important;
     max-width: none !important;
   }
   #post-detail-page .post-detail-img-ph {
     border-radius: 0;
     width: calc(100% + 32px) !important;
-    margin: 0 -16px !important;
-    margin-bottom: 0 !important;
+    margin: 0 -16px 16px !important;
   }
 
   /* ── Reading body: comfortable 16px ── */
@@ -2741,7 +2739,7 @@ html, body {
     width: calc(100% + 32px) !important;
     margin-left: -16px !important;
     margin-right: -16px !important;
-    margin-bottom: 0 !important;
+    margin-bottom: 16px !important;
     border-radius: 0 !important;
     max-width: none !important;
     display: block !important;
@@ -2753,7 +2751,7 @@ html, body {
     width: calc(100% + 32px) !important;
     margin-left: -16px !important;
     margin-right: -16px !important;
-    margin-bottom: 0 !important;
+    margin-bottom: 16px !important;
     border-radius: 0 !important;
     height: 220px;
   }
@@ -2770,22 +2768,32 @@ html, body {
   }
 
   /* ── Post detail title/meta: PTH-style ── */
-  .post-detail-cat {
-    padding-top: 18px;
-    display: block;
+  .post-detail-header {
+    text-align: left !important;
+    padding: 16px 0 8px !important;
+    margin: 0 !important;
   }
-
+  .post-detail-cat {
+    padding-top: 0;
+    display: block;
+    text-align: left !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 4px;
+  }
   .post-detail-title {
     font-size: 22px !important;
     line-height: 1.32 !important;
-    padding-top: 8px;
+    padding-top: 0;
+    margin-bottom: 12px;
     word-break: break-word;
+    text-align: left !important;
   }
-
   .post-detail-meta {
     font-size: 12px !important;
     gap: 6px !important;
-    padding-bottom: 14px;
+    padding-bottom: 0;
+    justify-content: flex-start !important;
+    text-align: left !important;
   }
 
   /* ── Reaction & share bar: edge-to-edge ── */
@@ -2963,6 +2971,27 @@ html, body {
 /* Fix CSS for Image Pickers hidden under CMS */
 #rte-img-picker, #cms-img-picker {
   z-index: 22000 !important;
+}
+
+/* ══════════════════════════════════════════════
+   FORCED MOBILE FIXES (HIGH PRIORITY)
+══════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  #hero-section {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 280px !important;
+  }
+  /* Force meta row left alignment globally on mobile */
+  .post-detail-header, .post-detail-cat, .post-detail-title, .post-detail-meta {
+    text-align: left !important;
+    justify-content: flex-start !important;
+  }
+  .post-detail-body { 
+    padding-top: 4px !important; 
+  }
 }
 </style>
 
