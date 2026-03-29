@@ -281,12 +281,16 @@ function initFirebase() {
 
   /* ── HERO (featured post) ── */
   #hero-section {
-    background: #000;
-    border-bottom: 1px solid var(--border);
+    width: calc(100% - 48px);
+    max-width: 1112px;
+    margin: 32px auto 40px;
+    background: #1a1a1a;
     overflow: hidden;
     position: relative;
-    min-height: 520px;
+    min-height: 480px;
     display: block;
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
   }
   .hero-slide {
     position: absolute;
@@ -308,7 +312,8 @@ function initFirebase() {
   .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.05) 100%);
+    background: linear-gradient(75deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%),
+                linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
     z-index: 2;
   }
   .hero-inner-overlay {
@@ -321,11 +326,11 @@ function initFirebase() {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 60px 48px 80px;
+    padding: 60px 60px 80px;
     color: #fff;
     box-sizing: border-box;
   }
-  .hero-tag {
+  .hero-slide .hero-tag {
     display: inline-flex; align-items: center;
     background: var(--accent); color: #fff;
     font-size: 10px; font-weight: 700;
@@ -338,12 +343,13 @@ function initFirebase() {
     font-family: var(--heading-font);
     font-size: clamp(28px, 4.5vw, 42px);
     font-weight: 900; line-height: 1.2;
-    margin-bottom: 18px; color: #fff;
+    margin-bottom: 18px; color: #fff !important;
     max-width: 800px;
-    text-shadow: 0 2px 15px rgba(0,0,0,0.3);
+    text-shadow: 0 2px 15px rgba(0,0,0,0.5);
   }
-  .hero-desc {
-    color: rgba(255,255,255,0.85);
+  .hero-slide .hero-desc {
+    color: #fff;
+    opacity: 0.95;
     font-size: 16px; line-height: 1.7;
     max-width: 650px; margin-bottom: 30px;
   }
@@ -353,6 +359,7 @@ function initFirebase() {
     gap: 12px;
     font-size: 14px;
     font-weight: 600;
+    color: #fff;
     text-shadow: 0 1px 4px rgba(0,0,0,0.4);
   }
   .hero-author-avatar {
@@ -406,43 +413,6 @@ function initFirebase() {
     font-size: 96px;
   }
   .hero-no-img .hero-inner { grid-template-columns: 1fr; }
-  .hero-tag {
-    display: inline-flex; align-items: center;
-    background: var(--accent); color: #fff;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 1.8px; text-transform: uppercase;
-    padding: 4px 12px; border-radius: 3px;
-    margin-bottom: 18px; align-self: flex-start;
-  }
-  .hero h1 {
-    font-family: var(--heading-font);
-    font-size: clamp(24px, 3vw, 38px);
-    font-weight: 900; line-height: 1.25;
-    margin-bottom: 16px; color: var(--dark);
-  }
-  .hero-desc {
-    color: var(--muted); font-size: 15px; line-height: 1.8;
-  }
-  .hero-meta {
-    margin-top: 20px; display: flex;
-    align-items: center; gap: 14px;
-    font-size: 13px; color: var(--muted);
-  }
-  .hero-meta .author { font-weight: 700; color: var(--dark); }
-  .hero-divider { width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
-  .read-more {
-    display: inline-flex; align-items: center; gap: 8px;
-    margin-top: 26px; align-self: flex-start;
-    background: var(--accent); color: #fff;
-    padding: 11px 24px; border-radius: 5px;
-    text-decoration: none; font-size: 13px;
-    font-weight: 700; letter-spacing: .3px;
-    transition: background .18s; cursor: pointer; border: none;
-    font-family: var(--body-font);
-  }
-  .read-more:hover { background: var(--accent-dark); }
-  .read-more-inline { cursor: pointer; }
-
   /* ── PAGINATION ── */
   .load-more-container {
     text-align: center;
@@ -3002,7 +2972,10 @@ html, body {
       <a onclick="filterCat('Nhật Ký Sự Kiện', this, event)">Sự Kiện</a>
     </nav>
     <div class="header-right">
-      <button class="search-btn" onclick="openSearch()"><span>Tìm kiếm</span></button>
+      <button class="search-btn" onclick="openSearch()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>Tìm kiếm</span>
+      </button>
       <button class="nav-toggle" id="nav-toggle" onclick="toggleMobileNav()" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
