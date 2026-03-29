@@ -2159,12 +2159,14 @@ function initFirebase() {
     word-break: break-word; overflow-wrap: break-word;
   }
   .post-detail-meta {
-    display: flex; align-items: center; gap: 12px;
-    font-size: 13.5px; color: var(--muted);
-    margin-bottom: 40px; flex-wrap: wrap;
-    padding-bottom: 0; border-bottom: none;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--muted);
+    margin-bottom: 30px; flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none; /* Hide scrollbar for Chrome/Safari */
   }
-  .post-detail-meta strong { color: var(--dark); font-weight: 700; }
+  .post-detail-meta::-webkit-scrollbar { display: none; }
+  .post-detail-meta span, .post-detail-meta strong { white-space: nowrap; }
   
   /* Sidebar design: White widgets */
   .sidebar-section {
@@ -8344,9 +8346,8 @@ function openPost(idx) {
     }
 
     <h1 class="post-detail-title">${escHtml(post.title)}</h1>
-    <div class="post-detail-cat">${escHtml(post.category)}</div>
     <div class="post-detail-meta">
-      <strong>${escHtml(s.author)}</strong>
+      <span style="font-weight:700; color:var(--accent); text-transform:uppercase;">${escHtml(post.category)}</span>
       <span class="dot"></span>
       <span>${formatDate(post.date)}</span>
       <span class="dot"></span>
@@ -8372,9 +8373,6 @@ function openPost(idx) {
       <span class="share-label">Chia sẻ:</span>
       <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=${pageUrl}" target="_blank">
         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;margin-top:-2px"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg> Facebook
-      </a>
-      <a class="share-btn" href="https://twitter.com/intent/tweet?url=${pageUrl}&text=${pageTitle}" target="_blank">
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;margin-top:-2px"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg> Twitter
       </a>
       <button class="share-btn" onclick="copyLink(this)"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;margin-top:-2px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Copy link</button>
     </div>
