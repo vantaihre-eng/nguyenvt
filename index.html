@@ -6212,11 +6212,16 @@ function cmsOpenPageEditor(idx) {
   const isNew = cmsCurrentEditPageIdx === null;
   document.getElementById('cms-page-editor-title').textContent = isNew ? 'Tạo trang mới' : 'Chỉnh sửa trang';
 
+  // Initialize Quill after making sure container is going to be visible
+  if (!pageQuill) initQuillEditors();
+
   if (!isNew) {
     const pg = data.pages[idx];
     document.getElementById('cms-page-title').value = pg.title || '';
     document.getElementById('cms-page-slug').value = pg.slug || '';
-    document.getElementById('cms-page-content').innerHTML = pg.content || '';
+    const contentHtml = pg.content || '';
+    if (pageQuill) pageQuill.root.innerHTML = contentHtml;
+    document.getElementById('cms-page-content').innerHTML = contentHtml;
     document.getElementById('cms-page-image').value = pg.image || '';
     document.getElementById('cms-page-show-nav').checked = !!pg.showNav;
     document.getElementById('cms-page-seo').value = pg.seo || '';
@@ -6224,6 +6229,7 @@ function cmsOpenPageEditor(idx) {
   } else {
     document.getElementById('cms-page-title').value = '';
     document.getElementById('cms-page-slug').value = '';
+    if (pageQuill) pageQuill.root.innerHTML = '';
     document.getElementById('cms-page-content').innerHTML = '';
     document.getElementById('cms-page-image').value = '';
     document.getElementById('cms-page-show-nav').checked = true;
@@ -6320,7 +6326,7 @@ function cmsSavePage() {
   const pg = {
     title,
     slug,
-    content: document.getElementById('cms-page-content').innerHTML,
+    content: pageQuill ? pageQuill.root.innerHTML : document.getElementById('cms-page-content').innerHTML,
     image: document.getElementById('cms-page-image').value.trim(),
     showNav: document.getElementById('cms-page-show-nav').checked,
     seo: document.getElementById('cms-page-seo').value.trim(),
