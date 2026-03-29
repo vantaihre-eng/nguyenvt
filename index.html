@@ -443,8 +443,8 @@ function initFirebase() {
   .hero-slider-wrap {
     position: relative;
     width: 100%;
-    min-height: 420px;
-    height: auto;
+    min-height: inherit;
+    height: 100%;
     overflow: hidden;
   }
   .hero-slide {
@@ -2049,9 +2049,24 @@ function initFirebase() {
     background: #ffffff;
   }
   @keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  .reveal-section {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+  .reveal-section.revealed {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .stagger-1 { transition-delay: 0.1s; }
+  .stagger-2 { transition-delay: 0.25s; }
+  .stagger-3 { transition-delay: 0.4s; }
+  .stagger-4 { transition-delay: 0.55s; }
   .post-detail-wrap {
     max-width: 1160px; margin: 0 auto;
     padding: 40px 24px 80px;
@@ -2928,6 +2943,10 @@ html, body {
     if (hasCache) {
       // Đã có cache → ẩn ngay, vào trang luôn
       if (el) el.style.display = 'none';
+      // Trigger reveal ngay lập tức cho các phần đã render sẵn (nếu có)
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.reveal-section').forEach(sec => sec.classList.add('revealed'));
+      });
       return;
     }
     // Chưa có cache → hiện loading + animate
@@ -2949,6 +2968,10 @@ html, body {
   function hideLoading() {
     const el = document.getElementById('app-loading');
     if (!el || el.style.opacity === '0') return;
+    
+    // Trigger staggered reveal
+    document.querySelectorAll('.reveal-section').forEach(sec => sec.classList.add('revealed'));
+    
     const bar = document.getElementById('loading-bar');
     if (bar) bar.style.width = '100%';
     setTimeout(() => {
@@ -2965,7 +2988,7 @@ html, body {
 <div id="reading-progress"></div>
 
 <!-- HEADER -->
-<header>
+<header class="reveal-section stagger-1">
   <div class="header-inner">
     <a href="#" class="logo" onclick="goHome(event)">
       <div class="logo-icon skeleton" style="border-radius:10px">?</div>
@@ -3037,7 +3060,7 @@ html, body {
 <!-- MAIN CONTENT: BLOG LIST -->
 <div id="blog-home">
   <!-- Hero Section (dynamic) -->
-  <section id="hero-section">
+  <section id="hero-section" class="reveal-section stagger-2">
     <div class="hero-inner">
       <div class="hero-text-col">
         <div class="skeleton" style="height:12px;width:80px;margin-bottom:20px"></div>
@@ -3049,7 +3072,7 @@ html, body {
   </section>
 
   <!-- Main Layout -->
-  <div class="main-wrap">
+  <div class="main-wrap reveal-section stagger-3">
     <main>
       <div class="filter-bar">
         <button class="filter-btn active" onclick="filterCat('all', this, event)">Tất cả</button>
@@ -3084,7 +3107,7 @@ html, body {
 
 <!-- POST DETAIL PAGE -->
 <div id="post-detail-page">
-  <div class="post-detail-wrap">
+  <div class="post-detail-wrap reveal-section stagger-2">
     <article id="post-detail-content"></article>
     <aside id="post-detail-sidebar" class="sidebar"></aside>
   </div>
@@ -3092,7 +3115,7 @@ html, body {
 
 <!-- LANDING PAGE VIEWER -->
 <div id="lp-viewer-page">
-  <div class="lp-viewer-content" id="lp-viewer-content"></div>
+  <div class="lp-viewer-content reveal-section stagger-2" id="lp-viewer-content"></div>
 </div>
 
 <!-- FOOTER -->
@@ -8276,6 +8299,7 @@ function _showHome(cat) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   updateMetaTags({ title: '', desc: data.settings.tagline, image: (data.posts.find(p=>p.featured)||data.posts[0]||{}).image||'', url: window.location.origin });
   document.title = data.settings.sitename + ' – ' + data.settings.tagline;
+  renderHero();
   renderPosts();
   document.querySelectorAll('nav a, .filter-btn').forEach(a => a.classList.remove('active'));
   if (cat === 'all') { const f = document.querySelector('nav a'); if (f) f.classList.add('active'); }
