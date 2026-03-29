@@ -5,7 +5,7 @@
 
 const FIREBASE_PROJECT = 'taitangau-7c2bb';
 const FIREBASE_API_KEY = 'AIzaSyDaCVGTacHKbgY-c-AZOEmx5VrwPy1RrG8';
-const SITE_NAME        = 'Tài Tàng Au';
+const SITE_NAME        = 'Taipulme';
 
 export async function onRequest(context) {
   const { request, next } = context;

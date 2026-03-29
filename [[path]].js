@@ -17,7 +17,7 @@ export async function onRequest(context) {
       if (!d.fields) return {};
       const f = d.fields;
       return {
-        sitename: f.sitename?.stringValue || 'Tài Tàng Au',
+        sitename: f.sitename?.stringValue || 'Taipulme',
         tagline:  f.tagline?.stringValue  || 'Chuyện Nghề & Chuyện Đời',
         ogImage:  f.ogImage?.stringValue  || '',
         domain:   f.domain?.stringValue   || url.origin,
@@ -53,7 +53,7 @@ export async function onRequest(context) {
   try {
     const settings = await getSiteSettings();
     const defaultImage = settings.ogImage || '';
-    const sitename = settings.sitename || 'Tài Tàng Au';
+    const sitename = settings.sitename || 'Taipulme';
     const tagline  = settings.tagline  || 'Chuyện Nghề & Chuyện Đời';
 
     // ── Trang chủ ──

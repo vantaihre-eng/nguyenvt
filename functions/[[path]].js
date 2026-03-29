@@ -26,13 +26,13 @@ export async function onRequest(context) {
         });
         
         if (postDoc) {
-          const title = postDoc.fields.title ? postDoc.fields.title.stringValue : 'Tài Tàng Au';
+          const title = postDoc.fields.title ? postDoc.fields.title.stringValue : 'Taipulme';
           const excerpt = postDoc.fields.excerpt ? postDoc.fields.excerpt.stringValue : 'Chuyện Nghề & Chuyện Đời';
           const image = postDoc.fields.image ? postDoc.fields.image.stringValue : '';
           
           // Bơm thẻ Meta Open Graph vào thẻ head của response
           const ogTags = `
-            <title>${title} | Tài Tàng Au</title>
+            <title>${title} | Taipulme</title>
             <meta property="og:title" content="${title}">
             <meta property="og:description" content="${excerpt}">
             <meta property="og:image" content="${image}">

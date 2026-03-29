@@ -358,6 +358,76 @@ function initFirebase() {
   .read-more:hover { background: var(--accent-dark); }
   .read-more-inline { cursor: pointer; }
 
+  /* ── PAGINATION ── */
+  .load-more-container {
+    text-align: center;
+    margin-top: 40px;
+  }
+  .load-more-btn {
+    background: #fff;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    padding: 12px 32px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    font-family: var(--body-font);
+  }
+  .load-more-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(16, 33, 68, 0.2);
+  }
+
+  /* ── HERO SLIDER ── */
+  .hero-slider-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .hero-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+    display: none;
+    z-index: 1;
+  }
+  .hero-slide.active {
+    opacity: 1;
+    display: block;
+    z-index: 2;
+  }
+  .hero-slider-dots {
+    position: absolute;
+    bottom: 24px;
+    left: 28px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+  .hero-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+  .hero-dot.active {
+    background: var(--accent);
+    transform: scale(1.2);
+    width: 24px;
+    border-radius: 4px;
+  }
+  .hero-no-img .hero-slider-dots {
+    left: 28px;
+  }
+
   @media (max-width: 860px) {
     #hero-section { min-height: auto; }
     .hero-inner { grid-template-columns: 1fr !important; }
@@ -3806,6 +3876,34 @@ html, body {
             </div>
           </div>
 
+          <!-- HERO SLIDER -->
+          <div class="cms-editor-card">
+            <div class="cms-section-title">🖼️ Hero Slider (Slider Trang Chủ)</div>
+            <p style="font-size:12px;color:#888;margin-bottom:16px">Chọn tối đa 5 bài viết để hiển thị dạng slider ở phần đầu trang chủ. Nếu để trống, sẽ lấy bài Featured, bài mới nhất, hoặc Bài viết ưu tiên.</p>
+            <div class="cms-settings-grid" id="cms-slider-selector">
+              <div class="cms-form-group">
+                <label style="font-size:11px;font-weight:700;color:#666">Slide 1</label>
+                <select class="cms-field" id="cms-slider-1"><option value="">— Trống —</option></select>
+              </div>
+              <div class="cms-form-group">
+                <label style="font-size:11px;font-weight:700;color:#666">Slide 2</label>
+                <select class="cms-field" id="cms-slider-2"><option value="">— Trống —</option></select>
+              </div>
+              <div class="cms-form-group">
+                <label style="font-size:11px;font-weight:700;color:#666">Slide 3</label>
+                <select class="cms-field" id="cms-slider-3"><option value="">— Trống —</option></select>
+              </div>
+              <div class="cms-form-group">
+                <label style="font-size:11px;font-weight:700;color:#666">Slide 4</label>
+                <select class="cms-field" id="cms-slider-4"><option value="">— Trống —</option></select>
+              </div>
+              <div class="cms-form-group">
+                <label style="font-size:11px;font-weight:700;color:#666">Slide 5</label>
+                <select class="cms-field" id="cms-slider-5"><option value="">— Trống —</option></select>
+              </div>
+            </div>
+          </div>
+
           <!-- SECURITY -->
           <div class="cms-editor-card">
             <div class="cms-section-title">Bảo mật</div>
@@ -4053,6 +4151,7 @@ window.landingPages = []; // global để _openBySlug và các hàm khác đều
 const LP_KEY = 'taipulme_landing_pages';
 
 let currentCategory = 'all';
+let postsDisplayLimit = 15; // Pagination limit
 
 async function loadData() {
   _loadLocal();
@@ -4394,7 +4493,8 @@ function renderPosts() {
     const priority = [];
     const others = [];
     posts.forEach(p => {
-      if (priorityIds.includes(p.slug || data.posts.indexOf(p).toString())) {
+      const pId = p.slug || data.posts.indexOf(p).toString();
+      if (priorityIds.includes(pId)) {
         priority.push(p);
       } else {
         others.push(p);
@@ -4414,7 +4514,11 @@ function renderPosts() {
     return;
   }
   
-  container.innerHTML = posts.map((post) => {
+  // Pagination slice
+  const totalPosts = posts.length;
+  const visiblePosts = posts.slice(0, postsDisplayLimit);
+  
+  container.innerHTML = visiblePosts.map((post) => {
     const displayIdx = data.posts.indexOf(post);
     const rt = post.readTime ? parseInt(post.readTime) : 0;
     return `
@@ -4449,15 +4553,48 @@ function renderPosts() {
       </div>
     `;
   }).join('');
+
+  // Handle "Load More" button
+  let loadMoreBtn = document.getElementById('load-more-container');
+  if (totalPosts > postsDisplayLimit) {
+    if (!loadMoreBtn) {
+      loadMoreBtn = document.createElement('div');
+      loadMoreBtn.id = 'load-more-container';
+      loadMoreBtn.className = 'load-more-container';
+      container.parentNode.insertBefore(loadMoreBtn, container.nextSibling);
+    }
+    loadMoreBtn.innerHTML = `<button class="load-more-btn" onclick="loadMorePosts()">Xem thêm</button>`;
+    loadMoreBtn.style.display = 'block';
+  } else if (loadMoreBtn) {
+    loadMoreBtn.style.display = 'none';
+  }
 }
+
+function loadMorePosts() {
+  postsDisplayLimit += 6;
+  renderPosts();
+}
+
+// Global slider interval reference
+let heroSlideInterval = null;
 
 function renderHero() {
   const hero = document.getElementById('hero-section');
   if (!hero) return;
-  const cats = data.settings.categories || [];
-  const featured = data.posts.find(p => p.featured) || data.posts[0];
+  
+  if (heroSlideInterval) { clearInterval(heroSlideInterval); heroSlideInterval = null; }
 
-  if (!featured) {
+  let heroPosts = [];
+  if (data.settings.sliderPostIds && data.settings.sliderPostIds.length > 0) {
+    heroPosts = data.settings.sliderPostIds.map(id => data.posts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id)).filter(p => p);
+  }
+  
+  if (heroPosts.length === 0) {
+    const featured = data.posts.find(p => p.featured) || data.posts[0];
+    if (featured) heroPosts.push(featured);
+  }
+
+  if (heroPosts.length === 0) {
     hero.className = 'hero-no-img';
     hero.innerHTML = `
       <div class="hero-inner">
@@ -4470,31 +4607,73 @@ function renderHero() {
     return;
   }
 
-  const idx = data.posts.indexOf(featured);
-  const imgCol = `
-    <div class="hero-img-col">
-      ${featured.image ? `
-        <img src="${featured.image}" alt="${escHtml(featured.title)}" loading="lazy" 
-             style="display:block" 
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-      ` : ''}
-      <div class="hero-img-col-ph" style="display:${featured.image ? 'none' : 'flex'}">${getCatEmoji(featured.category)}</div>
+  const isSlider = heroPosts.length > 1;
+  const hasAnyImg = heroPosts.some(p => p.image);
+  hero.className = hasAnyImg ? '' : 'hero-no-img';
+
+  const slidesHtml = heroPosts.map((featured, slideIdx) => {
+    const idx = data.posts.indexOf(featured);
+    const sapo = trimWords(featured.excerpt || featured.content || '', 31);
+    const imgCol = `
+      <div class="hero-img-col">
+        ${featured.image ? `
+          <img src="${featured.image}" alt="${escHtml(featured.title)}" loading="lazy" 
+               style="display:block" 
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+        ` : ''}
+        <div class="hero-img-col-ph" style="display:${featured.image ? 'none' : 'flex'}">${getCatEmoji(featured.category)}</div>
+      </div>
+    `;
+
+    return `
+      <div class="hero-slide ${slideIdx === 0 ? 'active' : ''}" data-slide="${slideIdx}">
+        <div class="hero-inner">
+          <div class="hero-text-col">
+            <span class="hero-tag">${escHtml(featured.category)}</span>
+            <h1>${escHtml(featured.title)}</h1>
+            <p class="hero-desc">${escHtml(sapo)}</p>
+            <a class="read-more read-more-inline" onclick="openPost(${idx})">Đọc tiếp →</a>
+          </div>
+          ${imgCol}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  let dotsHtml = '';
+  if (isSlider) {
+    dotsHtml = `
+      <div class="hero-slider-dots">
+        ${heroPosts.map((_, i) => `<div class="hero-dot ${i === 0 ? 'active' : ''}" onclick="goToHeroSlide(${i})"></div>`).join('')}
+      </div>
+    `;
+  }
+
+  hero.innerHTML = `
+    <div class="hero-slider-wrap">
+      ${slidesHtml}
+      ${dotsHtml}
     </div>
   `;
 
-  hero.className = featured.image ? '' : 'hero-no-img';
-  const sapo = trimWords(featured.excerpt || featured.content || '', 31);
-  hero.innerHTML = `
-    <div class="hero-inner">
-      <div class="hero-text-col">
-        <span class="hero-tag">${escHtml(featured.category)}</span>
-        <h1>${escHtml(featured.title)}</h1>
-        <p class="hero-desc">${escHtml(sapo)}</p>
-        <a class="read-more read-more-inline" onclick="openPost(${idx})">Đọc tiếp →</a>
-      </div>
-      ${imgCol}
-    </div>
-  `;
+  if (isSlider) {
+    let currentSlide = 0;
+    const slides = hero.querySelectorAll('.hero-slide');
+    const dots = hero.querySelectorAll('.hero-dot');
+    
+    window.goToHeroSlide = function(n) {
+      slides[currentSlide].classList.remove('active');
+      dots[currentSlide].classList.remove('active');
+      currentSlide = n;
+      slides[currentSlide].classList.add('active');
+      dots[currentSlide].classList.add('active');
+    };
+
+    heroSlideInterval = setInterval(() => {
+      const nextSlide = (currentSlide + 1) % slides.length;
+      goToHeroSlide(nextSlide);
+    }, 5000);
+  }
 }
 
 function renderSidebar(containerId, currentIdx) {
@@ -4781,9 +4960,12 @@ function goHome(e) {
   document.getElementById('blog-home').style.display = 'block';
   document.getElementById('post-detail-page').style.display = 'none';
   document.getElementById('lp-viewer-page').style.display = 'none';
+  const p404 = document.getElementById('page-404');
+  if (p404) p404.style.display = 'none';
   
   // Reset về "Tất cả" category
   currentCategory = 'all';
+  postsDisplayLimit = 15; // Reset pagination
   
   // Reset active nav
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
@@ -4792,6 +4974,7 @@ function goHome(e) {
   
   // Render lại posts
   renderPosts();
+  renderHero(); // Update hero post too
   
   // Scroll to top smoothly
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4800,9 +4983,11 @@ function goHome(e) {
   document.querySelector('header').classList.remove('header-hidden');
   
   // Update URL về trang chủ
-  try {
-    history.pushState({ view: 'home' }, '', location.pathname);
-  } catch(e) {}
+  if (!window._routerRestoring) {
+    try {
+      history.pushState({ view: 'home', cat: 'all' }, '', '/');
+    } catch(e) {}
+  }
 }
 
 /* ══════════════════════════════════════════════
@@ -6344,6 +6529,16 @@ function cmsLoadSettings() {
       el.value = pIds[n-1] || '';
     }
   });
+
+  // Hero Slider
+  const sIds = s.sliderPostIds || [];
+  [1, 2, 3, 4, 5].forEach(n => {
+    const el = document.getElementById('cms-slider-' + n);
+    if (el) {
+      el.innerHTML = pOptions;
+      el.value = sIds[n-1] || '';
+    }
+  });
 }
 
 /* ── Header & Footer link editors ── */
@@ -6438,6 +6633,14 @@ function cmsSaveSettings() {
     document.getElementById('cms-priority-1').value,
     document.getElementById('cms-priority-2').value,
     document.getElementById('cms-priority-3').value
+  ].filter(id => id);
+
+  data.settings.sliderPostIds = [
+    document.getElementById('cms-slider-1').value,
+    document.getElementById('cms-slider-2').value,
+    document.getElementById('cms-slider-3').value,
+    document.getElementById('cms-slider-4').value,
+    document.getElementById('cms-slider-5').value
   ].filter(id => id);
 
   initFirebase().then(() => saveData(data));
