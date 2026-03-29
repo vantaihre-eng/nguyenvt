@@ -8531,7 +8531,8 @@ function openPost(idx) {
     const react = allReact[idx] || { helpful: 0, voted: false };
     const s = data.settings;
     const rt = readTime(post.content || post.excerpt || '');
-    const pageUrl = encodeURIComponent(window.location.href);
+    const permalink = window.location.origin + '/bai-viet/' + (post.slug || idx);
+    const pageUrl = encodeURIComponent(permalink);
 
     const related = data.posts
       .map(function(p, i) { return Object.assign({}, p, { _idx: i }); })
