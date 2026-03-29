@@ -2,9 +2,9 @@
 // Firebase configuration
 export const firebaseConfig = {
   apiKey: "AIzaSyDaCVGTacHKbgY-c-AZOEmx5VrwPy1RrG8",
-  authDomain: "taipulme-7c2bb.firebaseapp.com",
-  projectId: "taipulme-7c2bb",
-  storageBucket: "taipulme-7c2bb.firebasestorage.app",
+  authDomain: "taitangau-7c2bb.firebaseapp.com",
+  projectId: "taitangau-7c2bb",
+  storageBucket: "taitangau-7c2bb.firebasestorage.app",
   messagingSenderId: "211203067163",
   appId: "1:211203067163:web:049caa517ca10ca0da57be"
 };
