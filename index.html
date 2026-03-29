@@ -4907,25 +4907,18 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     sidebar.style.display = 'block';
   }
 
-  // Đọc widgets. Nếu là trang tĩnh, ép buộc thứ tự/danh sách cố định: about, featured, categories, recent, facebook
-  let widgets;
-  if (isStaticPage) {
-    widgets = ['about', 'featured', 'categories', 'recent', 'facebook'];
-  } else {
-    widgets = getSidebarWidgets().filter(w => w.visible !== false).map(w => w.key);
-    // Đảm bảo bài viết cũng có link facebook nếu ko được cài đặt
-    if (!widgets.includes('facebook')) widgets.push('facebook');
-  }
+  // Thứ tự hiển thị: Chuyên mục -> Nổi bật -> Gần đây -> Avatar
+  let widgets = ['categories', 'featured', 'recent', 'about'];
   let html = '';
 
   widgets.forEach(section => {
     if (section === 'about') {
-      html += `
-        <div class="sidebar-section about-card">
-          ${s.avatar ? `<img src="${escHtml(s.avatar)}" alt="${escHtml(s.author)}">` : ''}
-          <h4>${escHtml(s.author)}</h4>
-          <p>${escHtml(s.bio)}</p>
-        </div>`;
+      if (s.avatar) {
+        html += `
+          <div class="sidebar-section about-card" style="display:flex; justify-content:center; align-items:center;">
+            <img src="${escHtml(s.avatar)}" alt="${escHtml(s.author)}" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin:0;">
+          </div>`;
+      }
     } else if (section === 'categories') {
       const catCounts = {};
       data.posts.forEach(p => { catCounts[p.category] = (catCounts[p.category] || 0) + 1; });
@@ -4979,17 +4972,6 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
                 </div>
               </div>
             `).join('')}
-          </div>`;
-      }
-    } else if (section === 'facebook') {
-      if (s.social && s.social.facebook) {
-        html += `
-          <div class="sidebar-section">
-            <h3>Kết nối</h3>
-            <div class="fb-widget" style="background:#f0f2f5;border-radius:8px;padding:12px;text-align:center">
-              <div style="font-weight:700;margin-bottom:8px;font-size:14px">Facebook Page</div>
-              <a href="${s.social.facebook}" target="_blank" class="t-btn" style="width:100%;display:block;background:#1877f2;text-decoration:none;color:#fff;text-align:center">Theo dõi trang</a>
-            </div>
           </div>`;
       }
     } else if (section === 'tags') {
@@ -6620,7 +6602,6 @@ function openPage(slug, fromCms) {
     if (!pg) return showToast('Không tìm thấy trang', true);
     const content = document.getElementById('post-detail-content');
     content.innerHTML = `
-      <button class="post-detail-back" onclick="cmsNav('pages',document.querySelector('.cms-nav-item[data-page=\'pages\']'))">← Quay lại CMS</button>
       ${pg.image ? `<img class="post-detail-img" src="${pg.image}" alt="${escHtml(pg.title)}" loading="lazy">` : ''}
       <h1 class="post-detail-title">${escHtml(pg.title)}</h1>
       <div class="post-detail-body">${pg.content || ''}</div>
@@ -6640,7 +6621,6 @@ function openPage(slug, fromCms) {
   // Re-use post detail page as page viewer
   const content = document.getElementById('post-detail-content');
   content.innerHTML = `
-    <button class="post-detail-back" onclick="goBack()">← Quay lại</button>
     ${pg.image ? `<img class="post-detail-img" src="${pg.image}" alt="${escHtml(pg.title)}" loading="lazy">` : ''}
     <h1 class="post-detail-title">${escHtml(pg.title)}</h1>
     <div class="post-detail-body">${pg.content || ''}</div>
@@ -8249,8 +8229,8 @@ function applyTheme(cfg) {
 
     /* Surface Card Overrides */
     .post-card, .sidebar-widget { background: var(--surface, #fff) !important; }
-    /* Sidebar sections match page background */
-    .sidebar-section { background: var(--cream, #fff) !important; border-color: color-mix(in srgb, var(--dark, #1a1a1a) 10%, transparent) !important; }
+    /* Sidebar sections are forced white as requested */
+    .sidebar-section { background: #fff !important; border-color: #eee !important; box-shadow: 0 4px 15px rgba(0,0,0,0.04) !important; }
 
     /* Visibility Overrides */
     ${cfg.showProgress === false ? '#reading-progress { display:none!important; }' : ''}
@@ -8358,10 +8338,6 @@ function openPost(idx) {
 
   const content = document.getElementById('post-detail-content');
   content.innerHTML = `
-    <button class="post-detail-back" onclick="goBack()">
-      ← Quay lại
-    </button>
-    
     ${post.image
       ? `<img class="post-detail-img" src="${escHtml(post.image)}" alt="${escHtml(post.title)}">`
       : `<div class="post-detail-img-ph">${getCatEmoji(post.category)}</div>`
