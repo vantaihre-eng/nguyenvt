@@ -2218,22 +2218,6 @@ function initFirebase() {
     font-size: 11px; font-weight: 700; letter-spacing: 1px;
     text-transform: uppercase; margin-bottom: 16px;
   }
-  /* Elephant Animations */
-  @keyframes e-jump  { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-14px)} 60%{transform:translateY(-8px)} }
-  @keyframes e-trunk { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(-20deg)} 60%{transform:rotate(15deg)} 80%{transform:rotate(-10deg)} }
-  @keyframes e-tail  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(25deg)} }
-  @keyframes e-blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.1)} }
-
-  #global-loader {
-    position: fixed; inset: 0; z-index: 9999;
-    background: rgba(255,255,255,0.95);
-    display: none; flex-direction: column; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px); transition: opacity .3s;
-  }
-  #global-loader .e-body  { animation: e-jump 0.6s ease-in-out infinite; transform-origin: 74px 60px; }
-  #global-loader .e-trunk { animation: e-trunk 0.5s ease-in-out infinite; transform-origin: 126px 64px; }
-  #global-loader .e-tail  { animation: e-tail 0.7s ease-in-out infinite; transform-origin: 38px 62px; }
-  #global-loader .e-eye   { animation: e-blink 2.5s ease-in-out infinite; transform-origin: 118px 43px; }
 
   .post-detail-title {
     font-family: var(--heading-font);
@@ -9295,31 +9279,6 @@ init();
     <button onclick="cmsLogin()" style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer">Đăng nhập →</button>
     <div id="cms-login-err" style="display:none;color:#f87171;font-size:13px;text-align:center;margin-top:12px">Mật khẩu không đúng</div>
     <button onclick="_hideLoginModal()" style="display:block;margin:16px auto 0;background:none;border:none;color:#666;font-size:12px;cursor:pointer">Huỷ</button>
-  </div>
-</div>
-<!-- Global Elephant Loader -->
-<div id="global-loader">
-  <div style="text-align:center">
-    <svg viewBox="0 0 170 140" xmlns="http://www.w3.org/2000/svg" style="width:160px;height:140px;overflow:visible">
-      <g class="e-tail"><path d="M38 62 Q26 50 28 38 Q29 30 24 26" stroke="#7a6fa8" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="24" cy="25" r="4" fill="#9b8ec4"/></g>
-      <g class="e-body">
-        <path d="M38 56 Q35 44 46 38 Q61 30 80 32 Q98 34 106 44 Q114 54 110 66 Q106 78 91 82 Q70 86 52 82 Q37 78 38 68 Z" fill="#7a6fa8"/>
-        <ellipse cx="73" cy="68" rx="24" ry="11" fill="#a89fd4" opacity="0.5"/>
-        <ellipse cx="108" cy="50" rx="22" ry="20" fill="#7a6fa8"/>
-        <path d="M120 34 Q140 24 144 38 Q148 52 140 60 Q132 66 122 60 Q116 54 118 44 Z" fill="#9b8ec4"/>
-        <path d="M122 38 Q136 30 138 40 Q140 50 134 56 Q128 60 122 54 Q120 48 121 42 Z" fill="#e8c5d0"/>
-        <g class="e-eye"><circle cx="118" cy="43" r="7" fill="#fff" stroke="#2a1a5e" stroke-width="1.5"/><circle cx="119" cy="44" r="4" fill="#2a1a5e"/><circle cx="120.5" cy="42.5" r="1.5" fill="#fff"/></g>
-        <path d="M112 35 Q117 30 123 32" stroke="#2a1a5e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path d="M111 58 Q118 65 125 61" stroke="#2a1a5e" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <ellipse cx="118" cy="62" rx="5" ry="3.5" fill="#e8a0a0" opacity="0.8"/>
-        <rect x="44" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
-        <rect x="63" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
-        <rect x="82" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
-        <rect x="98" y="78" width="16" height="26" rx="7" fill="#6b5e96"/>
-      </g>
-      <g class="e-trunk"><path d="M126 64 Q136 60 138 50 Q140 42 134 40" stroke="#7a6fa8" stroke-width="11" fill="none" stroke-linecap="round"/><path d="M126 64 Q136 60 138 50 Q140 42 134 40" stroke="#a89fd4" stroke-width="5" fill="none" stroke-linecap="round"/></g>
-    </svg>
-    <div style="margin-top:20px;font-size:13px;font-weight:700;color:#7a6fa8;letter-spacing:1px;text-transform:uppercase">Đang tải...</div>
   </div>
 </div>
 </body>
