@@ -3439,13 +3439,9 @@ html, body {
                 </div>
               </div>
 
-              <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-                <button class="cms-save-btn" style="background:#f0ece5;color:#333;border:1px solid #ccc;box-shadow:none" onclick="cmsSavePost('draft')">Lưu Nháp</button>
-                <button class="cms-save-btn" onclick="cmsSavePost('published')">Xuất Bản</button>
-                <div style="display:flex;align-items:center;gap:8px;background:#f9f9f9;padding:4px 8px;border-radius:6px;border:1px solid #e8e8e8;">
-                  <button class="cms-new-btn" style="padding:6px 14px;font-size:12px" onclick="cmsSavePost('scheduled')">Hẹn Giờ</button>
-                  <input type="datetime-local" id="cms-post-schedule-time" class="cms-field" style="width:auto;padding:4px 8px;height:auto">
-                </div>
+              <div style="display:flex;gap:12px;align-items:center">
+                <button class="cms-save-btn" onclick="cmsSavePost()">Lưu & Xuất bản</button>
+                <button class="cms-save-btn" onclick="cmsSavePost(true)" style="background:#64748b">Lưu nháp</button>
                 <button class="cms-cancel-btn" onclick="cmsNav('posts',null)">Huỷ</button>
               </div>
             </div>
@@ -4779,6 +4775,9 @@ function renderPosts() {
     ? data.posts 
     : data.posts.filter(p => p.category === currentCategory);
   
+  // Lọc bỏ các bài viết nháp đối với trang công khai
+  posts = posts.filter(p => !p.isDraft);
+  
   // Handle priority posts on "all" view
   if (currentCategory === 'all' && priorityIds.length > 0) {
     const priority = [];
@@ -4819,7 +4818,7 @@ function renderPosts() {
             ? `<img src="${post.image}" alt="${escHtml(post.title)}" class="post-img" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
             : ''
           }
-          <div class="post-img-placeholder" ${post.image ? 'style="display:none"' : ''} style="${post.image ? 'display:none' : 'background:' + getCatGradient(post.category)}">
+          <div class="post-img-placeholder" style="${post.image ? 'display:none;' : ''} background:${getCatGradient(post.category)}">
             <span class="ph-emoji">${getCatEmoji(post.category)}</span>
             <span class="ph-label">${escHtml(post.category || '')}</span>
           </div>
@@ -4883,11 +4882,11 @@ function renderHero() {
 
   let heroPosts = [];
   if (data.settings.sliderPostIds && data.settings.sliderPostIds.length > 0) {
-    heroPosts = data.settings.sliderPostIds.map(id => data.posts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id)).filter(p => p);
+    heroPosts = data.settings.sliderPostIds.map(id => data.posts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id)).filter(p => p && !p.isDraft);
   }
   
   if (heroPosts.length === 0) {
-    const featured = data.posts.find(p => p.featured) || data.posts[0];
+    const featured = data.posts.filter(p => !p.isDraft).find(p => p.featured) || data.posts.filter(p => !p.isDraft)[0];
     if (featured) heroPosts.push(featured);
   }
 
@@ -5037,7 +5036,7 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     } else if (section === 'recent') {
       const recent = data.posts
         .map((p, i) => Object.assign({}, p, { _idx: i }))
-        .filter(p => p._idx !== currentIdx)
+        .filter(p => p._idx !== currentIdx && !p.isDraft)
         .slice(0, 5);
       html += `
         <div class="sidebar-section">
@@ -5057,7 +5056,7 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     } else if (section === 'featured') {
       const featuredPosts = data.posts
         .map((p, i) => Object.assign({}, p, { _idx: i }))
-        .filter(p => p.featured || p._idx === 0)
+        .filter(p => (p.featured || p._idx === 0) && !p.isDraft)
         .slice(0, 3);
       if (featuredPosts.length > 0) {
         html += `
@@ -5200,10 +5199,15 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
     _urlToUse = domain + (_urlToUse.startsWith('/') ? '' : '/') + _urlToUse;
   }
   
-  if (_urlToUse) {
+  if (_urlToUse && typeof _urlToUse === 'string') {
     set('og-url', _urlToUse);
-    const canon = document.getElementById('canonical-url');
-    if (canon) canon.setAttribute('href', _urlToUse);
+    // Cập nhật thẻ canonical động để tối ưu SEO
+    const canonEl = document.getElementById('canonical-url');
+    if (canonEl) {
+      // Đảm bảo URL chính tắc không có query params dư thừa và thống nhất
+      const cleanUrl = _urlToUse.split('?')[0].split('#')[0].replace(/\/$/, '');
+      canonEl.setAttribute('href', cleanUrl || domain + '/');
+    }
   }
   
   // JSON-LD Schema
@@ -5467,7 +5471,11 @@ function cmsRenderDashboard() {
         ${recent.map((p, i) => `
           <tr>
             <td>${p.image ? `<img class="t-thumb" src="${escHtml(p.image)}" alt="">` : `<div class="t-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0ece5">${getCatEmoji(p.category)}</div>`}</td>
-            <td style="max-width:300px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}</div></td>
+            <td style="max-width:300px">
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                ${p.isDraft ? '<span style="background:#64748b;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px">NHÁP</span>' : ''}${escHtml(p.title)}
+              </div>
+            </td>
             <td><span class="t-cat">${escHtml(p.category)}</span></td>
             <td style="color:#777777;white-space:nowrap">${formatDate(p.date)}</td>
             <td><div class="t-actions">
@@ -5489,7 +5497,12 @@ function cmsRenderPostsList() {
         ${data.posts.map((p, i) => `
           <tr>
             <td>${p.image ? `<img class="t-thumb" src="${escHtml(p.image)}" alt="">` : `<div class="t-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0ece5">${getCatEmoji(p.category)}</div>`}</td>
-            <td style="max-width:280px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}</div>${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}</td>
+            <td style="max-width:280px">
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                ${p.isDraft ? '<span style="background:#64748b;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px">NHÁP</span>' : ''}${escHtml(p.title)}
+              </div>
+              ${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}
+            </td>
             <td><span class="t-cat">${escHtml(p.category)}</span></td>
             <td style="color:#777777;white-space:nowrap">${formatDate(p.date)}</td>
             <td style="text-align:center">${p.featured ? '⭐' : '—'}</td>
@@ -5718,7 +5731,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcut removed for security
 });
 
-async function cmsSavePost() {
+async function cmsSavePost(asDraft = false) {
   const title = document.getElementById('cms-post-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
 
@@ -5757,6 +5770,7 @@ async function cmsSavePost() {
     image: document.getElementById('cms-post-image').value.trim(),
     tags: document.getElementById('cms-post-tags').value.split(',').map(t => t.trim()).filter(Boolean),
     featured: isFeatured,
+    isDraft: asDraft === true,
     date: dateVal ? new Date(dateVal).getTime() : (cmsCurrentEditIdx !== null ? data.posts[cmsCurrentEditIdx].date : Date.now()),
     readTime: Math.max(1, Math.ceil((content || '').replace(/<[^>]+>/g,'').split(/\s+/).filter(Boolean).length / 200))
   };
@@ -8371,8 +8385,10 @@ function readTime(text) {
 }
 
 function openPost(idx) {
+  if (idx === undefined || idx === null) return;
   const post = data.posts[idx];
   if (!post) {
+    console.warn('Post not found at index:', idx);
     hideLoader();
     return;
   }
@@ -8388,11 +8404,12 @@ function openPost(idx) {
     const react = allReact[idx] || { helpful: 0, voted: false };
     const s = data.settings;
     const rt = readTime(post.content || post.excerpt || '');
-    const pageUrl = encodeURIComponent(window.location.href);
+    const permalink = window.location.origin + '/bai-viet/' + (post.slug || idx);
+    const pageUrl = encodeURIComponent(permalink);
 
     const related = data.posts
       .map(function(p, i) { return Object.assign({}, p, { _idx: i }); })
-      .filter(p => p._idx !== idx && p.category === post.category)
+      .filter(p => p._idx !== idx && p.category === post.category && !p.isDraft)
       .slice(0, 4);
 
     content.innerHTML = `
@@ -8445,7 +8462,9 @@ function openPost(idx) {
       const slug = post.slug || String(idx);
       try { history.pushState({ view: 'post', idx: idx, slug: slug }, '', '/bai-viet/' + slug); } catch(e) {}
     }
-    updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: window.location.origin + '/bai-viet/' + (post.slug || idx), type: 'article', author: data.settings.author, date: post.date });
+    try {
+      updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: window.location.origin + '/bai-viet/' + (post.slug || idx), type: 'article', author: data.settings.author, date: post.date });
+    } catch(e) { console.warn('Meta update failed:', e); }
     hideLoader();
   }, 100);
 }
@@ -8740,8 +8759,12 @@ async function init() {
     && !_initPath.startsWith('lp/');
   if (!_initIsSlug) {
     document.getElementById('blog-home').style.display = 'block';
-    renderHero();
-    renderPosts();
+    try {
+      renderHero();
+      renderPosts();
+    } catch (e) {
+      console.warn('Initial render error:', e);
+    }
   }
 
   // ── BƯỚC 2: Router (dùng data từ cache trước) ──
@@ -8779,6 +8802,9 @@ async function init() {
   _syncFirebaseBackground().then(() => {
     hideLoading(); // ẩn loading sau Firebase sync
     // _openBySlug đã được gọi trong _pullFirebase sau khi landingPages load xong
+  }).catch(err => {
+    console.error('Firebase sync failed:', err);
+    hideLoading(); // Vẫn ẩn loading để người dùng thấy nội dung cache
   });
 
   // Reading progress bar + Smart header hide/show
