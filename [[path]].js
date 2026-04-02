@@ -1,7 +1,20 @@
-export async function onRequest(context) {
   const request = context.request;
   const url = new URL(request.url);
   const path = url.pathname;
+
+  // ── BYPASS ASSETS (Fix MIME Type issues) ──
+  const isAsset = path.startsWith('/assets/') || 
+                  path.endsWith('.js') || 
+                  path.endsWith('.css') || 
+                  path.endsWith('.png') || 
+                  path.endsWith('.jpg') || 
+                  path.endsWith('.webp') ||
+                  path.endsWith('.svg') ||
+                  path.endsWith('.ico');
+
+  if (isAsset) {
+    return context.next();
+  }
 
   const response = await context.next();
   let html = await response.text();

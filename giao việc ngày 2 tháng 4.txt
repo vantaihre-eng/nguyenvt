@@ -1,0 +1,5 @@
+hãy tạo ra mỗi file html mới trong thư mục, đồng thời đổi tên file html cũ lưu theo ngày yêu cầu + bản ổn định. mục đích để rollback về nhanh nhất nếu gặp lỗi.
+
+Yêu cầu mới: xử lý tác vụ dưới nhưng không đụng vào logic các phần đang chạy tốt
+
+1. hiện tại bài viết chưa có chức năng lưu nháp, thành ra những bài tôi soạn thảo chưa hoàn chỉnh cũng k lưu tạm được. hãy bổ sung trong cms phần này, lưu nháp, đặc biệt, nháp cũng phải lưu vào fire base và imgbb
