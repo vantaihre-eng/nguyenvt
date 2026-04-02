@@ -21,6 +21,15 @@ async function bootstrap() {
   // 3. Init Router
   routerInit();
   
+  // 4. Hide Loading Screen
+  const loader = document.getElementById('app-loading');
+  if (loader) {
+    loader.style.opacity = '0';
+    setTimeout(() => {
+      loader.style.display = 'none';
+    }, 500);
+  }
+  
   console.log('✅ Taipulme Ready');
 }
 
