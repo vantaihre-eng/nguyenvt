@@ -9,6 +9,11 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "terser": "^5.46.1",
     "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "firebase": "^12.11.0",
+    "quill": "^2.0.3"
   }
 }
