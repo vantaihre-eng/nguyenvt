@@ -2079,6 +2079,18 @@ function initFirebase() {
     display: flex; align-items: center; gap: 8px; transition: background .2s;
   }
   .cms-save-btn:hover { background: var(--accent); }
+  .cms-draft-btn {
+    background: #777777; color: #ffffff; border: none;
+    border-radius: 6px; padding: 11px 24px; font-size: 13px;
+    font-weight: 700; cursor: pointer; font-family: var(--body-font);
+    transition: background .2s;
+  }
+  .cms-draft-btn:hover { background: #555555; }
+  .t-badge-draft {
+    background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 800;
+    padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+    border: 1px solid #e2e8f0; vertical-align: middle;
+  }
   .cms-cancel-btn {
     background: none; border: 1.5px solid #d8cfc3; border-radius: 6px;
     padding: 10px 18px; font-size: 13px; font-weight: 600;
@@ -3441,6 +3453,7 @@ html, body {
 
               <div style="display:flex;gap:12px;align-items:center">
                 <button class="cms-save-btn" onclick="cmsSavePost()">Lưu bài viết</button>
+                <button class="cms-draft-btn" onclick="cmsSavePost(true)">Ghi nháp</button>
                 <button class="cms-cancel-btn" onclick="cmsNav('posts',null)">Huỷ</button>
               </div>
             </div>
@@ -4774,6 +4787,11 @@ function renderPosts() {
     ? data.posts 
     : data.posts.filter(p => p.category === currentCategory);
   
+  // Filter out drafts if not in CMS
+  if (typeof _cmsSessionValid !== 'function' || !_cmsSessionValid()) {
+    posts = posts.filter(p => p.status !== 'draft');
+  }
+  
   // Handle priority posts on "all" view
   if (currentCategory === 'all' && priorityIds.length > 0) {
     const priority = [];
@@ -4877,12 +4895,13 @@ function renderHero() {
   hero.style.display = 'block';
 
   let heroPosts = [];
+  const activePosts = data.posts.filter(p => p.status !== 'draft');
   if (data.settings.sliderPostIds && data.settings.sliderPostIds.length > 0) {
-    heroPosts = data.settings.sliderPostIds.map(id => data.posts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id)).filter(p => p);
+    heroPosts = data.settings.sliderPostIds.map(id => activePosts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id)).filter(p => p);
   }
   
   if (heroPosts.length === 0) {
-    const featured = data.posts.find(p => p.featured) || data.posts[0];
+    const featured = activePosts.find(p => p.featured) || activePosts[0];
     if (featured) heroPosts.push(featured);
   }
 
@@ -5484,7 +5503,7 @@ function cmsRenderPostsList() {
         ${data.posts.map((p, i) => `
           <tr>
             <td>${p.image ? `<img class="t-thumb" src="${escHtml(p.image)}" alt="">` : `<div class="t-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0ece5">${getCatEmoji(p.category)}</div>`}</td>
-            <td style="max-width:280px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}</div>${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}</td>
+            <td style="max-width:280px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}${p.status === 'draft' ? '<span class="t-badge-draft">NHÁP</span>' : ''}</div>${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}</td>
             <td><span class="t-cat">${escHtml(p.category)}</span></td>
             <td style="color:#777777;white-space:nowrap">${formatDate(p.date)}</td>
             <td style="text-align:center">${p.featured ? '⭐' : '—'}</td>
@@ -5713,7 +5732,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcut removed for security
 });
 
-async function cmsSavePost() {
+async function cmsSavePost(forceDraft = false) {
   const title = document.getElementById('cms-post-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
 
@@ -5752,6 +5771,7 @@ async function cmsSavePost() {
     image: document.getElementById('cms-post-image').value.trim(),
     tags: document.getElementById('cms-post-tags').value.split(',').map(t => t.trim()).filter(Boolean),
     featured: isFeatured,
+    status: forceDraft ? 'draft' : 'published',
     date: dateVal ? new Date(dateVal).getTime() : (cmsCurrentEditIdx !== null ? data.posts[cmsCurrentEditIdx].date : Date.now()),
     readTime: Math.max(1, Math.ceil((content || '').replace(/<[^>]+>/g,'').split(/\s+/).filter(Boolean).length / 200))
   };
@@ -8367,8 +8387,9 @@ function readTime(text) {
 
 function openPost(idx) {
   const post = data.posts[idx];
-  if (!post) {
+  if (!post || (post.status === 'draft' && (!_cmsSessionValid || !_cmsSessionValid()))) {
     hideLoader();
+    if (post && post.status === 'draft') showToast('Bài viết này đang được soạn thảo (Nháp)', true);
     return;
   }
   
