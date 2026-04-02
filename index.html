@@ -10,7 +10,20 @@
     <link rel="canonical" href="https://taipulme.github.io/">
 
     <!-- Main Entry (Vite will handle CSS & JS) -->
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="./src/main.js"></script>
+    
+    <style>
+        /* Fallback loading styles */
+        #app-loading {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #fff; display: flex; align-items: center; justify-content: center;
+            font-family: sans-serif; color: #102144;
+        }
+        .loader-content { text-align: center; }
+        #loading-bar-wrap { width: 200px; height: 4px; background: #eee; border-radius: 2px; margin-bottom: 10px; overflow: hidden; }
+        #loading-bar { width: 30%; height: 100%; background: #102144; animation: prog 2s infinite ease-in-out; }
+        @keyframes prog { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+    </style>
 </head>
 <body>
 
