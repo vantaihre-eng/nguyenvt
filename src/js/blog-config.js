@@ -39,3 +39,9 @@ export const setStorage = (s) => { _storage = s; window._storage = s; };
 export const setAuth = (a) => { _auth = a; window._auth = a; };
 export const setFbReady = (val) => { _fbReady = val; };
 export const setFbInitPromise = (p) => { _fbInitPromise = p; };
+
+// Data Setters
+export const setPosts = (p) => { data.posts = p; };
+export const setSettings = (s) => { data.settings = { ...data.settings, ...s }; };
+export const setCategories = (c) => { data.categories = c; };
+export const setPages = (pg) => { data.pages = pg; };

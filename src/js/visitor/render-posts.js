@@ -23,7 +23,7 @@ export function renderPosts(filter = 'all') {
   }
 
   container.innerHTML = filtered.map(p => `
-    <article class="post-card" onclick="openPost('${p.id}')">
+    <article class="post-card" onclick="openPost('${p._id}')">
       ${p.image ? `
         <div class="post-image-wrap">
           <img class="post-img" src="${p.image}" alt="${utils.escHtml(p.title)}" loading="lazy">
@@ -48,7 +48,7 @@ export function renderHero() {
   if (!section) return;
 
   // Hero logic: typically the latest featured or newest published post
-  const heroPost = cfg.data.posts.find(p => p.status !== 'draft' && p.isFeatured) 
+  const heroPost = cfg.data.posts.find(p => p.status !== 'draft' && p.featured) 
                 || cfg.data.posts.find(p => p.status !== 'draft');
 
   if (!heroPost) {
@@ -56,10 +56,12 @@ export function renderHero() {
     return;
   }
 
+  const bgImg = heroPost.image || 'https://placehold.co/1200x600?text=Taipulme';
+
   section.style.display = 'block';
   section.innerHTML = `
-    <div class="hero-slider-wrap">
-      <div class="hero-slide active" style="background-image: url('${heroPost.image || ''}')">
+    <div class="hero-slider-wrap" onclick="openPost('${heroPost._id}')" style="cursor:pointer">
+      <div class="hero-slide active" style="background-image: url('${bgImg}')">
         <div class="hero-overlay"></div>
         <div class="hero-inner-overlay">
           <div class="hero-text-col">
@@ -68,7 +70,7 @@ export function renderHero() {
             </div>
             <h1>${utils.escHtml(heroPost.title)}</h1>
             <p class="hero-desc">${utils.escHtml(heroPost.excerpt || '')}</p>
-            <button class="admin-btn" onclick="openPost('${heroPost.id}')">Đọc bài viết</button>
+            <button class="t-btn btn-white">Đọc bài viết</button>
           </div>
         </div>
       </div>
