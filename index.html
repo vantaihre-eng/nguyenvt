@@ -3439,8 +3439,13 @@ html, body {
                 </div>
               </div>
 
-              <div style="display:flex;gap:12px;align-items:center">
-                <button class="cms-save-btn" onclick="cmsSavePost()">Lưu bài viết</button>
+              <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <button class="cms-save-btn" style="background:#f0ece5;color:#333;border:1px solid #ccc;box-shadow:none" onclick="cmsSavePost('draft')">Lưu Nháp</button>
+                <button class="cms-save-btn" onclick="cmsSavePost('published')">Xuất Bản</button>
+                <div style="display:flex;align-items:center;gap:8px;background:#f9f9f9;padding:4px 8px;border-radius:6px;border:1px solid #e8e8e8;">
+                  <button class="cms-new-btn" style="padding:6px 14px;font-size:12px" onclick="cmsSavePost('scheduled')">Hẹn Giờ</button>
+                  <input type="datetime-local" id="cms-post-schedule-time" class="cms-field" style="width:auto;padding:4px 8px;height:auto">
+                </div>
                 <button class="cms-cancel-btn" onclick="cmsNav('posts',null)">Huỷ</button>
               </div>
             </div>

@@ -84,6 +84,13 @@ async function getPostMeta(slug) {
     if (!doc) return null;
 
     const f = doc.fields || {};
+    const status = f.status?.stringValue;
+    const publishedAt = f.publishedAt?.integerValue || f.publishedAt?.doubleValue;
+    const now = Date.now();
+    
+    if (status && status !== 'published') return null;
+    if (publishedAt && Number(publishedAt) > now) return null;
+
     return {
       title:   f.title?.stringValue   || '',
       excerpt: f.excerpt?.stringValue || '',

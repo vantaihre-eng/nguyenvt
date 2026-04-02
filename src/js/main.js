@@ -356,9 +356,11 @@ function renderPosts() {
   if (!container) return;
 
   const priorityIds = data.settings.priorityPostIds || [];
+  const now = Date.now();
+  let postsObj = data.posts.filter(p => (!p.status || p.status === 'published') && (!p.publishedAt || p.publishedAt <= now));
   let posts = currentCategory === 'all' 
-    ? data.posts 
-    : data.posts.filter(p => p.category === currentCategory);
+    ? postsObj 
+    : postsObj.filter(p => p.category === currentCategory);
   
   // Handle priority posts on "all" view
   if (currentCategory === 'all' && priorityIds.length > 0) {
@@ -423,7 +425,9 @@ function renderHero() {
   const hero = document.getElementById('hero-section');
   if (!hero) return;
   const cats = data.settings.categories || [];
-  const featured = data.posts.find(p => p.featured) || data.posts[0];
+  const now = Date.now();
+  const validPosts = data.posts.filter(p => (!p.status || p.status === 'published') && (!p.publishedAt || p.publishedAt <= now));
+  const featured = validPosts.find(p => p.featured) || validPosts[0];
 
   if (!featured) {
     hero.className = 'hero-no-img';
@@ -504,8 +508,10 @@ function renderSidebar(containerId, currentIdx) {
           <p>${escHtml(s.bio)}</p>
         </div>`;
     } else if (section === 'categories') {
+      const now = Date.now();
+      const validPosts = data.posts.filter(p => (!p.status || p.status === 'published') && (!p.publishedAt || p.publishedAt <= now));
       const catCounts = {};
-      data.posts.forEach(p => { catCounts[p.category] = (catCounts[p.category] || 0) + 1; });
+      validPosts.forEach(p => { catCounts[p.category] = (catCounts[p.category] || 0) + 1; });
       html += `
         <div class="sidebar-section">
           <h3>Chuyên mục</h3>
@@ -517,9 +523,10 @@ function renderSidebar(containerId, currentIdx) {
           `).join('')}
         </div>`;
     } else if (section === 'recent') {
+      const now = Date.now();
       const recent = data.posts
         .map((p, i) => Object.assign({}, p, { _idx: i }))
-        .filter(p => p._idx !== currentIdx)
+        .filter(p => p._idx !== currentIdx && (!p.status || p.status === 'published') && (!p.publishedAt || p.publishedAt <= now))
         .slice(0, 5);
       html += `
         <div class="sidebar-section">
@@ -623,7 +630,9 @@ function performSearch() {
   const res = document.getElementById('search-results');
   if (!q) { res.innerHTML = ''; return; }
   
-  const matches = data.posts.filter(p => 
+  const now = Date.now();
+  const validPosts = data.posts.filter(p => (!p.status || p.status === 'published') && (!p.publishedAt || p.publishedAt <= now));
+  const matches = validPosts.filter(p => 
     (p.title && p.title.toLowerCase().includes(q)) || 
     (p.excerpt && p.excerpt.toLowerCase().includes(q)) || 
     (p.category && p.category.toLowerCase().includes(q))
@@ -848,7 +857,13 @@ function cmsRenderPostsList() {
         ${data.posts.map((p, i) => `
           <tr>
             <td>${p.image ? `<img class="t-thumb" src="${escHtml(p.image)}" alt="">` : `<div class="t-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0ece5">${getCatEmoji(p.category)}</div>`}</td>
-            <td style="max-width:280px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}</div>${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}</td>
+            <td style="max-width:280px">
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                ${p.status === 'draft' ? '<span style="background:#eee;color:#333;padding:2px 6px;border-radius:4px;font-size:10px;margin-right:4px;">Nháp</span>' : (p.status === 'scheduled' ? '<span style="background:#fff3cd;color:#856404;padding:2px 6px;border-radius:4px;font-size:10px;margin-right:4px;">Hẹn giờ</span>' : '')}
+                ${escHtml(p.title)}
+              </div>
+              ${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}
+            </td>
             <td><span class="t-cat">${escHtml(p.category)}</span></td>
             <td style="color:#777777;white-space:nowrap">${formatDate(p.date)}</td>
             <td style="text-align:center">${p.featured ? '⭐' : '—'}</td>
@@ -949,9 +964,13 @@ function rteInsertPickedImg(url) {
 }
 
 /* ── Post Editor ── */
+let cmsAutosaveTimer = null;
+
 function cmsOpenEditor(idx) {
   cmsCurrentEditIdx = idx !== undefined ? idx : null;
   const isNew = cmsCurrentEditIdx === null;
+
+  if (cmsAutosaveTimer) clearInterval(cmsAutosaveTimer);
 
   document.getElementById('cms-editor-title').textContent = isNew ? 'Tạo bài viết mới' : 'Chỉnh sửa bài viết';
 
@@ -988,6 +1007,14 @@ function cmsOpenEditor(idx) {
     // Date
     const d = post.date ? new Date(post.date) : new Date();
     document.getElementById('cms-post-date').value = d.toISOString().split('T')[0];
+    // Schedule time
+    if (post.status === 'scheduled' && post.publishedAt) {
+      const dt = new Date(post.publishedAt);
+      const tzOffset = dt.getTimezoneOffset() * 60000;
+      document.getElementById('cms-post-schedule-time').value = new Date(dt.getTime() - tzOffset).toISOString().slice(0, 16);
+    } else {
+      document.getElementById('cms-post-schedule-time').value = '';
+    }
     // Image preview
     updateImgPreview(post.image || '');
   } else {
@@ -1003,8 +1030,46 @@ function cmsOpenEditor(idx) {
     document.getElementById('cms-post-tags').value = '';
     document.getElementById('cms-post-featured').checked = false;
     document.getElementById('cms-post-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('cms-post-schedule-time').value = '';
     updateImgPreview('');
   }
+
+  // Restore autosave
+  const existingId = !isNew && data.posts[idx]?._id ? data.posts[idx]._id : 'new';
+  const savedDraft = localStorage.getItem('draft_post_' + existingId);
+  if (savedDraft) {
+    if (confirm('Bản nháp tự động trước đó được tìm thấy. Bạn có muốn khôi phục không?')) {
+      try {
+         const draft = JSON.parse(savedDraft);
+         if (draft.title) document.getElementById('cms-post-title').value = draft.title;
+         if (draft.content && postQuill) postQuill.root.innerHTML = draft.content;
+      } catch(e) {}
+    } else {
+      localStorage.removeItem('draft_post_' + existingId);
+    }
+  }
+
+  // Set autosave timer
+  cmsAutosaveTimer = setInterval(() => {
+    if (document.getElementById('cmspage-editor').style.display === 'none') {
+      clearInterval(cmsAutosaveTimer);
+      return;
+    }
+    const draft = {
+      title: document.getElementById('cms-post-title').value.trim(),
+      content: postQuill ? postQuill.root.innerHTML : ''
+    };
+    if (draft.title || draft.content.trim() !== '<p><br></p>') {
+      try { localStorage.setItem('draft_post_' + existingId, JSON.stringify(draft)); } catch(e) {}
+      if (_db) {
+         try {
+            _db.collection('autosaves').doc(existingId).set({
+               ...draft, updatedAt: Date.now()
+            }, { merge: true });
+         } catch(e) {}
+      }
+    }
+  }, 15000);
 }
 
 function updateImgPreview(url) {
@@ -1078,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcut moved to global scope for consistency
 });
 
-function cmsSavePost() {
+function cmsSavePost(action = 'published') {
   const title = document.getElementById('cms-post-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
 
@@ -1108,6 +1173,7 @@ function cmsSavePost() {
     });
   }
 
+  const existingPost = cmsCurrentEditIdx !== null ? data.posts[cmsCurrentEditIdx] : null;
   const post = {
     title,
     slug,
@@ -1117,12 +1183,27 @@ function cmsSavePost() {
     image: document.getElementById('cms-post-image').value.trim(),
     tags: document.getElementById('cms-post-tags').value.split(',').map(t => t.trim()).filter(Boolean),
     featured: isFeatured,
-    date: dateVal ? new Date(dateVal).getTime() : (cmsCurrentEditIdx !== null ? data.posts[cmsCurrentEditIdx].date : Date.now()),
+    date: dateVal ? new Date(dateVal).getTime() : (existingPost ? existingPost.date : Date.now()),
     readTime: Math.max(1, Math.ceil((content || '').replace(/<[^>]+>/g,'').split(/\s+/).filter(Boolean).length / 200))
   };
 
-  const existingId = (cmsCurrentEditIdx !== null && data.posts[cmsCurrentEditIdx]?._id) ? data.posts[cmsCurrentEditIdx]._id : null;
+  post.status = action;
+  post.updatedAt = Date.now();
+  if (action === 'published') {
+    post.publishedAt = existingPost && existingPost.publishedAt ? existingPost.publishedAt : Date.now();
+  } else if (action === 'scheduled') {
+    const sDate = document.getElementById('cms-post-schedule-time').value;
+    post.publishedAt = sDate ? new Date(sDate).getTime() : Date.now();
+  } else {
+    post.publishedAt = existingPost ? existingPost.publishedAt : null;
+  }
+
+  const existingId = existingPost && existingPost._id ? existingPost._id : null;
   if (existingId) post._id = existingId;
+
+  try {
+    localStorage.removeItem('draft_post_' + (existingId || 'new'));
+  } catch(e) {}
 
   if (cmsCurrentEditIdx !== null) {
     data.posts[cmsCurrentEditIdx] = post;
