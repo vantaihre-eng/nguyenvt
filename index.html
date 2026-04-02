@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taipulme – Chuyện Nghề & Chuyện Đời</title>
+    
+    <!-- Meta SEO -->
+    <meta name="description" content="Blog cá nhân chia sẻ về nghề nghiệp, cuộc sống và sáng tạo.">
+    <link rel="canonical" href="https://taipulme.github.io/">
+
+    <!-- Main Entry (Vite will handle CSS & JS) -->
+    
+    <style>
+        /* Fallback loading styles */
+        #app-loading {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #fff; display: flex; align-items: center; justify-content: center;
+            font-family: sans-serif; color: #102144;
+        }
+        .loader-content { text-align: center; }
+        #loading-bar-wrap { width: 200px; height: 4px; background: #eee; border-radius: 2px; margin-bottom: 10px; overflow: hidden; }
+        #loading-bar { width: 30%; height: 100%; background: #102144; animation: prog 2s infinite ease-in-out; }
+        @keyframes prog { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+    </style>
+  <script type="module" crossorigin src="./assets/index-BJgs6D3v.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BatRhs55.css">
+</head>
+<body>
+
+    <!-- ── LOADING SCREEN ── -->
+    <div id="app-loading">
+        <div class="loader-content">
+            <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+            <p>Đang tải dữ liệu <span id="ldot">...</span></p>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-inner">
+            <a href="/" class="logo" id="logo-link">
+                <div class="logo-icon">T</div>
+                <span class="logo-text">Taipulme</span>
+            </a>
+            <nav id="main-nav">
+                <a href="/" class="active">Trang chủ</a>
+                <a href="/danh-muc/chuyen-nghe">Chuyện Nghề</a>
+                <a href="/danh-muc/chuyen-doi">Chuyện Đời</a>
+                <a href="/danh-muc/su-kien">Sự Kiện</a>
+            </nav>
+            <div class="header-right">
+                <button class="search-btn" id="search-btn">🔍 Tìm kiếm</button>
+                <button class="nav-toggle" id="nav-toggle"><span></span><span></span><span></span></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- PAGE SLOT (Home, Detail, CMS, LP) -->
+    <div id="page-slot">
+        <!-- Home / Blog List -->
+        <main id="blog-home">
+            <section id="hero-section"></section>
+            <div id="posts-list" class="posts-list"></div>
+        </main>
+
+        <!-- Post Detail Page -->
+        <div id="post-detail-page" style="display:none">
+            <article id="post-detail-content"></article>
+        </div>
+
+        <!-- CMS Page -->
+        <div id="cms-page" style="display:none">
+            <div class="cms-app-wrap">
+                <!-- CMS Sidebar & Content here -->
+                <div id="cms-main-content">
+                    <div id="cmspage-posts">
+                        <button onclick="cmsOpenEditor()">+ Thêm bài mới</button>
+                        <div id="cms-posts-list-wrap"></div>
+                    </div>
+                    <div id="cmspage-editor" style="display:none">
+                        <input type="text" id="cms-post-title" placeholder="Tiêu đề">
+                        <input type="text" id="cms-post-slug" placeholder="slug">
+                        <select id="cms-post-category">
+                            <option>Chuyện Nghề</option>
+                            <option>Chuyện Đời</option>
+                        </select>
+                        <select id="cms-post-status">
+                            <option value="published">Công khai</option>
+                            <option value="draft">Nháp</option>
+                        </select>
+                        <div id="cms-quill-editor" style="height:400px"></div>
+                        <input type="date" id="cms-post-date">
+                        <input type="text" id="cms-post-image">
+                        <textarea id="cms-post-excerpt"></textarea>
+                        <button id="cms-save-btn" onclick="cmsSavePost()">Lưu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LP Viewer -->
+        <div id="lp-viewer-page" style="display:none">
+            <div id="lp-viewer-content"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+</body>
+</html>
