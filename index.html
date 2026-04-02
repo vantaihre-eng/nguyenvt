@@ -2218,6 +2218,22 @@ function initFirebase() {
     font-size: 11px; font-weight: 700; letter-spacing: 1px;
     text-transform: uppercase; margin-bottom: 16px;
   }
+  /* Elephant Animations */
+  @keyframes e-jump  { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-14px)} 60%{transform:translateY(-8px)} }
+  @keyframes e-trunk { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(-20deg)} 60%{transform:rotate(15deg)} 80%{transform:rotate(-10deg)} }
+  @keyframes e-tail  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(25deg)} }
+  @keyframes e-blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.1)} }
+
+  #global-loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(255,255,255,0.95);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); transition: opacity .3s;
+  }
+  #global-loader .e-body  { animation: e-jump 0.6s ease-in-out infinite; transform-origin: 74px 60px; }
+  #global-loader .e-trunk { animation: e-trunk 0.5s ease-in-out infinite; transform-origin: 126px 64px; }
+  #global-loader .e-tail  { animation: e-tail 0.7s ease-in-out infinite; transform-origin: 38px 62px; }
+  #global-loader .e-eye   { animation: e-blink 2.5s ease-in-out infinite; transform-origin: 118px 43px; }
 
   .post-detail-title {
     font-family: var(--heading-font);
@@ -3064,6 +3080,79 @@ html, body {
 <div id="app-loading" style="position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s ease">
   <div style="display:flex;flex-direction:column;align-items:center;gap:20px">
 
+    <!-- Chú voi bước vui vui -->
+    <div id="elephant-walk" style="position:relative;width:160px;height:120px">
+      <svg id="eleph-svg" viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" style="width:160px;height:120px;overflow:visible">
+        <!-- Đuôi -->
+        <path d="M38 62 Q28 55 30 45 Q31 40 27 36" stroke="#7a6fa8" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <circle cx="27" cy="35" r="4" fill="#9b8ec4"/>
+
+        <!-- Thân voi - hình dạng thực tế hơn -->
+        <path d="M38 48 Q35 38 45 32 Q60 24 80 26 Q98 28 105 38 Q112 48 108 60 Q104 72 90 76 Q70 80 52 76 Q38 72 38 62 Z" fill="#7a6fa8"/>
+
+        <!-- Bụng sáng -->
+        <ellipse cx="73" cy="62" rx="24" ry="12" fill="#a89fd4" opacity="0.6"/>
+
+        <!-- Đầu -->
+        <ellipse cx="108" cy="44" rx="22" ry="20" fill="#7a6fa8"/>
+
+        <!-- Tai to - đặc trưng voi châu Á -->
+        <path d="M120 28 Q140 18 144 32 Q148 46 140 54 Q132 60 122 54 Q116 48 118 38 Z" fill="#9b8ec4"/>
+        <path d="M122 32 Q136 24 138 34 Q140 44 134 50 Q128 54 122 48 Q120 42 121 36 Z" fill="#e8c5d0"/>
+
+        <!-- Mắt voi - nhỏ và hiền -->
+        <circle cx="118" cy="39" r="4.5" fill="#2a1a5e"/>
+        <circle cx="119.5" cy="37.5" r="1.5" fill="#fff"/>
+        <circle cx="118" cy="39" r="1" fill="#111"/>
+
+        <!-- Lông mi -->
+        <path d="M115 36 Q117 33 120 35" stroke="#2a1a5e" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
+        <!-- Vòi dài và cong - đặc trưng nhất của voi -->
+        <path id="trunk" d="M126 58 Q134 66 132 76 Q130 84 124 90 Q120 95 116 90 Q115 86 118 84" stroke="#7a6fa8" stroke-width="11" fill="none" stroke-linecap="round"/>
+        <path d="M126 58 Q134 66 132 76 Q130 84 124 90 Q120 95 116 90 Q115 86 118 84" stroke="#a89fd4" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+        <!-- Ngà nhỏ -->
+        <path d="M124 62 Q132 65 133 70" stroke="#f5f0e0" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+        <!-- 4 chân voi - dày và chắc -->
+        <rect id="leg1" x="44" y="72" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect id="leg2" x="63" y="72" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect id="leg3" x="82" y="72" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect id="leg4" x="98" y="72" width="16" height="26" rx="7" fill="#6b5e96"/>
+
+
+      </svg>
+    </div>
+
+    <!-- Text -->
+    <div style="text-align:center">
+      <div style="font-family:'Merriweather',Georgia,serif;font-size:18px;font-weight:700;color:#1a1a1a;letter-spacing:-.3px">Taipulme</div>
+      <div id="loading-dots" style="font-size:13px;color:#888;margin-top:6px;letter-spacing:2px">đang tải<span id="ldot">.</span></div>
+    </div>
+
+    <!-- Progress bar nhỏ -->
+    <div style="width:160px;height:3px;background:#e8e4f0;border-radius:99px;overflow:hidden">
+      <div id="loading-bar" style="height:100%;background:#7B6EA6;border-radius:99px;width:0%;transition:width .3s ease"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Bước chân voi */
+  @keyframes walk-body { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+  @keyframes leg-a     { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-8px) rotate(-12deg)} }
+  @keyframes leg-b     { 0%,100%{transform:translateY(-6px) rotate(-10deg)} 50%{transform:translateY(0) rotate(0deg)} }
+  @keyframes trunk-sway{ 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(8deg)} }
+  @keyframes tail-wag  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(15deg)} }
+
+  #eleph-svg { animation: walk-body .7s ease-in-out infinite; transform-origin: 80px 80px; }
+  #leg1 { animation: leg-a .7s ease-in-out infinite; transform-origin: 52px 72px; }
+  #leg2 { animation: leg-b .7s ease-in-out infinite; transform-origin: 71px 72px; }
+  #leg3 { animation: leg-b .7s ease-in-out infinite; transform-origin: 90px 72px; }
+  #leg4 { animation: leg-a .7s ease-in-out infinite; transform-origin: 106px 72px; }
+  #trunk{ animation: trunk-sway .9s ease-in-out infinite; transform-origin: 126px 58px; }
+</style>
 
 <script>
   // Chỉ hiện loading khi KHÔNG có cache localStorage
@@ -3440,8 +3529,7 @@ html, body {
               </div>
 
               <div style="display:flex;gap:12px;align-items:center">
-                <button class="cms-save-btn" onclick="cmsSavePost()">Lưu & Xuất bản</button>
-                <button class="cms-save-btn" onclick="cmsSavePost(true)" style="background:#64748b">Lưu nháp</button>
+                <button class="cms-save-btn" onclick="cmsSavePost()">Lưu bài viết</button>
                 <button class="cms-cancel-btn" onclick="cmsNav('posts',null)">Huỷ</button>
               </div>
             </div>
@@ -4775,9 +4863,6 @@ function renderPosts() {
     ? data.posts 
     : data.posts.filter(p => p.category === currentCategory);
   
-  // Lọc bỏ các bài viết nháp đối với trang công khai
-  posts = posts.filter(p => !p.isDraft);
-  
   // Handle priority posts on "all" view
   if (currentCategory === 'all' && priorityIds.length > 0) {
     const priority = [];
@@ -4818,7 +4903,7 @@ function renderPosts() {
             ? `<img src="${post.image}" alt="${escHtml(post.title)}" class="post-img" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
             : ''
           }
-          <div class="post-img-placeholder" style="${post.image ? 'display:none;' : ''} background:${getCatGradient(post.category)}">
+          <div class="post-img-placeholder" ${post.image ? 'style="display:none"' : ''} style="${post.image ? 'display:none' : 'background:' + getCatGradient(post.category)}">
             <span class="ph-emoji">${getCatEmoji(post.category)}</span>
             <span class="ph-label">${escHtml(post.category || '')}</span>
           </div>
@@ -4882,11 +4967,11 @@ function renderHero() {
 
   let heroPosts = [];
   if (data.settings.sliderPostIds && data.settings.sliderPostIds.length > 0) {
-    heroPosts = data.settings.sliderPostIds.map(id => data.posts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id)).filter(p => p && !p.isDraft);
+    heroPosts = data.settings.sliderPostIds.map(id => data.posts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id)).filter(p => p);
   }
   
   if (heroPosts.length === 0) {
-    const featured = data.posts.filter(p => !p.isDraft).find(p => p.featured) || data.posts.filter(p => !p.isDraft)[0];
+    const featured = data.posts.find(p => p.featured) || data.posts[0];
     if (featured) heroPosts.push(featured);
   }
 
@@ -5036,7 +5121,7 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     } else if (section === 'recent') {
       const recent = data.posts
         .map((p, i) => Object.assign({}, p, { _idx: i }))
-        .filter(p => p._idx !== currentIdx && !p.isDraft)
+        .filter(p => p._idx !== currentIdx)
         .slice(0, 5);
       html += `
         <div class="sidebar-section">
@@ -5056,7 +5141,7 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     } else if (section === 'featured') {
       const featuredPosts = data.posts
         .map((p, i) => Object.assign({}, p, { _idx: i }))
-        .filter(p => (p.featured || p._idx === 0) && !p.isDraft)
+        .filter(p => p.featured || p._idx === 0)
         .slice(0, 3);
       if (featuredPosts.length > 0) {
         html += `
@@ -5199,15 +5284,10 @@ function updateMetaTags({ title, desc, image, url, type, author, date, modified 
     _urlToUse = domain + (_urlToUse.startsWith('/') ? '' : '/') + _urlToUse;
   }
   
-  if (_urlToUse && typeof _urlToUse === 'string') {
+  if (_urlToUse) {
     set('og-url', _urlToUse);
-    // Cập nhật thẻ canonical động để tối ưu SEO
-    const canonEl = document.getElementById('canonical-url');
-    if (canonEl) {
-      // Đảm bảo URL chính tắc không có query params dư thừa và thống nhất
-      const cleanUrl = _urlToUse.split('?')[0].split('#')[0].replace(/\/$/, '');
-      canonEl.setAttribute('href', cleanUrl || domain + '/');
-    }
+    const canon = document.getElementById('canonical-url');
+    if (canon) canon.setAttribute('href', _urlToUse);
   }
   
   // JSON-LD Schema
@@ -5471,11 +5551,7 @@ function cmsRenderDashboard() {
         ${recent.map((p, i) => `
           <tr>
             <td>${p.image ? `<img class="t-thumb" src="${escHtml(p.image)}" alt="">` : `<div class="t-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0ece5">${getCatEmoji(p.category)}</div>`}</td>
-            <td style="max-width:300px">
-              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                ${p.isDraft ? '<span style="background:#64748b;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px">NHÁP</span>' : ''}${escHtml(p.title)}
-              </div>
-            </td>
+            <td style="max-width:300px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}</div></td>
             <td><span class="t-cat">${escHtml(p.category)}</span></td>
             <td style="color:#777777;white-space:nowrap">${formatDate(p.date)}</td>
             <td><div class="t-actions">
@@ -5497,12 +5573,7 @@ function cmsRenderPostsList() {
         ${data.posts.map((p, i) => `
           <tr>
             <td>${p.image ? `<img class="t-thumb" src="${escHtml(p.image)}" alt="">` : `<div class="t-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0ece5">${getCatEmoji(p.category)}</div>`}</td>
-            <td style="max-width:280px">
-              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                ${p.isDraft ? '<span style="background:#64748b;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px">NHÁP</span>' : ''}${escHtml(p.title)}
-              </div>
-              ${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}
-            </td>
+            <td style="max-width:280px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}</div>${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}</td>
             <td><span class="t-cat">${escHtml(p.category)}</span></td>
             <td style="color:#777777;white-space:nowrap">${formatDate(p.date)}</td>
             <td style="text-align:center">${p.featured ? '⭐' : '—'}</td>
@@ -5731,7 +5802,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcut removed for security
 });
 
-async function cmsSavePost(asDraft = false) {
+async function cmsSavePost() {
   const title = document.getElementById('cms-post-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
 
@@ -5770,7 +5841,6 @@ async function cmsSavePost(asDraft = false) {
     image: document.getElementById('cms-post-image').value.trim(),
     tags: document.getElementById('cms-post-tags').value.split(',').map(t => t.trim()).filter(Boolean),
     featured: isFeatured,
-    isDraft: asDraft === true,
     date: dateVal ? new Date(dateVal).getTime() : (cmsCurrentEditIdx !== null ? data.posts[cmsCurrentEditIdx].date : Date.now()),
     readTime: Math.max(1, Math.ceil((content || '').replace(/<[^>]+>/g,'').split(/\s+/).filter(Boolean).length / 200))
   };
@@ -6640,6 +6710,65 @@ function show404(slug) {
   }
   el.style.display = 'flex';
 
+  // CSS animation inject (chỉ inject 1 lần)
+  if (!document.getElementById('style-404')) {
+    const s = document.createElement('style');
+    s.id = 'style-404';
+    s.textContent = [
+      '@keyframes e404-shake { 0%,100%{transform:rotate(0deg)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)} 60%{transform:rotate(-5deg)} 80%{transform:rotate(5deg)} }',
+      '@keyframes e404-jump  { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-14px)} 60%{transform:translateY(-8px)} }',
+      '@keyframes e404-trunk { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(-20deg)} 60%{transform:rotate(15deg)} 80%{transform:rotate(-10deg)} }',
+      '@keyframes e404-tail  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(25deg)} }',
+      '@keyframes e404-blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.1)} }',
+      '@keyframes e404-excl  { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.7} }',
+      '#e404-body { animation: e404-jump 0.6s ease-in-out infinite; transform-origin: 74px 60px; }',
+      '#e404-trunk-g { animation: e404-trunk 0.5s ease-in-out infinite; transform-origin: 126px 64px; }',
+      '#e404-tail-g  { animation: e404-tail 0.7s ease-in-out infinite; transform-origin: 38px 62px; }',
+      '#e404-eye     { animation: e404-blink 2.5s ease-in-out infinite; transform-origin: 118px 43px; }',
+      '#e404-excl    { animation: e404-excl 0.5s ease-in-out infinite; transform-origin: 66px 20px; }',
+    ].join('');
+    document.head.appendChild(s);
+  }
+
+  el.innerHTML = '<div style="max-width:380px">'
+    + '<svg viewBox="0 0 170 140" xmlns="http://www.w3.org/2000/svg" style="width:200px;height:160px;margin-bottom:4px;overflow:visible">'
+    // Đuôi
+    + '<g id="e404-tail-g"><path d="M38 62 Q26 50 28 38 Q29 30 24 26" stroke="#7a6fa8" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="24" cy="25" r="4" fill="#9b8ec4"/></g>'
+    // Toàn thân nhảy lên
+    + '<g id="e404-body">'
+    // Thân
+    + '<path d="M38 56 Q35 44 46 38 Q61 30 80 32 Q98 34 106 44 Q114 54 110 66 Q106 78 91 82 Q70 86 52 82 Q37 78 38 68 Z" fill="#7a6fa8"/>'
+    + '<ellipse cx="73" cy="68" rx="24" ry="11" fill="#a89fd4" opacity="0.5"/>'
+    // Đầu
+    + '<ellipse cx="108" cy="50" rx="22" ry="20" fill="#7a6fa8"/>'
+    // Tai
+    + '<path d="M120 34 Q140 24 144 38 Q148 52 140 60 Q132 66 122 60 Q116 54 118 44 Z" fill="#9b8ec4"/>'
+    + '<path d="M122 38 Q136 30 138 40 Q140 50 134 56 Q128 60 122 54 Q120 48 121 42 Z" fill="#e8c5d0"/>'
+    // Mắt (blink)
+    + '<g id="e404-eye"><circle cx="118" cy="43" r="7" fill="#fff" stroke="#2a1a5e" stroke-width="1.5"/><circle cx="119" cy="44" r="4" fill="#2a1a5e"/><circle cx="120.5" cy="42.5" r="1.5" fill="#fff"/></g>'
+    // Lông mày nhướng
+    + '<path d="M112 35 Q117 30 123 32" stroke="#2a1a5e" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+    // Mồm há
+    + '<path d="M111 58 Q118 65 125 61" stroke="#2a1a5e" stroke-width="2" fill="none" stroke-linecap="round"/>'
+    + '<ellipse cx="118" cy="62" rx="5" ry="3.5" fill="#e8a0a0" opacity="0.8"/>'
+    // Ngà
+    + '<path d="M124 66 Q131 69 132 74" stroke="#f5f0e0" stroke-width="3.5" fill="none" stroke-linecap="round"/>'
+    // Chân
+    + '<rect x="44" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>'
+    + '<rect x="63" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>'
+    + '<rect x="82" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>'
+    + '<rect x="98" y="78" width="16" height="26" rx="7" fill="#6b5e96"/>'
+    + '</g>'
+    // Vòi (animate riêng)
+    + '<g id="e404-trunk-g"><path d="M126 64 Q136 60 138 50 Q140 42 134 40" stroke="#7a6fa8" stroke-width="11" fill="none" stroke-linecap="round"/><path d="M126 64 Q136 60 138 50 Q140 42 134 40" stroke="#a89fd4" stroke-width="5" fill="none" stroke-linecap="round"/></g>'
+    // Dấu chấm than nhấp nháy
+    + '<g id="e404-excl"><text x="55" y="26" font-size="26" font-weight="900" fill="#e85555" font-family="sans-serif">!</text></g>'
+    + '</svg>'
+    + '<div style="font-size:64px;font-weight:900;color:#1a1a1a;line-height:1;margin-bottom:8px">404</div>'
+    + '<div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:8px">Trang này không tồn tại!</div>'
+    + '<div style="font-size:14px;color:#888;margin-bottom:28px">Không tìm thấy <code style="background:#f5f5f5;padding:2px 7px;border-radius:4px;font-size:13px">/' + (slug || '') + '</code></div>'
+    + '<button onclick="show404Close()" style="background:#1a305e;color:#fff;border:none;padding:13px 32px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--body-font)">← Về trang chủ</button>'
+    + '</div>';
   window.scrollTo(0, 0);
 }
 
@@ -8385,10 +8514,8 @@ function readTime(text) {
 }
 
 function openPost(idx) {
-  if (idx === undefined || idx === null) return;
   const post = data.posts[idx];
   if (!post) {
-    console.warn('Post not found at index:', idx);
     hideLoader();
     return;
   }
@@ -8404,12 +8531,11 @@ function openPost(idx) {
     const react = allReact[idx] || { helpful: 0, voted: false };
     const s = data.settings;
     const rt = readTime(post.content || post.excerpt || '');
-    const permalink = window.location.origin + '/bai-viet/' + (post.slug || idx);
-    const pageUrl = encodeURIComponent(permalink);
+    const pageUrl = encodeURIComponent(window.location.href);
 
     const related = data.posts
       .map(function(p, i) { return Object.assign({}, p, { _idx: i }); })
-      .filter(p => p._idx !== idx && p.category === post.category && !p.isDraft)
+      .filter(p => p._idx !== idx && p.category === post.category)
       .slice(0, 4);
 
     content.innerHTML = `
@@ -8462,9 +8588,7 @@ function openPost(idx) {
       const slug = post.slug || String(idx);
       try { history.pushState({ view: 'post', idx: idx, slug: slug }, '', '/bai-viet/' + slug); } catch(e) {}
     }
-    try {
-      updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: window.location.origin + '/bai-viet/' + (post.slug || idx), type: 'article', author: data.settings.author, date: post.date });
-    } catch(e) { console.warn('Meta update failed:', e); }
+    updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: window.location.origin + '/bai-viet/' + (post.slug || idx), type: 'article', author: data.settings.author, date: post.date });
     hideLoader();
   }, 100);
 }
@@ -8759,12 +8883,8 @@ async function init() {
     && !_initPath.startsWith('lp/');
   if (!_initIsSlug) {
     document.getElementById('blog-home').style.display = 'block';
-    try {
-      renderHero();
-      renderPosts();
-    } catch (e) {
-      console.warn('Initial render error:', e);
-    }
+    renderHero();
+    renderPosts();
   }
 
   // ── BƯỚC 2: Router (dùng data từ cache trước) ──
@@ -8802,9 +8922,6 @@ async function init() {
   _syncFirebaseBackground().then(() => {
     hideLoading(); // ẩn loading sau Firebase sync
     // _openBySlug đã được gọi trong _pullFirebase sau khi landingPages load xong
-  }).catch(err => {
-    console.error('Firebase sync failed:', err);
-    hideLoading(); // Vẫn ẩn loading để người dùng thấy nội dung cache
   });
 
   // Reading progress bar + Smart header hide/show
@@ -9177,6 +9294,31 @@ init();
     <button onclick="cmsLogin()" style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer">Đăng nhập →</button>
     <div id="cms-login-err" style="display:none;color:#f87171;font-size:13px;text-align:center;margin-top:12px">Mật khẩu không đúng</div>
     <button onclick="_hideLoginModal()" style="display:block;margin:16px auto 0;background:none;border:none;color:#666;font-size:12px;cursor:pointer">Huỷ</button>
+  </div>
+</div>
+<!-- Global Elephant Loader -->
+<div id="global-loader">
+  <div style="text-align:center">
+    <svg viewBox="0 0 170 140" xmlns="http://www.w3.org/2000/svg" style="width:160px;height:140px;overflow:visible">
+      <g class="e-tail"><path d="M38 62 Q26 50 28 38 Q29 30 24 26" stroke="#7a6fa8" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="24" cy="25" r="4" fill="#9b8ec4"/></g>
+      <g class="e-body">
+        <path d="M38 56 Q35 44 46 38 Q61 30 80 32 Q98 34 106 44 Q114 54 110 66 Q106 78 91 82 Q70 86 52 82 Q37 78 38 68 Z" fill="#7a6fa8"/>
+        <ellipse cx="73" cy="68" rx="24" ry="11" fill="#a89fd4" opacity="0.5"/>
+        <ellipse cx="108" cy="50" rx="22" ry="20" fill="#7a6fa8"/>
+        <path d="M120 34 Q140 24 144 38 Q148 52 140 60 Q132 66 122 60 Q116 54 118 44 Z" fill="#9b8ec4"/>
+        <path d="M122 38 Q136 30 138 40 Q140 50 134 56 Q128 60 122 54 Q120 48 121 42 Z" fill="#e8c5d0"/>
+        <g class="e-eye"><circle cx="118" cy="43" r="7" fill="#fff" stroke="#2a1a5e" stroke-width="1.5"/><circle cx="119" cy="44" r="4" fill="#2a1a5e"/><circle cx="120.5" cy="42.5" r="1.5" fill="#fff"/></g>
+        <path d="M112 35 Q117 30 123 32" stroke="#2a1a5e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M111 58 Q118 65 125 61" stroke="#2a1a5e" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="118" cy="62" rx="5" ry="3.5" fill="#e8a0a0" opacity="0.8"/>
+        <rect x="44" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect x="63" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect x="82" y="78" width="16" height="28" rx="7" fill="#6b5e96"/>
+        <rect x="98" y="78" width="16" height="26" rx="7" fill="#6b5e96"/>
+      </g>
+      <g class="e-trunk"><path d="M126 64 Q136 60 138 50 Q140 42 134 40" stroke="#7a6fa8" stroke-width="11" fill="none" stroke-linecap="round"/><path d="M126 64 Q136 60 138 50 Q140 42 134 40" stroke="#a89fd4" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+    </svg>
+    <div style="margin-top:20px;font-size:13px;font-weight:700;color:#7a6fa8;letter-spacing:1px;text-transform:uppercase">Đang tải...</div>
   </div>
 </div>
 </body>
