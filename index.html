@@ -6906,6 +6906,8 @@ function show404(slug) {
   }
   el.innerHTML = `
     <div style="max-width:520px;display:flex;flex-direction:column;align-items:center;gap:18px">
+      <div style="display:flex;align-items:flex-start;justify-content:center;gap:18px;width:100%">
+        <span style="font-family:var(--heading-font,serif);font-size:42px;color:#102144;transform:rotate(-12deg)">?</span>
       <svg viewBox="0 0 150 118" style="width:132px;height:110px;filter:drop-shadow(0 10px 18px rgba(16,33,68,.12))" aria-hidden="true">
         <path d="M28 54c-10 7-12 18-6 24" fill="none" stroke="#0d5f96" stroke-width="5" stroke-linecap="round"></path>
         <ellipse cx="58" cy="46" rx="21" ry="24" fill="#74c0ea"></ellipse>
@@ -6922,9 +6924,9 @@ function show404(slug) {
         <circle cx="114" cy="41" r="2.2" fill="#102144"></circle>
         <path d="M101 59c4 3 9 4 16 2" fill="none" stroke="#d6f0ff" stroke-width="3" stroke-linecap="round"></path>
       </svg>
+        <span style="font-family:var(--heading-font,serif);font-size:52px;color:#102144;transform:rotate(14deg)">?</span>
+      </div>
       <div style="font-family:var(--heading-font,serif);font-size:54px;line-height:1;color:#102144;font-weight:900">404</div>
-      <div style="font-family:var(--heading-font,serif);font-size:28px;color:#102144;font-weight:700">Ua ua... trang nay di dau roi?</div>
-      <div style="font-size:15px;line-height:1.7;color:#58708f;max-width:460px">Con voi nay dang nghieng dau thac mac vi duong dan ${escHtml(slug || '') ? '<code style="background:#eef4fb;padding:2px 8px;border-radius:999px;color:#102144">' + escHtml(slug) + '</code>' : 'nay'} khong ton tai hoac chua duoc cong khai.</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
         <button onclick="show404Close()" style="border:none;background:#102144;color:#fff;padding:12px 18px;border-radius:999px;font-weight:700;cursor:pointer">Ve trang chu</button>
         <button onclick="history.back()" style="border:1px solid #c9d9ea;background:#fff;color:#102144;padding:12px 18px;border-radius:999px;font-weight:700;cursor:pointer">Quay lai</button>
@@ -8685,10 +8687,8 @@ function openPost(idx) {
   if (content) content.innerHTML = ''; // Xoá trắng ngay để tránh giật
 
   setTimeout(() => {
-    const vc = Number(post.views) || 0;
     const allReact = getReactions();
     const react = allReact[idx] || { helpful: 0, voted: false };
-    const s = data.settings;
     const rt = readTime(post.content || post.excerpt || '');
     const permalink = window.location.origin + '/bai-viet/' + (post.slug || idx);
     const pageUrl = encodeURIComponent(permalink);
@@ -8703,12 +8703,9 @@ function openPost(idx) {
       <h1 class="post-detail-title">${escHtml(post.title)}</h1>
       <div class="post-detail-meta">
         <span style="font-weight:700; color:var(--accent); text-transform:uppercase;">${escHtml(post.category)}</span>
-        <span class="dot"></span>
         <span>${formatDate(post.date)}</span>
         <span class="dot"></span>
         <span class="read-time-badge">${rt} phút đọc</span>
-        <span class="dot"></span>
-        <span>${fmtViews(vc)} lượt đọc</span>
       </div>
       <div class="post-detail-body">${post.content || '<p>' + escHtml(post.excerpt || '') + '</p>'}</div>
       <div class="reaction-bar" id="reaction-bar-${idx}">
@@ -8749,13 +8746,6 @@ function openPost(idx) {
       try { history.pushState({ view: 'post', idx: idx, slug: slug }, '', '/bai-viet/' + slug); } catch(e) {}
     }
     updateMetaTags({ title: post.title, desc: post.excerpt || '', image: post.image || '', url: window.location.origin + '/bai-viet/' + (post.slug || idx), type: 'article', author: data.settings.author, date: post.date });
-    incrementPostView(post).then((nextViews) => {
-      if (typeof nextViews !== 'number') return;
-      const meta = document.querySelector('#post-detail-page .post-detail-meta');
-      const spans = meta ? meta.querySelectorAll('span') : null;
-      const viewEl = spans && spans.length >= 7 ? spans[6] : null;
-      if (viewEl) viewEl.textContent = `${fmtViews(nextViews)} luot doc`;
-    });
     hideLoader();
   }, 100);
 }
