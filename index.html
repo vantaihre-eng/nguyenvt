@@ -3112,6 +3112,14 @@ html, body {
     clearInterval(window._loadingIv);
   }
   window.hideLoading = hideLoading;
+
+  // Safety net: never keep the white loading screen forever if Firebase/network hangs.
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      const el = document.getElementById('app-loading');
+      if (el && el.style.display !== 'none') hideLoading();
+    }, 2500);
+  });
 </script>
 
 
@@ -4431,7 +4439,18 @@ async function _syncFirebaseBackground() {
     const ok = await initFirebase();
     if (ok) await _pullFirebase();
     try { localStorage.setItem('taipulme_last_sync', String(Date.now())); } catch(e) {}
-  } catch(e) { console.warn('Background sync error:', e); }
+  } catch(e) {
+    console.warn('Background sync error:', e);
+    window._fbFullyLoaded = true;
+    try {
+      renderNav();
+      renderFilterBar();
+      renderHero();
+      renderPosts();
+      renderSidebar('sidebar');
+      renderFooter();
+    } catch(_err) {}
+  }
 }
 
 // Upload file ảnh lên Firebase Storage với timeout chống kẹt (CORS issue)
@@ -4564,7 +4583,21 @@ async function _pullFirebase() {
 
     window._fbFullyLoaded = true; // Set SAU khi đã xử lý routing
 
-  } catch(e) { console.warn('Firebase pull error:', e); }
+  } catch(e) {
+    console.warn('Firebase pull error:', e);
+    window._fbFullyLoaded = true;
+    try {
+      renderNav();
+      renderFilterBar();
+      renderHero();
+      renderPosts();
+      renderSidebar('sidebar');
+      renderFooter();
+      if (location.pathname === '/' || location.pathname === '') {
+        document.getElementById('blog-home').style.display = 'block';
+      }
+    } catch(_err) {}
+  }
 }
 
 function _cacheLocal() {
