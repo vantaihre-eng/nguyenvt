@@ -3063,7 +3063,13 @@ html, body {
 <!-- ── LOADING SCREEN ── -->
 <div id="app-loading" style="position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s ease">
   <div style="display:flex;flex-direction:column;align-items:center;gap:20px">
-
+    <div style="font-family:var(--heading-font, sans-serif);font-size:28px;font-weight:900;color:#102144">Taipulme<span id="ldot">.</span></div>
+    <div style="width:min(280px,70vw);height:8px;background:#f1f1f1;border-radius:999px;overflow:hidden">
+      <div id="loading-bar" style="width:12%;height:100%;background:#102144;transition:width .2s ease"></div>
+    </div>
+    <div style="font-size:13px;color:#666">Đang tải dữ liệu...</div>
+  </div>
+</div>
 
 <script>
   // Chỉ hiện loading khi KHÔNG có cache localStorage
