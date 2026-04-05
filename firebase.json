@@ -8,6 +8,10 @@
     ],
     "rewrites": [
       {
+        "source": "/modular-phase1/**",
+        "destination": "/modular-phase1/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

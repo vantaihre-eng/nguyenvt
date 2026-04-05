@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 
 export default defineConfig({
   base: '',
@@ -12,6 +13,10 @@ export default defineConfig({
       mangle: true
     },
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        modularPhase1: resolve(__dirname, 'modular-phase1/index.html')
+      },
       output: {
         // Remove manualChunks for now or use correct names if needed
       }
