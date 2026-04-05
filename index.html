@@ -152,6 +152,113 @@ function initFirebase() {
   });
   return _fbInitPromise;
 }
+
+const FIRESTORE_REST_BASE = `https://firestore.googleapis.com/v1/projects/${window.FIREBASE_CONFIG.projectId}/databases/(default)`;
+const FIRESTORE_REST_KEY = window.FIREBASE_CONFIG.apiKey;
+
+async function firestoreRestFetch(path, options) {
+  const sep = path.includes('?') ? '&' : '?';
+  const url = `${FIRESTORE_REST_BASE}${path}${sep}key=${encodeURIComponent(FIRESTORE_REST_KEY)}`;
+  const res = await fetch(url, options);
+  if (!res.ok) throw new Error(`Firestore REST ${res.status}`);
+  return res.json();
+}
+
+function firestoreValueToJs(field) {
+  if (!field || typeof field !== 'object') return null;
+  if ('stringValue' in field) return field.stringValue;
+  if ('integerValue' in field) return Number(field.integerValue);
+  if ('doubleValue' in field) return Number(field.doubleValue);
+  if ('booleanValue' in field) return !!field.booleanValue;
+  if ('nullValue' in field) return null;
+  if ('timestampValue' in field) return field.timestampValue;
+  if ('arrayValue' in field) return (field.arrayValue.values || []).map(firestoreValueToJs);
+  if ('mapValue' in field) {
+    const obj = {};
+    const fields = field.mapValue.fields || {};
+    Object.keys(fields).forEach(key => { obj[key] = firestoreValueToJs(fields[key]); });
+    return obj;
+  }
+  return null;
+}
+
+function firestoreDocToJs(doc) {
+  if (!doc) return null;
+  const obj = { _id: (doc.name || '').split('/').pop() };
+  const fields = doc.fields || {};
+  Object.keys(fields).forEach(key => { obj[key] = firestoreValueToJs(fields[key]); });
+  return obj;
+}
+
+async function fetchPublicFirestoreData() {
+  const [postsQuery, settingsDoc, categoriesDoc, pagesDoc, landingPagesDoc, imagesDoc, themeDoc, layoutDoc, mobileDoc] = await Promise.all([
+    firestoreRestFetch('/documents:runQuery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'posts' }],
+          orderBy: [{ field: { fieldPath: 'date' }, direction: 'DESCENDING' }]
+        }
+      })
+    }),
+    firestoreRestFetch('/documents/site/settings'),
+    firestoreRestFetch('/documents/site/categories').catch(() => null),
+    firestoreRestFetch('/documents/pages').catch(() => ({ documents: [] })),
+    firestoreRestFetch('/documents/landingPages').catch(() => ({ documents: [] })),
+    firestoreRestFetch('/documents/images').catch(() => ({ documents: [] })),
+    firestoreRestFetch('/documents/site/theme').catch(() => null),
+    firestoreRestFetch('/documents/site/layout').catch(() => null),
+    firestoreRestFetch('/documents/site/mobile').catch(() => null),
+  ]);
+
+  const posts = (postsQuery || [])
+    .map(item => firestoreDocToJs(item.document))
+    .filter(Boolean);
+  const pages = ((pagesDoc && pagesDoc.documents) || []).map(firestoreDocToJs).filter(Boolean);
+  const images = ((imagesDoc && imagesDoc.documents) || []).map(firestoreDocToJs).filter(Boolean);
+  const landingPages = ((landingPagesDoc && landingPagesDoc.documents) || []).map(firestoreDocToJs).filter(Boolean);
+
+  return {
+    posts,
+    settings: firestoreDocToJs(settingsDoc) || {},
+    categories: ((firestoreDocToJs(categoriesDoc) || {}).list) || [],
+    pages,
+    images,
+    landingPages,
+    theme: firestoreDocToJs(themeDoc),
+    layout: firestoreDocToJs(layoutDoc),
+    mobile: firestoreDocToJs(mobileDoc),
+  };
+}
+
+async function incrementPostView(post) {
+  if (!post || !post._id) return;
+  const dedupeKey = `taipulme_viewed_${post._id}`;
+  if (sessionStorage.getItem(dedupeKey)) return;
+  sessionStorage.setItem(dedupeKey, '1');
+  post.views = (Number(post.views) || 0) + 1;
+
+  try {
+    await firestoreRestFetch('/documents:commit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        writes: [{
+          transform: {
+            document: `${FIRESTORE_REST_BASE}/documents/posts/${post._id}`,
+            fieldTransforms: [{
+              fieldPath: 'views',
+              increment: { integerValue: '1' }
+            }]
+          }
+        }]
+      })
+    });
+  } catch(e) {
+    console.warn('View increment error:', e);
+  }
+}
 </script>
 <style>
   /* ═══════════════════════════════════════════
@@ -4429,6 +4536,7 @@ async function _syncFirebaseBackground() {
     const _isSlugUrl = !!_path
       && !_path.startsWith('bai-viet')
       && !_path.startsWith('danh-muc');
+    const _isCms = window.location.hash === '#admin' || document.getElementById('cms-page')?.classList.contains('active');
 
     // Nếu URL là /slug → LUÔN fetch Firebase (cần LP data chính xác)
     // Nếu trang chủ → dùng cache nếu còn tươi (< 5 phút)
@@ -4442,8 +4550,12 @@ async function _syncFirebaseBackground() {
       }
     }
 
-    const ok = await initFirebase();
-    if (ok) await _pullFirebase();
+    if (_isCms) {
+      const ok = await initFirebase();
+      if (ok) await _pullFirebase();
+    } else {
+      await _pullPublicData();
+    }
     try { localStorage.setItem('taipulme_last_sync', String(Date.now())); } catch(e) {}
   } catch(e) {
     console.warn('Background sync error:', e);
@@ -4604,6 +4716,59 @@ async function _pullFirebase() {
       }
     } catch(_err) {}
   }
+}
+
+async function _pullPublicData() {
+  const payload = await fetchPublicFirestoreData();
+  const _pendingPath = location.pathname.replace(/^\//, '');
+  const _urlIsSlug = !!_pendingPath
+    && !_pendingPath.startsWith('bai-viet')
+    && !_pendingPath.startsWith('danh-muc');
+
+  if (payload.settings) {
+    const s = payload.settings;
+    if (s.sidebarWidgets) try { localStorage.setItem(SIDEBAR_KEY, JSON.stringify(s.sidebarWidgets)); } catch(e) {}
+    data.settings = Object.assign({}, data.settings, s);
+    data.settings.social = Object.assign({facebook:'',instagram:'',youtube:'',tiktok:'',linkedin:'',twitter:''}, s.social||{});
+  }
+
+  const _defaultCats = data.categories.length ? [...data.categories] : [];
+  data.categories = (payload.categories && payload.categories.length) ? payload.categories : _defaultCats;
+  data.posts = payload.posts || [];
+  data.pages = payload.pages || [];
+  data.images = payload.images || [];
+  window.landingPages = (payload.landingPages || []).map(obj => {
+    if (!obj.slug) {
+      obj.slug = obj.title
+        ? obj.title.toLowerCase().normalize('NFD')
+            .replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d')
+            .replace(/[^a-z0-9\s-]/g,'').trim()
+            .replace(/\s+/g,'-').replace(/-+/g,'-').substring(0,60)
+        : obj.id;
+    }
+    return obj;
+  });
+
+  if (payload.theme) { localStorage.setItem(THEME_KEY, JSON.stringify(payload.theme)); applyTheme(payload.theme); }
+  if (payload.layout) { localStorage.setItem(LAYOUT_KEY, JSON.stringify(payload.layout)); applyLayout(payload.layout); }
+  if (payload.mobile) { localStorage.setItem(MOBILE_KEY, JSON.stringify(payload.mobile)); applyMobileCfg(payload.mobile); }
+
+  _cacheLocal();
+  renderNav();
+  applyFavicon();
+  if (typeof applyLogo === 'function') applyLogo();
+  renderFilterBar();
+  renderSidebar('sidebar');
+  renderFooter();
+
+  const _postOpen = document.getElementById('post-detail-page')?.style.display === 'block';
+  const _lpOpen = document.getElementById('lp-viewer-page')?.style.display === 'block';
+  if (!_postOpen && !_lpOpen) {
+    if (_urlIsSlug) _openBySlug(_pendingPath);
+    else { renderHero(); renderPosts(); }
+  }
+
+  window._fbFullyLoaded = true;
 }
 
 function _cacheLocal() {
@@ -5821,6 +5986,7 @@ async function cmsSavePost(mode) {
     tags: document.getElementById('cms-post-tags').value.split(',').map(t => t.trim()).filter(Boolean),
     featured: willPublish ? isFeatured : false,
     status: targetStatus,
+    views: Number(prevPost?.views) || 0,
     date: dateVal
       ? new Date(dateVal).getTime()
       : (wasPublished
@@ -8423,15 +8589,8 @@ function searchTag(tag, e) {
 /* ══════════════════════════════════════════════
    POST DETAIL PAGE
 ══════════════════════════════════════════════ */
-const VIEWS_KEY = 'taipulme_views';
 const REACT_KEY = 'taipulme_reactions';
 
-function getViews() { try { return JSON.parse(localStorage.getItem(VIEWS_KEY) || '{}'); } catch(e) { return {}; } }
-function saveViews(v) { localStorage.setItem(VIEWS_KEY, JSON.stringify(v)); }
-function trackView(idx) {
-  const id = String(idx);
-  const v = getViews(); v[id] = (v[id] || 0) + 1; saveViews(v);
-}
 function fmtViews(n) { return n >= 1000 ? (n/1000).toFixed(1).replace('.0','') + 'k' : String(n); }
 function getReactions() { try { return JSON.parse(localStorage.getItem(REACT_KEY) || '{}'); } catch(e) { return {}; } }
 function saveReactions(v) { localStorage.setItem(REACT_KEY, JSON.stringify(v)); }
@@ -8454,9 +8613,8 @@ function openPost(idx) {
   if (content) content.innerHTML = ''; // Xoá trắng ngay để tránh giật
 
   setTimeout(() => {
-    trackView(idx);
-    const views = getViews();
-    const vc = views[String(idx)] || 1;
+    incrementPostView(post);
+    const vc = Number(post.views) || 0;
     const allReact = getReactions();
     const react = allReact[idx] || { helpful: 0, voted: false };
     const s = data.settings;
