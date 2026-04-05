@@ -88,6 +88,7 @@ async function getPostMeta(slug) {
       title:   f.title?.stringValue   || '',
       excerpt: f.excerpt?.stringValue || '',
       image:   f.image?.stringValue   || defaultImage || '',
+      status:  f.status?.stringValue  || 'published',
     };
   } catch(e) { return null; }
 }
@@ -99,6 +100,8 @@ function escapeHtml(str) {
 }
 
 function injectOGTags(html, post, pageUrl) {
+  if (post.status === 'draft') return html;
+
   const title = escapeHtml(post.title);
   const desc  = escapeHtml(post.excerpt || post.title);
   const img   = post.image || '';
