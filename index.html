@@ -241,19 +241,13 @@ async function incrementPostView(post) {
   post.views = nextViews;
 
   try {
-    await firestoreRestFetch('/documents:commit', {
-      method: 'POST',
+    await firestoreRestFetch(`/documents/posts/${encodeURIComponent(post._id)}?updateMask.fieldPaths=views`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        writes: [{
-          transform: {
-            document: `${FIRESTORE_REST_BASE}/documents/posts/${post._id}`,
-            fieldTransforms: [{
-              fieldPath: 'views',
-              increment: { integerValue: '1' }
-            }]
-          }
-        }]
+        fields: {
+          views: { integerValue: String(nextViews) }
+        }
       })
     });
     sessionStorage.setItem(dedupeKey, '1');
