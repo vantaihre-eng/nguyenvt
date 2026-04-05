@@ -3439,9 +3439,11 @@ html, body {
                 </div>
               </div>
 
-              <div style="display:flex;gap:12px;align-items:center">
-                <button class="cms-save-btn" onclick="cmsSavePost()">Lưu bài viết</button>
+              <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <button class="cms-save-btn" type="button" onclick="cmsSavePost('draft')">Lưu nháp</button>
+                <button class="cms-save-btn" type="button" onclick="cmsSavePost('publish')" style="background:#196f3d">Đăng bài</button>
                 <button class="cms-cancel-btn" onclick="cmsNav('posts',null)">Huỷ</button>
+                <span id="cms-post-status-note" style="font-size:12px;color:#777"></span>
               </div>
             </div>
 
@@ -4737,6 +4739,14 @@ function hideLoader() {
   }
 }
 
+function isPublishedPost(post) {
+  return !!post && post.status !== 'draft';
+}
+
+function getPublishedPosts() {
+  return (data.posts || []).filter(isPublishedPost);
+}
+
 /* ══════════════════════════════════════════════
    RENDERING
 ══════════════════════════════════════════════ */
@@ -4770,9 +4780,10 @@ function renderPosts() {
   }
 
   const priorityIds = data.settings.priorityPostIds || [];
-  let posts = currentCategory === 'all' 
-    ? data.posts 
-    : data.posts.filter(p => p.category === currentCategory);
+  const publishedPosts = getPublishedPosts();
+  let posts = currentCategory === 'all'
+    ? publishedPosts
+    : publishedPosts.filter(p => p.category === currentCategory);
   
   // Handle priority posts on "all" view
   if (currentCategory === 'all' && priorityIds.length > 0) {
@@ -4878,11 +4889,15 @@ function renderHero() {
 
   let heroPosts = [];
   if (data.settings.sliderPostIds && data.settings.sliderPostIds.length > 0) {
-    heroPosts = data.settings.sliderPostIds.map(id => data.posts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id)).filter(p => p);
+    const publishedPosts = getPublishedPosts();
+    heroPosts = data.settings.sliderPostIds
+      .map(id => publishedPosts.find(p => p.slug === id || data.posts.indexOf(p).toString() === id))
+      .filter(p => p);
   }
   
   if (heroPosts.length === 0) {
-    const featured = data.posts.find(p => p.featured) || data.posts[0];
+    const publishedPosts = getPublishedPosts();
+    const featured = publishedPosts.find(p => p.featured) || publishedPosts[0];
     if (featured) heroPosts.push(featured);
   }
 
@@ -5018,7 +5033,7 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
       }
     } else if (section === 'categories') {
       const catCounts = {};
-      data.posts.forEach(p => { catCounts[p.category] = (catCounts[p.category] || 0) + 1; });
+      getPublishedPosts().forEach(p => { catCounts[p.category] = (catCounts[p.category] || 0) + 1; });
       html += `
         <div class="sidebar-section">
           <h3>Chuyên mục</h3>
@@ -5032,7 +5047,7 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     } else if (section === 'recent') {
       const recent = data.posts
         .map((p, i) => Object.assign({}, p, { _idx: i }))
-        .filter(p => p._idx !== currentIdx)
+        .filter(p => isPublishedPost(p) && p._idx !== currentIdx)
         .slice(0, 5);
       html += `
         <div class="sidebar-section">
@@ -5052,7 +5067,7 @@ function renderSidebar(containerId, currentIdx, isStaticPage) {
     } else if (section === 'featured') {
       const featuredPosts = data.posts
         .map((p, i) => Object.assign({}, p, { _idx: i }))
-        .filter(p => p.featured || p._idx === 0)
+        .filter(p => isPublishedPost(p) && (p.featured || p._idx === 0))
         .slice(0, 3);
       if (featuredPosts.length > 0) {
         html += `
@@ -5448,21 +5463,26 @@ function cmsRenderDashboard() {
   const catCounts = {};
   data.posts.forEach(p => { catCounts[p.category] = (catCounts[p.category] || 0) + 1; });
   const recent = data.posts.slice(0, 8);
+  const publishedCount = data.posts.filter(p => isPublishedPost(p)).length;
+  const draftCount = data.posts.filter(p => p.status === 'draft').length;
   document.getElementById('cms-dash-content').innerHTML = `
     <div class="cms-dash-stats">
       <div class="cms-stat"><div class="cms-stat-num">${data.posts.length}</div><div class="cms-stat-label">Bài viết</div></div>
+      <div class="cms-stat"><div class="cms-stat-num">${publishedCount}</div><div class="cms-stat-label">Đã đăng</div></div>
+      <div class="cms-stat"><div class="cms-stat-num">${draftCount}</div><div class="cms-stat-label">Nháp</div></div>
       <div class="cms-stat"><div class="cms-stat-num">${data.images.length}</div><div class="cms-stat-label">Hình ảnh</div></div>
       <div class="cms-stat"><div class="cms-stat-num">${Object.keys(catCounts).length}</div><div class="cms-stat-label">Danh mục</div></div>
-      <div class="cms-stat"><div class="cms-stat-num">${data.posts.filter(p=>p.featured).length}</div><div class="cms-stat-label">Nổi bật</div></div>
+      <div class="cms-stat"><div class="cms-stat-num">${data.posts.filter(p=>isPublishedPost(p) && p.featured).length}</div><div class="cms-stat-label">Nổi bật</div></div>
     </div>
     <div class="cms-section-title">Bài viết gần đây</div>
     <table class="cms-table">
-      <thead><tr><th></th><th>Tiêu đề</th><th>Danh mục</th><th>Ngày</th><th></th></tr></thead>
+      <thead><tr><th></th><th>Tiêu đề</th><th>Trạng thái</th><th>Danh mục</th><th>Ngày</th><th></th></tr></thead>
       <tbody>
         ${recent.map((p, i) => `
           <tr>
             <td>${p.image ? `<img class="t-thumb" src="${escHtml(p.image)}" alt="">` : `<div class="t-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0ece5">${getCatEmoji(p.category)}</div>`}</td>
             <td style="max-width:300px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}</div></td>
+            <td><span class="lpb-status-badge ${isPublishedPost(p) ? 'published' : 'draft'}">${isPublishedPost(p) ? 'Đã đăng' : 'Nháp'}</span></td>
             <td><span class="t-cat">${escHtml(p.category)}</span></td>
             <td style="color:#777777;white-space:nowrap">${formatDate(p.date)}</td>
             <td><div class="t-actions">
@@ -5479,15 +5499,16 @@ function cmsRenderDashboard() {
 function cmsRenderPostsList() {
   document.getElementById('cms-posts-list-wrap').innerHTML = `
     <table class="cms-table">
-      <thead><tr><th></th><th>Tiêu đề</th><th>Danh mục</th><th>Ngày</th><th>Nổi bật</th><th></th></tr></thead>
+      <thead><tr><th></th><th>Tiêu đề</th><th>Trạng thái</th><th>Danh mục</th><th>Ngày</th><th>Nổi bật</th><th></th></tr></thead>
       <tbody>
         ${data.posts.map((p, i) => `
           <tr>
             <td>${p.image ? `<img class="t-thumb" src="${escHtml(p.image)}" alt="">` : `<div class="t-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:#f0ece5">${getCatEmoji(p.category)}</div>`}</td>
             <td style="max-width:280px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.title)}</div>${p.excerpt ? `<div style="font-size:12px;color:#777777;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${escHtml(p.excerpt.substring(0,80))}</div>` : ''}</td>
+            <td><span class="lpb-status-badge ${isPublishedPost(p) ? 'published' : 'draft'}">${isPublishedPost(p) ? 'Đã đăng' : 'Nháp'}</span></td>
             <td><span class="t-cat">${escHtml(p.category)}</span></td>
             <td style="color:#777777;white-space:nowrap">${formatDate(p.date)}</td>
-            <td style="text-align:center">${p.featured ? '⭐' : '—'}</td>
+            <td style="text-align:center">${isPublishedPost(p) && p.featured ? '⭐' : '—'}</td>
             <td><div class="t-actions">
               <button class="t-btn" onclick="cmsOpenEditor(${i})">Sửa</button>
               <button class="t-btn danger" onclick="cmsDeletePost(${i})">Xóa</button>
@@ -5587,6 +5608,7 @@ function cmsOpenEditor(idx) {
   const isNew = cmsCurrentEditIdx === null;
 
   document.getElementById('cms-editor-title').textContent = isNew ? 'Tạo bài viết mới' : 'Chỉnh sửa bài viết';
+  const statusNote = document.getElementById('cms-post-status-note');
 
   // Refresh category dropdown from data
   const catSel = document.getElementById('cms-post-category');
@@ -5623,6 +5645,7 @@ function cmsOpenEditor(idx) {
     document.getElementById('cms-post-date').value = d.toISOString().split('T')[0];
     // Image preview
     updateImgPreview(post.image || '');
+    if (statusNote) statusNote.textContent = isPublishedPost(post) ? 'Trạng thái hiện tại: Đã đăng' : 'Trạng thái hiện tại: Nháp';
   } else {
     document.getElementById('cms-post-title').value = '';
     document.getElementById('cms-post-slug').value = '';
@@ -5637,6 +5660,7 @@ function cmsOpenEditor(idx) {
     document.getElementById('cms-post-featured').checked = false;
     document.getElementById('cms-post-date').value = new Date().toISOString().split('T')[0];
     updateImgPreview('');
+    if (statusNote) statusNote.textContent = 'Bài mới sẽ ở trạng thái nháp cho tới khi bấm Đăng bài';
   }
 }
 
@@ -5713,7 +5737,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcut removed for security
 });
 
-async function cmsSavePost() {
+async function cmsSavePost(mode) {
   const title = document.getElementById('cms-post-title').value.trim();
   if (!title) return showToast('Vui lòng nhập tiêu đề', true);
 
@@ -5732,12 +5756,17 @@ async function cmsSavePost() {
 
   const contentHtml = postQuill.root.innerHTML;
   const content = contentHtml.trim() === '<p><br></p>' ? '' : contentHtml.trim();
+  const targetStatus = mode === 'publish' ? 'published' : 'draft';
+  if (targetStatus === 'published' && !content) return showToast('Vui lòng nhập nội dung trước khi đăng', true);
 
   const dateVal = document.getElementById('cms-post-date').value;
   const isFeatured = document.getElementById('cms-post-featured').checked;
+  const prevPost = cmsCurrentEditIdx !== null ? data.posts[cmsCurrentEditIdx] : null;
+  const wasPublished = isPublishedPost(prevPost);
+  const willPublish = targetStatus === 'published';
 
   // If this post is marked as featured, unmark all others
-  if (isFeatured) {
+  if (isFeatured && willPublish) {
     data.posts.forEach((p, i) => {
       if (i !== cmsCurrentEditIdx) p.featured = false;
     });
@@ -5751,8 +5780,14 @@ async function cmsSavePost() {
     content: content || '',
     image: document.getElementById('cms-post-image').value.trim(),
     tags: document.getElementById('cms-post-tags').value.split(',').map(t => t.trim()).filter(Boolean),
-    featured: isFeatured,
-    date: dateVal ? new Date(dateVal).getTime() : (cmsCurrentEditIdx !== null ? data.posts[cmsCurrentEditIdx].date : Date.now()),
+    featured: willPublish ? isFeatured : false,
+    status: targetStatus,
+    date: dateVal
+      ? new Date(dateVal).getTime()
+      : (wasPublished
+        ? prevPost.date
+        : (willPublish ? Date.now() : (prevPost?.date || Date.now()))),
+    updatedAt: Date.now(),
     readTime: Math.max(1, Math.ceil((content || '').replace(/<[^>]+>/g,'').split(/\s+/).filter(Boolean).length / 200))
   };
 
@@ -5766,10 +5801,10 @@ async function cmsSavePost() {
     cmsCurrentEditIdx = 0;
   }
 
-  showToast('⏳ Đang lưu bài viết...');
+  showToast(targetStatus === 'published' ? '⏳ Đang đăng bài viết...' : '⏳ Đang lưu nháp...');
   try {
     await savePost(post, existingId);
-    showToast('✅ Đã lưu bài viết thành công');
+    showToast(targetStatus === 'published' ? '✅ Đã đăng bài viết thành công' : '✅ Đã lưu nháp');
     renderHero();
     renderPosts();
     renderSidebar('sidebar');
@@ -6571,7 +6606,7 @@ function _waitForPost(slug) {
   let waited = 0;
   const iv = setInterval(() => {
     waited += 200;
-    const idx = data.posts.findIndex(p => p.slug === slug);
+    const idx = data.posts.findIndex(p => p.slug === slug && isPublishedPost(p));
     if (idx >= 0) { clearInterval(iv); openPost(idx); return; }
     if (window._fbFullyLoaded || waited >= 5000) {
       clearInterval(iv);
@@ -6826,7 +6861,7 @@ function cmsLoadSettings() {
   // Priority Posts
   const pIds = s.priorityPostIds || [];
   const pOptions = '<option value="">— Trống —</option>' + 
-    data.posts.map((p, i) => `<option value="${escHtml(p.slug || i.toString())}">${escHtml(p.title)}</option>`).join('');
+    getPublishedPosts().map((p) => `<option value="${escHtml(p.slug || data.posts.indexOf(p).toString())}">${escHtml(p.title)}</option>`).join('');
   
   [1, 2, 3].forEach(n => {
     const el = document.getElementById('cms-priority-' + n);
@@ -8312,11 +8347,13 @@ function performSearch() {
     return;
   }
   
-  const matches = data.posts.filter(p => 
-    p.title.toLowerCase().includes(query) ||
-    (p.excerpt && p.excerpt.toLowerCase().includes(query)) ||
-    (p.content && p.content.toLowerCase().includes(query)) ||
-    (p.tags && p.tags.some(t => t.toLowerCase().includes(query)))
+  const matches = data.posts.filter(p =>
+    isPublishedPost(p) && (
+      p.title.toLowerCase().includes(query) ||
+      (p.excerpt && p.excerpt.toLowerCase().includes(query)) ||
+      (p.content && p.content.toLowerCase().includes(query)) ||
+      (p.tags && p.tags.some(t => t.toLowerCase().includes(query)))
+    )
   );
   
   if (matches.length === 0) {
@@ -8367,8 +8404,10 @@ function readTime(text) {
 
 function openPost(idx) {
   const post = data.posts[idx];
-  if (!post) {
+  const isInCms = document.getElementById('cms-page')?.classList.contains('active');
+  if (!post || (!isInCms && !isPublishedPost(post))) {
     hideLoader();
+    if (post && !isPublishedPost(post)) show404(post.slug || String(idx));
     return;
   }
   
@@ -8388,7 +8427,7 @@ function openPost(idx) {
 
     const related = data.posts
       .map(function(p, i) { return Object.assign({}, p, { _idx: i }); })
-      .filter(p => p._idx !== idx && p.category === post.category)
+      .filter(p => p._idx !== idx && isPublishedPost(p) && p.category === post.category)
       .slice(0, 4);
 
     content.innerHTML = `
@@ -8516,7 +8555,7 @@ function _showHome(cat) {
   if (p404) p404.style.display = 'none';
   const _rp = document.getElementById('reading-progress'); if(_rp) _rp.style.width = '0%';
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  updateMetaTags({ title: '', desc: data.settings.tagline, image: (data.posts.find(p=>p.featured)||data.posts[0]||{}).image||'', url: window.location.origin });
+  updateMetaTags({ title: '', desc: data.settings.tagline, image: (getPublishedPosts().find(p=>p.featured)||getPublishedPosts()[0]||{}).image||'', url: window.location.origin });
   document.title = data.settings.sitename + ' – ' + data.settings.tagline;
   renderHero();
   renderPosts();
@@ -8685,7 +8724,7 @@ function closeMobileNavOutside(e) {
 
 function getTopTags() {
   const tagCount = {};
-  data.posts.forEach(p => {
+  getPublishedPosts().forEach(p => {
     if (p.tags) {
       p.tags.forEach(t => {
         tagCount[t] = (tagCount[t] || 0) + 1;
@@ -8892,16 +8931,16 @@ function routerApplyState(state) {
   if (state.view === 'post') {
     // Find post by slug or index
     let idx = -1;
-    if (state.idx !== undefined && data.posts[state.idx]) {
+    if (state.idx !== undefined && data.posts[state.idx] && isPublishedPost(data.posts[state.idx])) {
       idx = state.idx;
     } else if (state.slug) {
       // Try numeric index
       const n = parseInt(state.slug);
-      if (!isNaN(n) && data.posts[n]) {
+      if (!isNaN(n) && data.posts[n] && isPublishedPost(data.posts[n])) {
         idx = n;
       } else {
         // Find by slug field
-        idx = data.posts.findIndex(p => p.slug === state.slug);
+        idx = data.posts.findIndex(p => p.slug === state.slug && isPublishedPost(p));
       }
     }
     if (idx >= 0) {
